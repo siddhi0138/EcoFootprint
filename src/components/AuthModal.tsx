@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Mail, Lock, Leaf } from 'lucide-react';
+import { User, Mail, Lock, Leaf, Chrome } from 'lucide-react'; // Import Chrome icon for Google
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,7 +18,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const { login, register, isLoading } = useUser();
+  const { login, register, signInWithGoogle, isLoading } = useUser(); // Add signInWithGoogle
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -35,6 +35,22 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         title: "Login failed",
         description: "Invalid email or password.",
         variant: "destructive"
+      });
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      toast({
+        title: "Welcome!",
+        description: "Successfully signed in with Google.",
+      });
+      onClose();
+    } catch (error) {
+      toast({
+        title: "Google Sign-In failed",
+        description: "Unable to sign in with Google. Please try again.",
       });
     }
   };
@@ -115,6 +131,19 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
             </form>
+             <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
+               <Chrome className="mr-2 h-4 w-4" /> Sign in with Google
+            </Button>
           </TabsContent>
           
           <TabsContent value="register">
