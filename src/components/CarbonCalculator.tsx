@@ -1,11 +1,15 @@
+// TODO: Implement data fetching from Firestore
 
 import React, { useState } from 'react';
+import { getApp } from 'firebase/app'; // Import getApp
+import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore'; // Import Timestamp
+import { useUser } from '@/contexts/UserContext'; // Assuming UserContext provides the authenticated user
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calculator, Car, Home, Plane, ShoppingBag, Leaf } from 'lucide-react';
+import { Calculator, Car, Home, Plane, ShoppingBag, Leaf, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const CarbonCalculator = () => {
@@ -13,46 +17,99 @@ const CarbonCalculator = () => {
     transportation: { car: '', publicTransport: '', flights: '' },
     energy: { electricity: '', heating: '', homeSize: '' },
     consumption: { shopping: '', food: '', diet: 'mixed' },
-    lifestyle: { recycling: 'sometimes', renewable: 'no' }
+    lifestyle: { recycling: 'sometimes', renewable: 'no' },
+    waste: { paper: '', plastic: '', glass: '', compost: 'no' } // Added waste category
   });
   const [result, setResult] = useState<number | null>(null);
   const { toast } = useToast();
+  // Ensure useUser hook correctly provides the Firebase User object or null
+  const { user } = useUser(); // Get the authenticated user from context
+  const db = getFirestore(getApp()); // Get Firestore instance
 
-  const calculateFootprint = () => {
-    // Simplified carbon footprint calculation (kg CO2/year)
+  const calculateFootprint = async () => {
+    // Carbon footprint calculation (kg CO2/year)
+    // Emission factors are approximate and based on general averages.
+    // For more accuracy, these should be specific to region, energy source, etc.
+    // Consider fetching from a reliable API for a production application.
+
     const carMiles = parseFloat(formData.transportation.car) || 0;
     const flights = parseFloat(formData.transportation.flights) || 0;
     const electricity = parseFloat(formData.energy.electricity) || 0;
     const shopping = parseFloat(formData.consumption.shopping) || 0;
 
+    // Added waste category
+    const paperWaste = parseFloat(formData.waste.paper) || 0;
+    const plasticWaste = parseFloat(formData.waste.plastic) || 0;
+    const glassWaste = parseFloat(formData.waste.glass) || 0;
+
     let total = 0;
-    
-    // Transportation (0.4 kg CO2 per mile for average car)
-    total += carMiles * 12 * 0.4;
-    
-    // Flights (0.9 kg CO2 per mile)
-    total += flights * 0.9;
-    
-    // Electricity (0.5 kg CO2 per kWh)
-    total += electricity * 12 * 0.5;
-    
-    // Shopping (estimate)
+
+    // Transportation:
+    // Average passenger car: ~0.404 kg CO2 per mile (source: EPA, 2021)
+    total += carMiles * 12 * 0.404;
+
+    // Flights: Short-haul flights have higher emissions per mile than long-haul.
+    // Using an average estimate: ~0.2 kg CO2 per passenger mile (source: various estimates)
+    total += flights * 0.2;
+
+    // Home Energy - Electricity:
+    // US Average: ~0.42 kg CO2 per kWh (source: EIA, varies greatly by region)
+    total += electricity * 12 * 0.42;
+
+    // Note: Heating is not currently calculated but could be added based on fuel type (natural gas, oil, etc.)
+
+    // Consumption: Highly variable, this is a very rough estimate based on spending.
+    // Shopping (estimate): This factor is a broad average and can vary significantly.
     total += shopping * 12 * 2;
     
     // Diet adjustments
+    // Dietary emissions vary widely based on type and source of food.
+    // These multipliers are approximate.
     const dietMultiplier = formData.consumption.diet === 'vegetarian' ? 0.8 : 
                           formData.consumption.diet === 'vegan' ? 0.6 : 1;
     total *= dietMultiplier;
-    
-    // Renewable energy reduction
+
+    // Waste Generation:
+    // Emission factors for waste vary based on waste type and disposal method (landfill, recycling, composting).
+    // These are simplified estimates for landfill disposal.
+    // Paper: ~1.5 kg CO2e per kg (includes production and disposal)
+    total += paperWaste * 1.5;
+    // Plastic: ~3 kg CO2e per kg (includes production and disposal)
+    total += plasticWaste * 3;
+    // Glass: ~0.5 kg CO2e per kg (primarily from production)
+    total += glassWaste * 0.5;
+
+    // Renewable energy reduction: This is a simplified reduction.
+    // A more accurate calculation would consider the percentage of renewable energy used.
     if (formData.lifestyle.renewable === 'yes') {
+      // Assume a significant reduction for 100% renewable
       total *= 0.7;
+    }
+
+    // Save data to Firestore
+    if (user) {
+      try {
+        const carbonFootprintsCollection = collection(db, 'carbonFootprints');
+        await addDoc(carbonFootprintsCollection, {
+          userId: user.uid,
+          timestamp: Timestamp.now(), // Use Firestore Timestamp
+          footprint: Math.round(total),
+          formData: formData, // Save the form data for potential future use
+        });
+        console.log('Carbon footprint data saved to Firestore');
+      } catch (error) {
+        console.error('Error saving carbon footprint data: ', error);
+        toast({
+          title: "Error saving data",
+          description: "Failed to save your footprint data. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
 
     setResult(Math.round(total));
     
     toast({
-      title: "Carbon footprint calculated!",
       description: `Your estimated annual footprint: ${Math.round(total)} kg CO2`,
     });
   };
@@ -185,9 +242,9 @@ const CarbonCalculator = () => {
             </div>
 
             {/* Lifestyle */}
-            <div className="space-y-4">
+             <div className="space-y-4">
               <div className="flex items-center space-x-2 mb-3">
-                <Leaf className="h-4 w-4 text-green-600" />
+                <Leaf className="h-4 w-4 text-green-600"/>
                 <h4 className="font-medium">Lifestyle</h4>
               </div>
               <div>
