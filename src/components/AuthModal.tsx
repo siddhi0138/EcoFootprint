@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,8 +18,17 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [activeTab, setActiveTab] = useState('login'); // State to control active tab
   const { login, register, signInWithGoogle, isLoading } = useUser(); // Add signInWithGoogle
   const { toast } = useToast();
+
+  // Clear form fields when modal opens or tabs change
+  useEffect(() => {
+    setEmail('');
+    setPassword('');
+    setName('');
+  }, [isOpen, activeTab]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +72,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         title: "Account created!",
         description: "Welcome to EcoAnalyzer community.",
       });
-      onClose();
+      setActiveTab('login'); // Switch to login tab after successful registration
     } catch (error) {
       toast({
         title: "Registration failed",
@@ -73,7 +82,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
     }
   };
 
-  return (
+  return (  
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -83,7 +92,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
           </DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="login" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="register">Register</TabsTrigger>
