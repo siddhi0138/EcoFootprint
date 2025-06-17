@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,18 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				sage: {
+					50: 'hsl(var(--sage-50))',
+					100: 'hsl(var(--sage-100))',
+					200: 'hsl(var(--sage-200))',
+					300: 'hsl(var(--sage-300))',
+					400: 'hsl(var(--sage-400))',
+					500: 'hsl(var(--sage-500))',
+					600: 'hsl(var(--sage-600))',
+					700: 'hsl(var(--sage-700))',
+					800: 'hsl(var(--sage-800))',
+					900: 'hsl(var(--sage-900))',
 				}
 			},
 			borderRadius: {
@@ -84,11 +97,27 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				float: {
+					'0%, 100%': { transform: 'translateY(0px)' },
+					'50%': { transform: 'translateY(-10px)' },
+				},
+				sway: {
+					'0%, 100%': { transform: 'rotate(-1deg)' },
+					'50%': { transform: 'rotate(1deg)' },
+				},
+				grow: {
+					'0%': { transform: 'scale(1)' },
+					'50%': { transform: 'scale(1.05)' },
+					'100%': { transform: 'scale(1)' },
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'float': 'float 3s ease-in-out infinite',
+				'sway': 'sway 4s ease-in-out infinite',
+				'grow': 'grow 2s ease-in-out infinite',
 			}
 		}
 	},
