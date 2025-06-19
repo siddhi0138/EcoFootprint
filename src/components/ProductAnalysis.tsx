@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ import {
   Heart
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { getRandomProducts } from '@/data/productsData';
 
 const ProductAnalysis = ({ product }) => {
   console.log('ProductAnalysis component rendered, product:', product);
@@ -47,31 +49,31 @@ const ProductAnalysis = ({ product }) => {
 
   const historicalData = {
     '3months': [
-      { month: 'Mar', overall: 85, carbon: 83, water: 88, waste: 80, energy: 86, ethics: 90 },
-      { month: 'Apr', overall: 86, carbon: 84, water: 89, waste: 81, energy: 87, ethics: 91 },
-      { month: 'May', overall: 87, carbon: 85, water: 90, waste: 82, energy: 88, ethics: 92 }
+      { month: 'Mar', overall: product.sustainability.overall, carbon: product.sustainability.carbon, water: product.sustainability.water, waste: product.sustainability.waste, energy: product.sustainability.energy, ethics: product.sustainability.ethics },
+      { month: 'Apr', overall: product.sustainability.overall + 1, carbon: product.sustainability.carbon + 1, water: product.sustainability.water + 1, waste: product.sustainability.waste + 1, energy: product.sustainability.energy + 1, ethics: product.sustainability.ethics + 1 },
+      { month: 'May', overall: product.sustainability.overall + 2, carbon: product.sustainability.carbon + 1, water: product.sustainability.water + 2, waste: product.sustainability.waste + 2, energy: product.sustainability.energy + 2, ethics: product.sustainability.ethics + 2 }
     ],
     '6months': [
-      { month: 'Jan', overall: 82, carbon: 80, water: 85, waste: 78, energy: 83, ethics: 87 },
-      { month: 'Feb', overall: 83, carbon: 81, water: 86, waste: 79, energy: 84, ethics: 88 },
-      { month: 'Mar', overall: 85, carbon: 83, water: 88, waste: 80, energy: 86, ethics: 90 },
-      { month: 'Apr', overall: 86, carbon: 84, water: 89, waste: 81, energy: 87, ethics: 91 },
-      { month: 'May', overall: 87, carbon: 85, water: 90, waste: 82, energy: 88, ethics: 92 },
-      { month: 'Jun', overall: 87, carbon: 85, water: 90, waste: 82, energy: 88, ethics: 92 }
+      { month: 'Jan', overall: product.sustainability.overall - 5, carbon: product.sustainability.carbon - 3, water: product.sustainability.water - 3, waste: product.sustainability.waste - 4, energy: product.sustainability.energy - 3, ethics: product.sustainability.ethics - 3 },
+      { month: 'Feb', overall: product.sustainability.overall - 4, carbon: product.sustainability.carbon - 2, water: product.sustainability.water - 2, waste: product.sustainability.waste - 3, energy: product.sustainability.energy - 2, ethics: product.sustainability.ethics - 2 },
+      { month: 'Mar', overall: product.sustainability.overall - 2, carbon: product.sustainability.carbon - 1, water: product.sustainability.water, waste: product.sustainability.waste - 2, energy: product.sustainability.energy, ethics: product.sustainability.ethics },
+      { month: 'Apr', overall: product.sustainability.overall - 1, carbon: product.sustainability.carbon, water: product.sustainability.water + 1, waste: product.sustainability.waste - 1, energy: product.sustainability.energy + 1, ethics: product.sustainability.ethics + 1 },
+      { month: 'May', overall: product.sustainability.overall, carbon: product.sustainability.carbon + 1, water: product.sustainability.water + 2, waste: product.sustainability.waste, energy: product.sustainability.energy + 2, ethics: product.sustainability.ethics + 2 },
+      { month: 'Jun', overall: product.sustainability.overall + 1, carbon: product.sustainability.carbon + 1, water: product.sustainability.water + 2, waste: product.sustainability.waste + 1, energy: product.sustainability.energy + 2, ethics: product.sustainability.ethics + 2 }
     ],
     '1year': [
-      { month: 'Jul 23', overall: 78, carbon: 76, water: 81, waste: 74, energy: 79, ethics: 83 },
-      { month: 'Aug 23', overall: 79, carbon: 77, water: 82, waste: 75, energy: 80, ethics: 84 },
-      { month: 'Sep 23', overall: 80, carbon: 78, water: 83, waste: 76, energy: 81, ethics: 85 },
-      { month: 'Oct 23', overall: 81, carbon: 79, water: 84, waste: 77, energy: 82, ethics: 86 },
-      { month: 'Nov 23', overall: 82, carbon: 80, water: 85, waste: 78, energy: 83, ethics: 87 },
-      { month: 'Dec 23', overall: 83, carbon: 81, water: 86, waste: 79, energy: 84, ethics: 88 },
-      { month: 'Jan 24', overall: 82, carbon: 80, water: 85, waste: 78, energy: 83, ethics: 87 },
-      { month: 'Feb 24', overall: 83, carbon: 81, water: 86, waste: 79, energy: 84, ethics: 88 },
-      { month: 'Mar 24', overall: 85, carbon: 83, water: 88, waste: 80, energy: 86, ethics: 90 },
-      { month: 'Apr 24', overall: 86, carbon: 84, water: 89, waste: 81, energy: 87, ethics: 91 },
-      { month: 'May 24', overall: 87, carbon: 85, water: 90, waste: 82, energy: 88, ethics: 92 },
-      { month: 'Jun 24', overall: 87, carbon: 85, water: 90, waste: 82, energy: 88, ethics: 92 }
+      { month: 'Jul 23', overall: product.sustainability.overall - 9, carbon: product.sustainability.carbon - 6, water: product.sustainability.water - 7, waste: product.sustainability.waste - 8, energy: product.sustainability.energy - 6, ethics: product.sustainability.ethics - 7 },
+      { month: 'Aug 23', overall: product.sustainability.overall - 8, carbon: product.sustainability.carbon - 5, water: product.sustainability.water - 6, waste: product.sustainability.waste - 7, energy: product.sustainability.energy - 5, ethics: product.sustainability.ethics - 6 },
+      { month: 'Sep 23', overall: product.sustainability.overall - 7, carbon: product.sustainability.carbon - 4, water: product.sustainability.water - 5, waste: product.sustainability.waste - 6, energy: product.sustainability.energy - 4, ethics: product.sustainability.ethics - 5 },
+      { month: 'Oct 23', overall: product.sustainability.overall - 6, carbon: product.sustainability.carbon - 3, water: product.sustainability.water - 4, waste: product.sustainability.waste - 5, energy: product.sustainability.energy - 3, ethics: product.sustainability.ethics - 4 },
+      { month: 'Nov 23', overall: product.sustainability.overall - 5, carbon: product.sustainability.carbon - 2, water: product.sustainability.water - 3, waste: product.sustainability.waste - 4, energy: product.sustainability.energy - 2, ethics: product.sustainability.ethics - 3 },
+      { month: 'Dec 23', overall: product.sustainability.overall - 4, carbon: product.sustainability.carbon - 1, water: product.sustainability.water - 2, waste: product.sustainability.waste - 3, energy: product.sustainability.energy - 1, ethics: product.sustainability.ethics - 2 },
+      { month: 'Jan 24', overall: product.sustainability.overall - 3, carbon: product.sustainability.carbon, water: product.sustainability.water - 1, waste: product.sustainability.waste - 2, energy: product.sustainability.energy, ethics: product.sustainability.ethics - 1 },
+      { month: 'Feb 24', overall: product.sustainability.overall - 2, carbon: product.sustainability.carbon + 1, water: product.sustainability.water, waste: product.sustainability.waste - 1, energy: product.sustainability.energy + 1, ethics: product.sustainability.ethics },
+      { month: 'Mar 24', overall: product.sustainability.overall - 1, carbon: product.sustainability.carbon + 2, water: product.sustainability.water + 1, waste: product.sustainability.waste, energy: product.sustainability.energy + 2, ethics: product.sustainability.ethics + 1 },
+      { month: 'Apr 24', overall: product.sustainability.overall, carbon: product.sustainability.carbon + 3, water: product.sustainability.water + 2, waste: product.sustainability.waste + 1, energy: product.sustainability.energy + 3, ethics: product.sustainability.ethics + 2 },
+      { month: 'May 24', overall: product.sustainability.overall + 1, carbon: product.sustainability.carbon + 4, water: product.sustainability.water + 3, waste: product.sustainability.waste + 2, energy: product.sustainability.energy + 4, ethics: product.sustainability.ethics + 3 },
+      { month: 'Jun 24', overall: product.sustainability.overall + 2, carbon: product.sustainability.carbon + 5, water: product.sustainability.water + 4, waste: product.sustainability.waste + 3, energy: product.sustainability.energy + 5, ethics: product.sustainability.ethics + 4 }
     ]
   };
 
@@ -84,39 +86,40 @@ const ProductAnalysis = ({ product }) => {
     { subject: 'Ethics', A: product.sustainability.ethics, fullMark: 100 }
   ];
 
-  const competitors = [
-    { name: 'Brand A', score: 79, trend: '+1' },
-    { name: 'Brand B', score: 84, trend: '-2' },
-    { name: 'Brand C', score: 76, trend: '+3' },
-    { name: 'Industry Avg', score: 72, trend: '+1' }
-  ];
+  // Generate competitors from our product data
+  const competitorProducts = getRandomProducts(4);
+  const competitors = competitorProducts.map(comp => ({
+    name: comp.brand,
+    score: comp.sustainabilityScore,
+    trend: Math.random() > 0.5 ? `+${Math.floor(Math.random() * 3) + 1}` : `-${Math.floor(Math.random() * 2) + 1}`
+  }));
 
   const suggestions = [
     {
       category: 'Packaging',
       impact: 'High',
-      suggestion: 'Switch to biodegradable packaging materials',
+      suggestion: product.packaging.recyclable ? 'Explore compostable packaging options' : 'Switch to recyclable packaging materials',
       potential: '+8 points',
       status: 'recommended'
     },
     {
       category: 'Supply Chain',
       impact: 'Medium',
-      suggestion: 'Implement local sourcing for 40% of ingredients',
+      suggestion: 'Implement local sourcing for 40% of materials',
       potential: '+5 points',
       status: 'in-progress'
     },
     {
       category: 'Manufacturing',
       impact: 'High',
-      suggestion: 'Increase renewable energy usage to 80%',
+      suggestion: product.energySource.includes('Renewable') ? 'Achieve 100% renewable energy' : 'Increase renewable energy usage to 80%',
       potential: '+12 points',
       status: 'planned'
     },
     {
       category: 'Transportation',
       impact: 'Low',
-      suggestion: 'Optimize logistics routes',
+      suggestion: 'Optimize logistics routes and packaging density',
       potential: '+2 points',
       status: 'completed'
     }
@@ -239,6 +242,61 @@ const ProductAnalysis = ({ product }) => {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Product Details Section */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="border-slate-200/50 shadow-md rounded-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Product Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Brand:</span>
+                      <span className="font-medium">{product.brand}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Category:</span>
+                      <span className="font-medium capitalize">{product.category}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Origin:</span>
+                      <span className="font-medium">{product.origin}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Price:</span>
+                      <span className="font-medium">${product.price}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Rating:</span>
+                      <span className="font-medium">{product.rating}/5 ({product.reviews} reviews)</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-slate-200/50 shadow-md rounded-2xl">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Environmental Impact</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Carbon Footprint:</span>
+                      <span className="font-medium">{product.carbon}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Water Usage:</span>
+                      <span className="font-medium">{product.water}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Packaging:</span>
+                      <span className="font-medium">{product.packaging}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600">Energy Source:</span>
+                      <span className="font-medium">{product.energySource || 'Mixed Grid'}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="trends" className="mt-6">
@@ -301,9 +359,9 @@ const ProductAnalysis = ({ product }) => {
                   ))}
                   
                   <div className="text-center pt-4">
-                    <Badge className="bg-slate-800 text-white px-4 py-2">
+                    <Badge className={`px-4 py-2 ${product.sustainability.overall > 75 ? 'bg-green-600 text-white' : 'bg-slate-800 text-white'}`}>
                       <TrendingUp className="w-4 h-4 mr-2" />
-                      Above Industry Average
+                      {product.sustainability.overall > 75 ? 'Above Industry Average' : 'Room for Improvement'}
                     </Badge>
                   </div>
                 </CardContent>

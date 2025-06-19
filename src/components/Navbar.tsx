@@ -41,7 +41,8 @@ import {
 const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: { 
   onNavigate: any; 
   activeTab: any; 
-  toggleLoginForm?: () => void; 
+  toggleLoginForm?: () => void;
+  cartItemCount: number;
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);

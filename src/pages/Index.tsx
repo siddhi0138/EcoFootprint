@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Search, Sparkles } from 'lucide-react';
+import Cart from '@/components/Cart';
 
 // Import components
 import Navbar from '@/components/Navbar';
@@ -26,9 +27,9 @@ import AIRecommendations from '@/components/AIRecommendations';
 import EnvironmentalAlerts from '@/components/EnvironmentalAlerts';
 import RewardsSystem from '@/components/RewardsSystem';
 import ProductLifecycle from '@/components/ProductLifecycle';
+import SustainabilityChallenges from '@/components/SustainabiltyChallenges'; // Corrected import path
 import SocialImpactHub from '@/components/SocialImpactHub';
-import SustainabilityChallenges from '@/components/SustainabiltyChallenges';
-import SmartInsights from '@/components/SmartInsights'; // Assuming this import is correct
+import SmartInsights from '@/components/SmartInsights';
 import LiveEvents from '@/components/LiveEvents';
 import ARProductScanner from '@/components/ARProductScanner';
 import InvestmentTracker from '@/components/InvestmentTracker';
@@ -40,10 +41,11 @@ import AuthModal from '@/components/AuthModal';
 
 const Index = () => {
   console.log('Index component starting to render...');
-  
+
   const [activeTab, setActiveTab] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [scannedProduct, setScannedProduct] = useState(null);
+  const [cart, setCart] = useState([]);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   console.log('State initialized, activeTab:', activeTab);
@@ -93,6 +95,11 @@ const Index = () => {
     setActiveTab(tab);
   };
 
+  const addToCart = (product) => {
+    setCart((prevCart) => [...prevCart, product]);
+    setActiveTab('cart'); // Assuming there is a cart tab, or you can change as needed
+  };
+
   const handleGetStarted = () => {
     console.log('Get started clicked');
     setIsLoginModalOpen(true);
@@ -115,21 +122,25 @@ const Index = () => {
   if (activeTab === 'home') {
     console.log('RENDERING HOME PAGE - this should be visible');
     console.log('About to render Navbar, Hero, Features, Footer components');
-    
+
     try {
       return (
         <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-
           <div style={{ border: '2px solid red', padding: '10px', margin: '10px' }}>
             <h1 style={{ color: 'red', fontSize: '24px' }}>DEBUG: Home page is rendering!</h1>
           </div>
-          <Navbar onNavigate={handleNavigation} activeTab={activeTab} toggleLoginForm={toggleLoginForm} />
+          <Navbar
+ onNavigate={handleNavigation}
+ activeTab={activeTab}
+ toggleLoginForm={toggleLoginForm}
+            cartItemCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
+ />
           <Hero onGetStarted={handleGetStarted} />
           <Features />
           <Footer />
-          <AuthModal 
-            isOpen={isLoginModalOpen} 
-            onClose={() => setIsLoginModalOpen(false)} 
+          <AuthModal
+            isOpen={isLoginModalOpen}
+            onClose={() => setIsLoginModalOpen(false)}
             onSuccess={handleLoginSuccess}
           />
         </div>
@@ -143,24 +154,41 @@ const Index = () => {
   console.log('RENDERING APP INTERFACE for tab:', activeTab);
 
   return (
-    <>
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <Navbar onNavigate={handleNavigation} activeTab={activeTab} toggleLoginForm={toggleLoginForm} />
-      
+      <Navbar 
+        onNavigate={handleNavigation} 
+        activeTab={activeTab} 
+        toggleLoginForm={toggleLoginForm} 
+        cartItemCount={cart.length} 
+      />
+
       {/* Main Content Area */}
       <div className="pt-20">
         <div className="container mx-auto px-6 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsContent value="scanner" className="mt-6">
-              <ProductScanner onProductScanned={setScannedProduct} />
+              <ProductScanner 
+                onProductScanned={setScannedProduct} 
+                addToCart={addToCart} 
+                setActiveTab={setActiveTab} 
+              />
             </TabsContent>
 
-            <TabsContent value="chatbot" className="mt-6">
-              <EcoChatbot />
+
+            <TabsContent value="cart" className="mt-6">
+              <Cart 
+                cart={cart} 
+                setCart={setCart} 
+                setActiveTab={setActiveTab} 
+              />
             </TabsContent>
 
             <TabsContent value="ar-scanner" className="mt-6">
               <ARProductScanner />
+            </TabsContent>
+
+            <TabsContent value="chatbot" className="mt-6">
+              <EcoChatbot />
             </TabsContent>
 
             <TabsContent value="search" className="mt-6">
@@ -193,7 +221,7 @@ const Index = () => {
                       Search
                     </Button>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {recentScans.map((product) => (
                       <Card key={product.id} className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gray-100/50 shadow-md rounded-2xl overflow-hidden group bg-white/80 backdrop-blur-sm dark:bg-gray-700/80 dark:border-gray-600/50">
@@ -203,7 +231,7 @@ const Index = () => {
                               <h3 className="font-bold text-gray-800 truncate text-lg group-hover:text-emerald-700 transition-colors dark:text-gray-200 dark:group-hover:text-emerald-400">{product.name}</h3>
                               <p className="text-sm text-gray-600 mt-1 font-medium dark:text-gray-400">{product.brand}</p>
                             </div>
-                            <Badge 
+                            <Badge
                               variant={product.score >= 80 ? "default" : product.score >= 60 ? "secondary" : "destructive"}
                               className={`text-sm px-3 py-1 rounded-xl ${product.score >= 80 ? "bg-emerald-500 hover:bg-emerald-600" : ""}`}
                             >
@@ -226,6 +254,10 @@ const Index = () => {
               <ProductAnalysis product={scannedProduct} />
             </TabsContent>
 
+            <TabsContent value="comparison" className="mt-4">
+              <ProductComparison />
+            </TabsContent>
+
             <TabsContent value="companies" className="mt-4">
               <CompanyProfile />
             </TabsContent>
@@ -240,10 +272,6 @@ const Index = () => {
 
             <TabsContent value="carbon-tracker" className="mt-4">
               <CarbonTracker />
-            </TabsContent>
-
-            <TabsContent value="comparison" className="mt-4">
-              <ProductComparison />
             </TabsContent>
 
             <TabsContent value="education" className="mt-4">
@@ -309,14 +337,12 @@ const Index = () => {
         </div>
       </div>
 
-      <AuthModal 
-        isOpen={isLoginModalOpen} 
-        onClose={() => setIsLoginModalOpen(false)} 
+      <AuthModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
         onSuccess={handleLoginSuccess}
       />
     </div>
-    <Footer />
- </>
   );
 };
 
