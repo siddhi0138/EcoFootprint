@@ -72,13 +72,13 @@
     @apply border-border;
   }
   body {
-    @apply bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 text-foreground;
+    @apply bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900 text-foreground transition-colors duration-300;
   }
   html {
-    @apply bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50;
+    @apply bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900 transition-colors duration-300;
   }
   #root {
-    @apply bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 min-h-screen;
+    @apply bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900 min-h-screen transition-colors duration-300;
   }
 }
 

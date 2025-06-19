@@ -1,14 +1,16 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth'; // Import getAuth
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGE_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAoBMalN3miOwj4LGgN-ORFclk71kscWuQ",
+  authDomain: "ecofootprint-4aa28.firebaseapp.com",
+  projectId: "ecofootprint-4aa28",
+  storageBucket: "ecofootprint-4aa28.firebasestorage.app",
+  messagingSenderId: "263046775029",
+  appId: "1:263046775029:web:70f8182a5116696a6b05bc",
+  measurementId: "G-FZ5YPG18FC"
 };
 
 // Initialize Firebase
@@ -17,4 +19,7 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firestore
 const db = getFirestore(app);
 
-export { app, db };
+// Initialize Firebase Authentication
+const auth = getAuth(app); // Initialize auth
+
+export { app, db, auth }; // Export auth

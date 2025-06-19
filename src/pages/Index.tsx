@@ -4,33 +4,31 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Search, TrendingUp, Users, Award, Bell, Star, Zap, Sparkles, Bot, Target } from 'lucide-react';
+import { Search, Sparkles } from 'lucide-react';
 
 // Import components
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
+import Features from '@/components/Features';
 import Footer from '@/components/Footer';
 import ProductScanner from '@/components/ProductScanner';
 import SustainabilityScore from '@/components/SustainabilityScore';
 import CompanyProfile from '@/components/CompanyProfile';
 import ProductAnalysis from '@/components/ProductAnalysis';
-import SustainabilityMarketplace from '@/components/SustainabilityMarketplace'; // Corrected import
+import SustainabilityMarketplace from '@/components/SustainabilityMarketplace';
 import CommunityHub from '@/components/CommunityHub';
 import CarbonTracker from '@/components/CarbonTracker';
+import ProductComparison from '@/components/ProductComparison';
 import EducationCenter from '@/components/EducationCenter';
 import NotificationCenter from '@/components/NotificationCenter';
-import QuickActions from '@/components/QuickActions';
-import LoginForm from '@/components/LoginForm';
 import UserProfile from '@/components/UserProfile';
 import AIRecommendations from '@/components/AIRecommendations';
-import ProductComparison from '@/components/ProductComparison';
 import EnvironmentalAlerts from '@/components/EnvironmentalAlerts';
 import RewardsSystem from '@/components/RewardsSystem';
 import ProductLifecycle from '@/components/ProductLifecycle';
-import SustainabilityChallenges from '@/components/SustainabilityChallenge';
 import SocialImpactHub from '@/components/SocialImpactHub';
-import SmartInsights from '@/components/SmartInsights';
+import SustainabilityChallenges from '@/components/SustainabiltyChallenges';
+import SmartInsights from '@/components/SmartInsights'; // Assuming this import is correct
 import LiveEvents from '@/components/LiveEvents';
 import ARProductScanner from '@/components/ARProductScanner';
 import InvestmentTracker from '@/components/InvestmentTracker';
@@ -38,12 +36,18 @@ import ESGAnalyzer from '@/components/ESGAnalyzer';
 import TransportationPlanner from '@/components/TransportationPlanner';
 import EcoRecipeFinder from '@/components/EcoRecipeFinder';
 import EcoChatbot from '@/components/EcoChatbot';
-import Features from '@/components/Features';
-import { IndexProps } from '@/types';
-const Index: React.FC<IndexProps> = ({ showLoginForm, toggleLoginForm }) => {
+import AuthModal from '@/components/AuthModal';
+
+const Index = () => {
+  console.log('Index component starting to render...');
+  
   const [activeTab, setActiveTab] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [scannedProduct, setScannedProduct] = useState(null);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  console.log('State initialized, activeTab:', activeTab);
+
   const recentScans = [
     {
       id: 1,
@@ -71,13 +75,6 @@ const Index: React.FC<IndexProps> = ({ showLoginForm, toggleLoginForm }) => {
     }
   ];
 
-  const topCompanies = [
-    { name: "Patagonia", score: 94, trend: "+2" },
-    { name: "Interface Inc.", score: 91, trend: "+1" },
-    { name: "Unilever", score: 76, trend: "-1" },
-    { name: "IKEA", score: 73, trend: "+3" }
-  ];
-
   const userStats = {
     totalScans: 127,
     avgScore: 82,
@@ -88,349 +85,238 @@ const Index: React.FC<IndexProps> = ({ showLoginForm, toggleLoginForm }) => {
     currentWeekScans: 8,
     streakDays: 12
   };
-  console.log('showLoginForm:', showLoginForm);
 
+  console.log('About to define handler functions...');
 
   const handleNavigation = (tab) => {
+    console.log('Navigating to tab:', tab);
     setActiveTab(tab);
   };
 
   const handleGetStarted = () => {
+    console.log('Get started clicked');
+    setIsLoginModalOpen(true);
+  };
+
+  const toggleLoginForm = () => {
+    console.log('Toggle login form');
+    setIsLoginModalOpen(!isLoginModalOpen);
+  };
+
+  const handleLoginSuccess = () => {
+    console.log('Login successful');
+    setIsLoginModalOpen(false);
     setActiveTab('scanner');
   };
 
+  console.log('Handler functions defined, checking activeTab for render logic:', activeTab);
+
   // Render landing page
   if (activeTab === 'home') {
-    return (
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50"> {/* Use flexbox to manage layout */}
-        <Navbar onNavigate={handleNavigation} activeTab={activeTab} toggleLoginForm={toggleLoginForm} />
-        <main className="flex-grow pt-20"> {/* Main content expands to fill available space, added top padding for navbar */}
-          <Hero onGetStarted={handleGetStarted} /> {/* Hero section already likely has top/bottom padding */}
-          <Features /> {/* Render the Features component below Hero */}
-        </main>
-        <Footer />
-      </div>
-    );
+    console.log('RENDERING HOME PAGE - this should be visible');
+    console.log('About to render Navbar, Hero, Features, Footer components');
+    
+    try {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+
+          <div style={{ border: '2px solid red', padding: '10px', margin: '10px' }}>
+            <h1 style={{ color: 'red', fontSize: '24px' }}>DEBUG: Home page is rendering!</h1>
+          </div>
+          <Navbar onNavigate={handleNavigation} activeTab={activeTab} toggleLoginForm={toggleLoginForm} />
+          <Hero onGetStarted={handleGetStarted} />
+          <Features />
+          <Footer />
+          <AuthModal 
+            isOpen={isLoginModalOpen} 
+            onClose={() => setIsLoginModalOpen(false)} 
+            onSuccess={handleLoginSuccess}
+          />
+        </div>
+      );
+    } catch (error) {
+      console.error('Error rendering home page:', error);
+      return <div style={{ color: 'red', fontSize: '20px', padding: '20px' }}>Error rendering home page: {error.message}</div>;
+    }
   }
 
-  // Render app interface
-  // Conditionally render login form placeholder
-  if (showLoginForm) {
-    return <LoginForm />;
-  }
+  console.log('RENDERING APP INTERFACE for tab:', activeTab);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50"> {/* Use flexbox for app layout */}
+    <>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <Navbar onNavigate={handleNavigation} activeTab={activeTab} toggleLoginForm={toggleLoginForm} />
       
-      {/* App Header - Better spacing and padding */}
-      <div className="pt-20 bg-white/90 backdrop-blur-sm border-b border-gray-100">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-            <div className="flex-1">
-              <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-emerald-700 to-teal-600 bg-clip-text text-transparent">
-                EcoScope Dashboard
-              </h1>
-              <p className="text-gray-600 mt-1 text-sm lg:text-base">AI-Powered Environmental Intelligence Platform</p>
-            </div>
-            
-            {/* Quick Stats - Better responsive layout */}
-            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-              <div className="flex items-center space-x-2 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
-                <Zap className="w-4 h-4 text-emerald-600" />
-                <span className="text-sm font-semibold text-emerald-700">{userStats.streakDays} day streak</span>
-              </div>
-              <div className="flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
-                <Star className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-semibold text-blue-700">Level {Math.floor(userStats.totalScans / 25) + 1}</span>
-              </div>
-              <Badge variant="secondary" className="bg-gray-100 text-gray-700 px-3 py-1">
-                <Award className="w-3 h-3 mr-1" />
-                #{userStats.rank} globally
-              </Badge>
-            </div>
-          </div>
-          
-          {/* Weekly Progress - Better spacing */}
-          <div className="mt-6 bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-700 flex items-center space-x-2">
-                <Target className="w-4 h-4" />
-                <span>Weekly Goal Progress</span>
-              </span>
-              <span className="text-sm text-gray-600">{userStats.currentWeekScans}/{userStats.weeklyGoal} scans</span>
-            </div>
-            <Progress value={(userStats.currentWeekScans / userStats.weeklyGoal) * 100} className="h-2" />
-            <div className="flex justify-between mt-2 text-xs text-gray-500">
-              <span>Keep going!</span>
-              <span>{Math.round((userStats.currentWeekScans / userStats.weeklyGoal) * 100)}% complete</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Main Content Area */}
+      <div className="pt-20">
+        <div className="container mx-auto px-6 py-8">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsContent value="scanner" className="mt-6">
+              <ProductScanner onProductScanned={setScannedProduct} />
+            </TabsContent>
 
-      {/* Main Content Area - Better responsive layout and pushes footer */}
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-          {/* Main Content */}
-          <div className="xl:col-span-3">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsContent value="scanner" className="mt-4">
-                <ProductScanner onProductScanned={setScannedProduct} />
-              </TabsContent>
+            <TabsContent value="chatbot" className="mt-6">
+              <EcoChatbot />
+            </TabsContent>
 
-              <TabsContent value="chatbot" className="mt-4">
-                <EcoChatbot />
-              </TabsContent>
+            <TabsContent value="ar-scanner" className="mt-6">
+              <ARProductScanner />
+            </TabsContent>
 
-              <TabsContent value="ar-scanner" className="mt-4">
-                <ARProductScanner />
-              </TabsContent>
-
-              <TabsContent value="search" className="mt-4">
-                <Card className="bg-white border-gray-200 shadow-sm">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center space-x-3 text-gray-800">
-                      <div className="p-2 bg-emerald-600 rounded-lg">
-                        <Search className="w-5 h-5 text-white" />
-                      </div>
-                      <span>Search Products & Brands</span>
-                      <Badge variant="secondary" className="ml-auto bg-emerald-100 text-emerald-700">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        AI Enhanced
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                      <Input
-                        placeholder="Search for products, brands, or barcodes..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="flex-1 border-gray-200 focus:border-emerald-400 h-11"
-                      />
-                      <Button className="bg-emerald-600 hover:bg-emerald-700 px-6 h-11 whitespace-nowrap">
-                        Search
-                      </Button>
+            <TabsContent value="search" className="mt-6">
+              <Card className="bg-white/90 backdrop-blur-sm border-emerald-100/50 shadow-xl rounded-3xl overflow-hidden dark:bg-gray-800/90 dark:border-gray-700/50">
+                <CardHeader className="pb-6 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20">
+                  <CardTitle className="flex items-center space-x-4 text-gray-800 dark:text-gray-200">
+                    <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl shadow-lg">
+                      <Search className="w-6 h-6 text-white" />
                     </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {recentScans.map((product) => (
-                        <Card key={product.id} className="hover:shadow-lg transition-shadow cursor-pointer border-gray-100 shadow-sm">
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-800 truncate">{product.name}</h3>
-                                <p className="text-sm text-gray-600">{product.brand}</p>
-                              </div>
-                              <Badge 
-                                variant={product.score >= 80 ? "default" : product.score >= 60 ? "secondary" : "destructive"}
-                                className={product.score >= 80 ? "bg-emerald-500 hover:bg-emerald-600" : ""}
-                              >
-                                {product.score}
-                              </Badge>
-                            </div>
-                            <div className="flex justify-between items-center text-sm text-gray-500">
-                              <span>{product.category}</span>
-                              <span>{product.date}</span>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                    <div className="flex-1">
+                      <span className="text-2xl font-bold">Search Products & Brands</span>
+                      <p className="text-sm text-gray-600 mt-1 font-normal dark:text-gray-400">Discover the environmental impact of any product</p>
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="analysis" className="mt-4">
-                <ProductAnalysis product={scannedProduct} />
-              </TabsContent>
-
-              <TabsContent value="companies" className="mt-4">
-                <CompanyProfile />
-              </TabsContent>
-
-              <TabsContent value="marketplace" className="mt-4">
-                <SustainabilityMarketplace />
-              </TabsContent>
-
-              <TabsContent value="community" className="mt-4">
-                <CommunityHub />
-              </TabsContent>
-
-              <TabsContent value="carbon-tracker" className="mt-4">
-                <CarbonTracker />
-              </TabsContent>
-
-              <TabsContent value="comparison" className="mt-4">
-                <ProductComparison />
-              </TabsContent>
-
-              <TabsContent value="education" className="mt-4">
-                <EducationCenter />
-              </TabsContent>
-
-              <TabsContent value="notifications" className="mt-4">
-                <NotificationCenter />
-              </TabsContent>
-
-              <TabsContent value="profile" className="mt-4">
-                <UserProfile stats={userStats} />
-              </TabsContent>
-
-              <TabsContent value="ai-recommendations" className="mt-4">
-                <AIRecommendations />
-              </TabsContent>
-
-              <TabsContent value="environmental-alerts" className="mt-4">
-                <EnvironmentalAlerts />
-              </TabsContent>
-
-              <TabsContent value="rewards" className="mt-4">
-                <RewardsSystem />
-              </TabsContent>
-
-              <TabsContent value="lifecycle" className="mt-4">
-                <ProductLifecycle />
-              </TabsContent>
-
-              <TabsContent value="challenges" className="mt-4">
-                <SustainabilityChallenges />
-              </TabsContent>
-
-              <TabsContent value="social-impact" className="mt-4">
-                <SocialImpactHub />
-              </TabsContent>
-
-              <TabsContent value="smart-insights" className="mt-4">
-                <SmartInsights />
-              </TabsContent>
-
-              <TabsContent value="live-events" className="mt-4">
-                <LiveEvents />
-              </TabsContent>
-
-              <TabsContent value="investment-tracker" className="mt-4">
-                <InvestmentTracker />
-              </TabsContent>
-
-              <TabsContent value="esg-analyzer" className="mt-4">
-                <ESGAnalyzer />
-              </TabsContent>
-
-              <TabsContent value="transportation-planner" className="mt-4">
-                <TransportationPlanner />
-              </TabsContent>
-
-              <TabsContent value="recipe-finder" className="mt-4">
-                <EcoRecipeFinder />
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Enhanced Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <QuickActions onNavigate={handleNavigation} />
-
-            {/* Your Impact */}
-            <Card className="bg-white border-gray-200 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg text-gray-800 flex items-center space-x-3">
-                  <div className="p-2 bg-emerald-600 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-white" />
-                  </div>
-                  <span>Your Impact</span>
-                  <Badge variant="outline" className="ml-auto border-emerald-200 text-emerald-700">
-                    <Sparkles className="w-3 h-3 mr-1" />
-                    Live
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600 font-medium">Total Scans</span>
-                  <span className="font-bold text-gray-800">{userStats.totalScans}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600 font-medium">Avg Score</span>
-                  <span className="font-bold text-emerald-600">{userStats.avgScore}</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600 font-medium">CO₂ Saved</span>
-                  <span className="font-bold text-blue-600">{userStats.co2Saved} kg</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600 font-medium">Badges Earned</span>
-                  <span className="font-bold text-amber-600">{userStats.badges}</span>
-                </div>
-                <div className="space-y-2">
-                  <Progress value={65} className="h-2" />
-                  <p className="text-xs text-gray-500 text-center">65% to next level</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Top Companies */}
-            <Card className="bg-white border-gray-200 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg text-gray-800 flex items-center space-x-3">
-                  <div className="p-2 bg-emerald-600 rounded-lg">
-                    <Users className="w-5 h-5 text-white" />
-                  </div>
-                  <span>Top Sustainable Companies</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {topCompanies.map((company, index) => (
-                  <div key={company.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-sm font-bold text-gray-600 bg-gray-200 w-6 h-6 rounded-full flex items-center justify-center">#{index + 1}</span>
-                      <span className="text-sm font-medium text-gray-800">{company.name}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline" className="text-xs border-gray-200">
-                        {company.score}
-                      </Badge>
-                      <span className="text-xs text-emerald-600 font-bold">{company.trend}</span>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Recent Activity */}
-            <Card className="bg-white border-gray-200 shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg text-gray-800 flex items-center space-x-3">
-                  <div className="p-2 bg-emerald-600 rounded-lg">
-                    <Bell className="w-5 h-5 text-white" />
-                  </div>
-                  <span>Recent Scans</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {recentScans.slice(0, 3).map((scan) => (
-                  <div key={scan.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate">{scan.name}</p>
-                      <p className="text-xs text-gray-500">{scan.brand}</p>
-                    </div>
-                    <Badge 
-                      variant={scan.score >= 80 ? "default" : "secondary"}
-                      className={scan.score >= 80 ? "bg-emerald-500 hover:bg-emerald-600" : ""}
-                    >
-                      {scan.score}
+                    <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-xl dark:bg-emerald-900/50 dark:text-emerald-300">
+                      <Sparkles className="w-4 h-4 mr-1" />
+                      AI Enhanced
                     </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                    <Input
+                      placeholder="Search for products, brands, or barcodes..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="flex-1 border-emerald-200 focus:border-emerald-400 h-12 rounded-2xl bg-gray-50/50 dark:border-gray-600 dark:bg-gray-700/50"
+                    />
+                    <Button className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 px-8 h-12 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap">
+                      <Search className="w-4 h-4 mr-2" />
+                      Search
+                    </Button>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {recentScans.map((product) => (
+                      <Card key={product.id} className="hover:shadow-xl transition-all duration-300 cursor-pointer border-gray-100/50 shadow-md rounded-2xl overflow-hidden group bg-white/80 backdrop-blur-sm dark:bg-gray-700/80 dark:border-gray-600/50">
+                        <CardContent className="p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-bold text-gray-800 truncate text-lg group-hover:text-emerald-700 transition-colors dark:text-gray-200 dark:group-hover:text-emerald-400">{product.name}</h3>
+                              <p className="text-sm text-gray-600 mt-1 font-medium dark:text-gray-400">{product.brand}</p>
+                            </div>
+                            <Badge 
+                              variant={product.score >= 80 ? "default" : product.score >= 60 ? "secondary" : "destructive"}
+                              className={`text-sm px-3 py-1 rounded-xl ${product.score >= 80 ? "bg-emerald-500 hover:bg-emerald-600" : ""}`}
+                            >
+                              {product.score}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-500 bg-gray-100 px-3 py-1 rounded-xl dark:text-gray-400 dark:bg-gray-600">{product.category}</span>
+                            <span className="text-gray-500 dark:text-gray-400">{product.date}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="analysis" className="mt-4">
+              <ProductAnalysis product={scannedProduct} />
+            </TabsContent>
+
+            <TabsContent value="companies" className="mt-4">
+              <CompanyProfile />
+            </TabsContent>
+
+            <TabsContent value="marketplace" className="mt-4">
+              <SustainabilityMarketplace />
+            </TabsContent>
+
+            <TabsContent value="community" className="mt-4">
+              <CommunityHub />
+            </TabsContent>
+
+            <TabsContent value="carbon-tracker" className="mt-4">
+              <CarbonTracker />
+            </TabsContent>
+
+            <TabsContent value="comparison" className="mt-4">
+              <ProductComparison />
+            </TabsContent>
+
+            <TabsContent value="education" className="mt-4">
+              <EducationCenter />
+            </TabsContent>
+
+            <TabsContent value="notifications" className="mt-4">
+              <NotificationCenter />
+            </TabsContent>
+
+            <TabsContent value="profile" className="mt-4">
+              <UserProfile stats={userStats} />
+            </TabsContent>
+
+            <TabsContent value="ai-recommendations" className="mt-4">
+              <AIRecommendations />
+            </TabsContent>
+
+            <TabsContent value="environmental-alerts" className="mt-4">
+              <EnvironmentalAlerts />
+            </TabsContent>
+
+            <TabsContent value="rewards" className="mt-4">
+              <RewardsSystem />
+            </TabsContent>
+
+            <TabsContent value="lifecycle" className="mt-4">
+              <ProductLifecycle />
+            </TabsContent>
+
+            <TabsContent value="challenges" className="mt-4">
+              <SustainabilityChallenges />
+            </TabsContent>
+
+            <TabsContent value="social-impact" className="mt-4">
+              <SocialImpactHub />
+            </TabsContent>
+
+            <TabsContent value="smart-insights" className="mt-4">
+              <SmartInsights />
+            </TabsContent>
+
+            <TabsContent value="live-events" className="mt-4">
+              <LiveEvents />
+            </TabsContent>
+
+            <TabsContent value="investment-tracker" className="mt-4">
+              <InvestmentTracker />
+            </TabsContent>
+
+            <TabsContent value="esg-analyzer" className="mt-4">
+              <ESGAnalyzer />
+            </TabsContent>
+
+            <TabsContent value="transportation-planner" className="mt-4">
+              <TransportationPlanner />
+            </TabsContent>
+
+            <TabsContent value="recipe-finder" className="mt-4">
+              <EcoRecipeFinder />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
-      <Footer /> {/* Keep Footer outside main content but inside flex container */}
+
+      <AuthModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+        onSuccess={handleLoginSuccess}
+      />
     </div>
+    <Footer />
+ </>
   );
 };
 
