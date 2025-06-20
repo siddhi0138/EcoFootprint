@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Search, Sparkles } from 'lucide-react';
-import Cart from '@/components/Cart';
 
 // Import components
 import Navbar from '@/components/Navbar';
@@ -27,7 +26,7 @@ import AIRecommendations from '@/components/AIRecommendations';
 import EnvironmentalAlerts from '@/components/EnvironmentalAlerts';
 import RewardsSystem from '@/components/RewardsSystem';
 import ProductLifecycle from '@/components/ProductLifecycle';
-import SustainabilityChallenges from '@/components/SustainabiltyChallenges'; // Corrected import path
+import SustainabilityChallenges from '@/components/SustainabilityChallenges';
 import SocialImpactHub from '@/components/SocialImpactHub';
 import SmartInsights from '@/components/SmartInsights';
 import LiveEvents from '@/components/LiveEvents';
@@ -38,66 +37,31 @@ import TransportationPlanner from '@/components/TransportationPlanner';
 import EcoRecipeFinder from '@/components/EcoRecipeFinder';
 import EcoChatbot from '@/components/EcoChatbot';
 import AuthModal from '@/components/AuthModal';
+import { useAuthContext } from "@/contexts/AuthContext";
+import { collection, doc, getDocs, query, orderBy } from "firebase/firestore";
+import { db } from "@/firebase";
+
 
 const Index = () => {
   console.log('Index component starting to render...');
 
+  const { user } = useAuthContext();
+
   const [activeTab, setActiveTab] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [scannedProduct, setScannedProduct] = useState(null);
-  const [cart, setCart] = useState([]);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [recentScans, setRecentScans] = useState([]);
+
 
   console.log('State initialized, activeTab:', activeTab);
 
-  const recentScans = [
-    {
-      id: 1,
-      name: "Organic Cotton T-Shirt",
-      brand: "EcoWear",
-      score: 85,
-      category: "Clothing",
-      date: "2024-06-15"
-    },
-    {
-      id: 2,
-      name: "Bamboo Toothbrush",
-      brand: "GreenLife",
-      score: 92,
-      category: "Personal Care",
-      date: "2024-06-14"
-    },
-    {
-      id: 3,
-      name: "Plant-Based Protein",
-      brand: "NutraGreen",
-      score: 78,
-      category: "Food",
-      date: "2024-06-13"
-    }
-  ];
-
-  const userStats = {
-    totalScans: 127,
-    avgScore: 82,
-    co2Saved: 45.2,
-    rank: 156,
-    badges: 8,
-    weeklyGoal: 75,
-    currentWeekScans: 8,
-    streakDays: 12
-  };
 
   console.log('About to define handler functions...');
 
   const handleNavigation = (tab) => {
     console.log('Navigating to tab:', tab);
     setActiveTab(tab);
-  };
-
-  const addToCart = (product) => {
-    setCart((prevCart) => [...prevCart, product]);
-    setActiveTab('cart'); // Assuming there is a cart tab, or you can change as needed
   };
 
   const handleGetStarted = () => {
@@ -116,6 +80,23 @@ const Index = () => {
     setActiveTab('scanner');
   };
 
+  useEffect(() => {
+    const fetchRecentScans = async () => {
+      if (user) {
+        const scansCollectionRef = collection(db, "users", user.uid, "recentScans");
+        const scansQuery = query(scansCollectionRef, orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(scansQuery);
+        const scansData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setRecentScans(scansData);
+      } else {
+        setRecentScans([]);
+      }
+    };
+
+    fetchRecentScans();
+  }, [user]);
+
+
   console.log('Handler functions defined, checking activeTab for render logic:', activeTab);
 
   // Render landing page
@@ -129,12 +110,7 @@ const Index = () => {
           <div style={{ border: '2px solid red', padding: '10px', margin: '10px' }}>
             <h1 style={{ color: 'red', fontSize: '24px' }}>DEBUG: Home page is rendering!</h1>
           </div>
-          <Navbar
- onNavigate={handleNavigation}
- activeTab={activeTab}
- toggleLoginForm={toggleLoginForm}
-            cartItemCount={cart.reduce((sum, item) => sum + item.quantity, 0)}
- />
+          <Navbar onNavigate={handleNavigation} activeTab={activeTab} toggleLoginForm={toggleLoginForm} cartItemCount={0} />
           <Hero onGetStarted={handleGetStarted} />
           <Features />
           <Footer />
@@ -155,32 +131,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <Navbar 
-        onNavigate={handleNavigation} 
-        activeTab={activeTab} 
-        toggleLoginForm={toggleLoginForm} 
-        cartItemCount={cart.length} 
-      />
+      <Navbar onNavigate={handleNavigation} activeTab={activeTab} toggleLoginForm={toggleLoginForm} cartItemCount={0} />
 
       {/* Main Content Area */}
       <div className="pt-20">
         <div className="container mx-auto px-6 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsContent value="scanner" className="mt-6">
-              <ProductScanner 
-                onProductScanned={setScannedProduct} 
-                addToCart={addToCart} 
-                setActiveTab={setActiveTab} 
-              />
-            </TabsContent>
-
-
-            <TabsContent value="cart" className="mt-6">
-              <Cart 
-                cart={cart} 
-                setCart={setCart} 
-                setActiveTab={setActiveTab} 
-              />
+              <ProductScanner setScannedProduct={setScannedProduct} />
             </TabsContent>
 
             <TabsContent value="ar-scanner" className="mt-6">
@@ -214,7 +172,7 @@ const Index = () => {
                       placeholder="Search for products, brands, or barcodes..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="flex-1 border-emerald-200 focus:border-emerald-400 h-12 rounded-2xl bg-gray-50/50 dark:border-gray-600 dark:bg-gray-700/50"
+                      className="flex-1 border-emerald-200 focus:border-emerald-400 h-12 rounded-2xl bg-gray-50/50 dark:border-gray-700/50"
                     />
                     <Button className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 px-8 h-12 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap">
                       <Search className="w-4 h-4 mr-2" />
@@ -232,15 +190,20 @@ const Index = () => {
                               <p className="text-sm text-gray-600 mt-1 font-medium dark:text-gray-400">{product.brand}</p>
                             </div>
                             <Badge
-                              variant={product.score >= 80 ? "default" : product.score >= 60 ? "secondary" : "destructive"}
-                              className={`text-sm px-3 py-1 rounded-xl ${product.score >= 80 ? "bg-emerald-500 hover:bg-emerald-600" : ""}`}
+                              variant={product.sustainabilityScore >= 80 ? "default" : product.sustainabilityScore >= 60 ? "secondary" : "destructive"}
+                              className={`text-sm px-3 py-1 rounded-xl ${product.sustainabilityScore >= 80 ? "bg-emerald-500 hover:bg-emerald-600" : ""}`}
                             >
-                              {product.score}
+                              {product.sustainabilityScore}
                             </Badge>
                           </div>
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-500 bg-gray-100 px-3 py-1 rounded-xl dark:text-gray-400 dark:bg-gray-600">{product.category}</span>
-                            <span className="text-gray-500 dark:text-gray-400">{product.date}</span>
+                            {/* Assuming 'timestamp' is stored in Firebase and you want to display a formatted date */}
+                            {product.timestamp && (
+                               <span className="text-gray-500 dark:text-gray-400">
+                                 {new Date(product.timestamp.seconds * 1000).toLocaleDateString()}
+                               </span>
+                             )}
                           </div>
                         </CardContent>
                       </Card>
@@ -283,7 +246,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="profile" className="mt-4">
-              <UserProfile stats={userStats} />
+              <UserProfile />
             </TabsContent>
 
             <TabsContent value="ai-recommendations" className="mt-4">

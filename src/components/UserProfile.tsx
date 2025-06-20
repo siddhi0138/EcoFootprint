@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserData } from '@/contexts/UserDataContext';
 import { 
   User, 
   Settings, 
@@ -20,12 +22,20 @@ import {
   Trophy,
   Calendar,
   Users,
-  LogOut
+  LogOut,
+  Recycle,
+  ShoppingCart,
+  Car,
+  BookOpen,
+  ChefHat,
+  BarChart3,
+  TrendingDown
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-const UserProfile = ({ stats }) => {
+const UserProfile = () => {
   const { user, logout } = useAuth();
+  const { userStats, carbonEntries, scannedProducts } = useUserData();
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState({
     name: user?.name || 'Alex Green',
@@ -40,19 +50,63 @@ const UserProfile = ({ stats }) => {
   });
 
   const achievements = [
-    { name: 'Eco Warrior', description: '100+ sustainable scans', earned: true },
-    { name: 'Carbon Saver', description: 'Saved 50kg CO₂', earned: true },
-    { name: 'Community Helper', description: 'Helped 10+ users', earned: false, progress: 7 },
-    { name: 'Streak Master', description: '30-day streak', earned: false, progress: 12 }
+    { 
+      name: 'Eco Warrior', 
+      description: '100+ sustainable scans', 
+      earned: userStats.totalScans >= 100,
+      progress: userStats.totalScans,
+      target: 100,
+      icon: Leaf
+    },
+    { 
+      name: 'Carbon Saver', 
+      description: 'Saved 50kg CO₂', 
+      earned: userStats.co2Saved >= 50,
+      progress: userStats.co2Saved,
+      target: 50,
+      icon: TrendingDown
+    },
+    { 
+      name: 'Knowledge Seeker', 
+      description: '10+ courses completed', 
+      earned: userStats.coursesCompleted >= 10,
+      progress: userStats.coursesCompleted,
+      target: 10,
+      icon: BookOpen
+    },
+    { 
+      name: 'Recipe Explorer', 
+      description: '25+ recipes viewed', 
+      earned: userStats.recipesViewed >= 25,
+      progress: userStats.recipesViewed,
+      target: 25,
+      icon: ChefHat
+    },
+    { 
+      name: 'Green Investor', 
+      description: '5+ investments made', 
+      earned: userStats.investmentsMade >= 5,
+      progress: userStats.investmentsMade,
+      target: 5,
+      icon: TrendingUp
+    },
+    { 
+      name: 'Transport Pioneer', 
+      description: '20+ eco-trips planned', 
+      earned: userStats.transportTrips >= 20,
+      progress: userStats.transportTrips,
+      target: 20,
+      icon: Car
+    }
   ];
 
   const monthlyData = [
-    { month: 'Jan', scans: 12, co2Saved: 5.2 },
-    { month: 'Feb', scans: 18, co2Saved: 8.1 },
-    { month: 'Mar', scans: 25, co2Saved: 12.3 },
-    { month: 'Apr', scans: 32, co2Saved: 15.8 },
-    { month: 'May', scans: 28, co2Saved: 13.6 },
-    { month: 'Jun', scans: 42, co2Saved: 20.4 }
+    { month: 'Jan', scans: Math.max(0, userStats.totalScans - 50), co2Saved: Math.max(0, userStats.co2Saved - 25) },
+    { month: 'Feb', scans: Math.max(0, userStats.totalScans - 40), co2Saved: Math.max(0, userStats.co2Saved - 20) },
+    { month: 'Mar', scans: Math.max(0, userStats.totalScans - 30), co2Saved: Math.max(0, userStats.co2Saved - 15) },
+    { month: 'Apr', scans: Math.max(0, userStats.totalScans - 20), co2Saved: Math.max(0, userStats.co2Saved - 10) },
+    { month: 'May', scans: Math.max(0, userStats.totalScans - 10), co2Saved: Math.max(0, userStats.co2Saved - 5) },
+    { month: 'Jun', scans: userStats.totalScans, co2Saved: userStats.co2Saved }
   ];
 
   const categoryData = [
@@ -63,15 +117,15 @@ const UserProfile = ({ stats }) => {
     { name: 'Home & Garden', value: 8, color: '#ef4444' }
   ];
 
-  const currentLevel = Math.floor(stats.totalScans / 25) + 1;
-  const nextLevelProgress = (stats.totalScans % 25) / 25 * 100;
-  const scansToNextLevel = 25 - (stats.totalScans % 25);
+  const currentLevel = Math.floor(userStats.totalScans / 25) + 1;
+  const nextLevelProgress = (userStats.totalScans % 25) / 25 * 100;
+  const scansToNextLevel = 25 - (userStats.totalScans % 25);
 
   const leaderboard = [
     { rank: 1, name: "EcoMaster_2024", scans: 2156, co2Saved: 124.3 },
     { rank: 2, name: "GreenGuardian", scans: 1892, co2Saved: 108.7 },
     { rank: 3, name: "SustainableLife", scans: 1654, co2Saved: 95.2 },
-    { rank: stats.rank, name: "You", scans: stats.totalScans, co2Saved: stats.co2Saved, highlight: true }
+    { rank: userStats.rank, name: "You", scans: userStats.totalScans, co2Saved: userStats.co2Saved, highlight: true }
   ];
 
   const preferences = {
@@ -90,14 +144,12 @@ const UserProfile = ({ stats }) => {
 
   const handleSave = () => {
     setIsEditing(false);
-    // Here you would typically save to backend
   };
 
   const handleLogout = () => {
     logout();
   };
 
-  // If user is not logged in, show login message
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -164,7 +216,6 @@ const UserProfile = ({ stats }) => {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Profile Picture */}
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full flex items-center justify-center">
@@ -180,12 +231,11 @@ const UserProfile = ({ stats }) => {
                   <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">{profile.name}</h3>
                   <p className="text-gray-600 dark:text-gray-400">{profile.location}</p>
                   <Badge className="mt-1 bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-600">
-                    Level {Math.floor(stats.totalScans / 25) + 1}
+                    Level {currentLevel}
                   </Badge>
                 </div>
               </div>
 
-              {/* Profile Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
@@ -239,22 +289,21 @@ const UserProfile = ({ stats }) => {
                 </div>
               </div>
 
-              {/* Stats Overview */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-gray-200 dark:border-gray-600">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.totalScans}</div>
+                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{userStats.totalScans}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Total Scans</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.co2Saved}kg</div>
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{userStats.co2Saved}kg</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">CO₂ Saved</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.badges}</div>
+                  <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{achievements.filter(a => a.earned).length}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Badges</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">#{stats.rank}</div>
+                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">#{userStats.rank}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Global Rank</div>
                 </div>
               </div>
@@ -264,14 +313,13 @@ const UserProfile = ({ stats }) => {
 
         <TabsContent value="dashboard">
           <div className="space-y-6">
-            {/* Overview Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-green-100 text-sm">Total Scans</p>
-                      <p className="text-2xl font-bold">{stats.totalScans}</p>
+                      <p className="text-2xl font-bold">{userStats.totalScans}</p>
                     </div>
                     <Target className="w-8 h-8 text-green-200" />
                   </div>
@@ -282,10 +330,10 @@ const UserProfile = ({ stats }) => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-blue-100 text-sm">Avg Score</p>
-                      <p className="text-2xl font-bold">{stats.avgScore}</p>
+                      <p className="text-blue-100 text-sm">CO₂ Saved</p>
+                      <p className="text-2xl font-bold">{userStats.co2Saved}kg</p>
                     </div>
-                    <TrendingUp className="w-8 h-8 text-blue-200" />
+                    <TrendingDown className="w-8 h-8 text-blue-200" />
                   </div>
                 </CardContent>
               </Card>
@@ -294,10 +342,10 @@ const UserProfile = ({ stats }) => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-purple-100 text-sm">CO₂ Saved</p>
-                      <p className="text-2xl font-bold">{stats.co2Saved}kg</p>
+                      <p className="text-purple-100 text-sm">Total Points</p>
+                      <p className="text-2xl font-bold">{userStats.totalPoints}</p>
                     </div>
-                    <Leaf className="w-8 h-8 text-purple-200" />
+                    <Star className="w-8 h-8 text-purple-200" />
                   </div>
                 </CardContent>
               </Card>
@@ -307,7 +355,7 @@ const UserProfile = ({ stats }) => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-orange-100 text-sm">Global Rank</p>
-                      <p className="text-2xl font-bold">#{stats.rank}</p>
+                      <p className="text-2xl font-bold">#{userStats.rank}</p>
                     </div>
                     <Trophy className="w-8 h-8 text-orange-200" />
                   </div>
@@ -316,7 +364,6 @@ const UserProfile = ({ stats }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Progress & Level */}
               <Card className="bg-white/60 backdrop-blur-sm border-green-100 dark:bg-gray-800/60 dark:border-gray-600">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -338,20 +385,23 @@ const UserProfile = ({ stats }) => {
                     <Progress value={nextLevelProgress} className="h-3" />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-center">
+                  <div className="grid grid-cols-3 gap-4 text-center">
                     <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                      <div className="text-lg font-bold text-green-600 dark:text-green-400">{stats.badges}</div>
-                      <div className="text-sm text-green-700 dark:text-green-300">Badges Earned</div>
+                      <div className="text-lg font-bold text-green-600 dark:text-green-400">{userStats.coursesCompleted}</div>
+                      <div className="text-sm text-green-700 dark:text-green-300">Courses</div>
                     </div>
                     <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{Math.round(stats.totalScans / 7)}</div>
-                      <div className="text-sm text-blue-700 dark:text-blue-300">Weekly Avg</div>
+                      <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{userStats.recipesViewed}</div>
+                      <div className="text-sm text-blue-700 dark:text-blue-300">Recipes</div>
+                    </div>
+                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <div className="text-lg font-bold text-purple-600 dark:text-purple-400">{userStats.investmentsMade}</div>
+                      <div className="text-sm text-purple-700 dark:text-purple-300">Investments</div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Activity Chart */}
               <Card className="bg-white/60 backdrop-blur-sm border-green-100 dark:bg-gray-800/60 dark:border-gray-600">
                 <CardHeader>
                   <CardTitle className="text-gray-800 dark:text-gray-200">Monthly Activity</CardTitle>
@@ -383,42 +433,44 @@ const UserProfile = ({ stats }) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Category Breakdown */}
               <Card className="bg-white/60 backdrop-blur-sm border-green-100 dark:bg-gray-800/60 dark:border-gray-600">
                 <CardHeader>
-                  <CardTitle className="text-gray-800 dark:text-gray-200">Scan Categories</CardTitle>
+                  <CardTitle className="text-gray-800 dark:text-gray-200">Activity Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={categoryData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {categoryData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value) => [`${value}%`, 'Percentage']}
-                        contentStyle={{ 
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '8px',
-                          color: '#374151'
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Recycle className="w-5 h-5 text-green-600" />
+                        <span className="font-medium">Carbon Entries</span>
+                      </div>
+                      <span className="font-bold text-green-600">{carbonEntries.length}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <ShoppingCart className="w-5 h-5 text-blue-600" />
+                        <span className="font-medium">Products Scanned</span>
+                      </div>
+                      <span className="font-bold text-blue-600">{scannedProducts.length}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Car className="w-5 h-5 text-purple-600" />
+                        <span className="font-medium">Transport Trips</span>
+                      </div>
+                      <span className="font-bold text-purple-600">{userStats.transportTrips}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <BarChart3 className="w-5 h-5 text-orange-600" />
+                        <span className="font-medium">ESG Reports</span>
+                      </div>
+                      <span className="font-bold text-orange-600">{userStats.esgReports}</span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
-              {/* Leaderboard */}
               <Card className="bg-white/60 backdrop-blur-sm border-green-100 dark:bg-gray-800/60 dark:border-gray-600">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -475,7 +527,7 @@ const UserProfile = ({ stats }) => {
                     <div className={`p-2 rounded-full ${
                       achievement.earned ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-gray-200 text-gray-400 dark:bg-gray-600 dark:text-gray-500'
                     }`}>
-                      <Award className="w-5 h-5" />
+                      <achievement.icon className="w-5 h-5" />
                     </div>
                     <div>
                       <h3 className={`font-semibold ${
@@ -492,9 +544,9 @@ const UserProfile = ({ stats }) => {
                     <div>
                       <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
                         <span>Progress</span>
-                        <span>{achievement.progress}/10</span>
+                        <span>{achievement.progress}/{achievement.target}</span>
                       </div>
-                      <Progress value={(achievement.progress / 10) * 100} className="h-2" />
+                      <Progress value={(achievement.progress / achievement.target) * 100} className="h-2" />
                     </div>
                   )}
                 </CardContent>
@@ -516,10 +568,10 @@ const UserProfile = ({ stats }) => {
                 <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Weekly Scanning Goal</h3>
                 <div className="flex items-center space-x-4">
                   <div className="flex-1">
-                    <Progress value={(stats.currentWeekScans / profile.goals.weeklyScans) * 100} />
+                    <Progress value={(userStats.currentWeekScans / profile.goals.weeklyScans) * 100} />
                   </div>
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {stats.currentWeekScans}/{profile.goals.weeklyScans}
+                    {userStats.currentWeekScans}/{profile.goals.weeklyScans}
                   </span>
                 </div>
               </div>

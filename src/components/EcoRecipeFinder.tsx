@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { 
   ChefHat, 
   Search, 
@@ -17,19 +17,28 @@ import {
   Apple,
   Filter,
   Heart,
-  Globe
+  Globe,
+  Calendar,
+  Plus,
+  X
 } from 'lucide-react';
+import { useUserData } from '@/contexts/UserDataContext';
+import { useToast } from '@/hooks/use-toast';
 
 const EcoRecipeFinder = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [activeTab, setActiveTab] = useState('recipes');
+  const [favoriteRecipes, setFavoriteRecipes] = useState(new Set());
+  const [mealPlan, setMealPlan] = useState([]);
+  const { incrementRecipeViewed, addPoints } = useUserData();
+  const { toast } = useToast();
 
   const recipes = [
     {
       id: 1,
       name: "Rainbow Quinoa Buddha Bowl",
-      image: "/placeholder.svg",
+      image: "photo-1512621776951-a57141f2eefd",
       sustainabilityScore: 95,
       carbonFootprint: "0.8 kg CO₂",
       waterUsage: "250L",
@@ -66,7 +75,7 @@ const EcoRecipeFinder = () => {
     {
       id: 2,
       name: "Plant-Based Lentil Shepherd's Pie",
-      image: "/placeholder.svg",
+      image: "photo-1574484284002-952d92456975",
       sustainabilityScore: 92,
       carbonFootprint: "1.2 kg CO₂",
       waterUsage: "180L",
@@ -103,7 +112,7 @@ const EcoRecipeFinder = () => {
     {
       id: 3,
       name: "Zero-Waste Vegetable Broth",
-      image: "/placeholder.svg",
+      image: "photo-1547592180-85f173990554",
       sustainabilityScore: 98,
       carbonFootprint: "0.2 kg CO₂",
       waterUsage: "50L",
@@ -166,6 +175,67 @@ const EcoRecipeFinder = () => {
     }
   ];
 
+  const handleViewRecipe = (recipe) => {
+    setSelectedRecipe(recipe);
+    incrementRecipeViewed();
+    addPoints(5);
+    toast({
+      title: "Recipe Viewed!",
+      description: "You earned 5 points for viewing a recipe!",
+    });
+  };
+
+  const handleFavoriteRecipe = (recipeId) => {
+    const newFavorites = new Set(favoriteRecipes);
+    if (newFavorites.has(recipeId)) {
+      newFavorites.delete(recipeId);
+      toast({
+        title: "Recipe Removed",
+        description: "Recipe removed from favorites.",
+      });
+    } else {
+      newFavorites.add(recipeId);
+      addPoints(5);
+      toast({
+        title: "Recipe Favorited!",
+        description: "You earned 5 points for favoriting a recipe!",
+      });
+    }
+    setFavoriteRecipes(newFavorites);
+  };
+
+  const handleAddToMealPlan = (recipe, day = 'Monday') => {
+    const newMealPlan = [...mealPlan];
+    const existingIndex = newMealPlan.findIndex(meal => meal.day === day);
+    
+    if (existingIndex >= 0) {
+      newMealPlan[existingIndex] = { day, recipe };
+    } else {
+      newMealPlan.push({ day, recipe });
+    }
+    
+    setMealPlan(newMealPlan);
+    addPoints(10);
+    toast({
+      title: "Added to Meal Plan!",
+      description: "You earned 10 points for meal planning!",
+    });
+  };
+
+  const generateMealPlan = () => {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const newMealPlan = days.map(day => ({
+      day,
+      recipe: recipes[Math.floor(Math.random() * recipes.length)]
+    }));
+    setMealPlan(newMealPlan);
+    addPoints(25);
+    toast({
+      title: "Meal Plan Generated!",
+      description: "You earned 25 points for generating a meal plan!",
+    });
+  };
+
   const getScoreColor = (score) => {
     if (score >= 90) return "bg-green-500";
     if (score >= 80) return "bg-emerald-500";
@@ -218,9 +288,12 @@ const EcoRecipeFinder = () => {
                   <div key={recipe.id} className="bg-white/80 rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow">
                     <div className="h-48 bg-gray-200 relative">
                       <img 
-                        src={recipe.image} 
+                        src={`https://images.unsplash.com/${recipe.image}?w=400&h=300&fit=crop`}
                         alt={recipe.name}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop';
+                        }}
                       />
                       <div className="absolute top-3 left-3">
                         <Badge className={`text-white ${getScoreColor(recipe.sustainabilityScore)}`}>
@@ -228,8 +301,13 @@ const EcoRecipeFinder = () => {
                         </Badge>
                       </div>
                       <div className="absolute top-3 right-3">
-                        <Button size="sm" variant="ghost" className="bg-white/80 hover:bg-white">
-                          <Heart className="w-4 h-4" />
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="bg-white/80 hover:bg-white"
+                          onClick={() => handleFavoriteRecipe(recipe.id)}
+                        >
+                          <Heart className={`w-4 h-4 ${favoriteRecipes.has(recipe.id) ? 'fill-current text-red-500' : ''}`} />
                         </Button>
                       </div>
                     </div>
@@ -271,75 +349,132 @@ const EcoRecipeFinder = () => {
                         </div>
                       </div>
 
-                      <Button 
-                        className="w-full bg-green-600 hover:bg-green-700"
-                        onClick={() => setSelectedRecipe(recipe)}
-                      >
-                        View Recipe
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => handleViewRecipe(recipe)}
+                          >
+                            View Recipe
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center justify-between">
+                              <span>{recipe.name}</span>
+                              <div className="flex items-center space-x-2">
+                                <Badge className={`text-white ${getScoreColor(recipe.sustainabilityScore)}`}>
+                                  Sustainability: {recipe.sustainabilityScore}
+                                </Badge>
+                                <Badge variant="outline">{recipe.difficulty}</Badge>
+                              </div>
+                            </DialogTitle>
+                            <DialogDescription>
+                              Detailed recipe information and sustainability analysis
+                            </DialogDescription>
+                          </DialogHeader>
+
+                          <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <img 
+                                src={`https://images.unsplash.com/${recipe.image}?w=600&h=400&fit=crop`}
+                                alt={recipe.name}
+                                className="w-full h-64 object-cover rounded-lg"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop';
+                                }}
+                              />
+                              
+                              <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div className="flex items-center space-x-1">
+                                    <Clock className="w-4 h-4 text-green-600" />
+                                    <span>{recipe.cookTime}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <Users className="w-4 h-4 text-blue-600" />
+                                    <span>{recipe.servings} servings</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <TreePine className="w-4 h-4 text-green-600" />
+                                    <span>{recipe.carbonFootprint}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <Droplets className="w-4 h-4 text-blue-600" />
+                                    <span>{recipe.waterUsage}</span>
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-1">
+                                  {recipe.tags.map((tag, index) => (
+                                    <Badge key={index} variant="outline" className="text-xs">
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                </div>
+
+                                <div className="grid grid-cols-4 gap-2 p-3 bg-green-50 rounded-lg text-center text-xs">
+                                  <div>
+                                    <div className="font-semibold text-green-700">{recipe.nutrition.calories}</div>
+                                    <div className="text-green-600">Calories</div>
+                                  </div>
+                                  <div>
+                                    <div className="font-semibold text-green-700">{recipe.nutrition.protein}</div>
+                                    <div className="text-green-600">Protein</div>
+                                  </div>
+                                  <div>
+                                    <div className="font-semibold text-green-700">{recipe.nutrition.carbs}</div>
+                                    <div className="text-green-600">Carbs</div>
+                                  </div>
+                                  <div>
+                                    <div className="font-semibold text-green-700">{recipe.nutrition.fat}</div>
+                                    <div className="text-green-600">Fat</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div>
+                                <h3 className="font-semibold mb-2">Ingredients:</h3>
+                                <ul className="text-sm text-gray-700 space-y-1">
+                                  {recipe.ingredients.map((ingredient, index) => (
+                                    <li key={index}>• {ingredient}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                              
+                              <div>
+                                <h3 className="font-semibold mb-2">Instructions:</h3>
+                                <ol className="text-sm text-gray-700 space-y-1">
+                                  {recipe.instructions.map((step, index) => (
+                                    <li key={index}>{index + 1}. {step}</li>
+                                  ))}
+                                </ol>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 pt-4 border-t">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => handleFavoriteRecipe(recipe.id)}
+                                className={favoriteRecipes.has(recipe.id) ? 'bg-red-50 text-red-600' : ''}
+                              >
+                                <Heart className={`w-4 h-4 mr-2 ${favoriteRecipes.has(recipe.id) ? 'fill-current' : ''}`} />
+                                {favoriteRecipes.has(recipe.id) ? 'Favorited' : 'Add to Favorites'}
+                              </Button>
+                              <Button onClick={() => handleAddToMealPlan(recipe, 'Monday')}>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add to Meal Plan
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
                 ))}
               </div>
-
-              {/* Recipe Detail Modal */}
-              {selectedRecipe && (
-                <div className="bg-white/95 rounded-xl p-6 border border-green-100 mt-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-800">{selectedRecipe.name}</h2>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <Badge className={`text-white ${getScoreColor(selectedRecipe.sustainabilityScore)}`}>
-                          Sustainability: {selectedRecipe.sustainabilityScore}
-                        </Badge>
-                        <Badge variant="outline">{selectedRecipe.difficulty}</Badge>
-                      </div>
-                    </div>
-                    <Button variant="ghost" onClick={() => setSelectedRecipe(null)}>
-                      ✕
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="font-semibold mb-2">Ingredients:</h3>
-                      <ul className="text-sm text-gray-700 space-y-1">
-                        {selectedRecipe.ingredients.map((ingredient, index) => (
-                          <li key={index}>• {ingredient}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h3 className="font-semibold mb-2">Instructions:</h3>
-                      <ol className="text-sm text-gray-700 space-y-1">
-                        {selectedRecipe.instructions.map((step, index) => (
-                          <li key={index}>{index + 1}. {step}</li>
-                        ))}
-                      </ol>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 p-4 bg-green-50 rounded-lg">
-                    <div className="text-center">
-                      <div className="font-semibold text-green-700">{selectedRecipe.nutrition.calories}</div>
-                      <div className="text-xs text-green-600">Calories</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold text-green-700">{selectedRecipe.nutrition.protein}</div>
-                      <div className="text-xs text-green-600">Protein</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold text-green-700">{selectedRecipe.carbonFootprint}</div>
-                      <div className="text-xs text-green-600">Carbon</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold text-green-700">{selectedRecipe.waterUsage}</div>
-                      <div className="text-xs text-green-600">Water</div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </TabsContent>
 
             <TabsContent value="tips" className="space-y-4 mt-6">
@@ -363,13 +498,52 @@ const EcoRecipeFinder = () => {
             </TabsContent>
 
             <TabsContent value="planner" className="mt-6">
-              <div className="bg-white/80 rounded-xl p-6 border border-gray-100 text-center">
-                <ChefHat className="w-12 h-12 mx-auto mb-4 text-green-600" />
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Weekly Meal Planner</h3>
-                <p className="text-gray-600 mb-4">Plan sustainable meals for the week based on seasonal ingredients and your dietary preferences.</p>
-                <Button className="bg-green-600 hover:bg-green-700">
-                  Create Meal Plan
-                </Button>
+              <div className="space-y-6">
+                <div className="bg-white/80 rounded-xl p-6 border border-gray-100 text-center">
+                  <ChefHat className="w-12 h-12 mx-auto mb-4 text-green-600" />
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Weekly Meal Planner</h3>
+                  <p className="text-gray-600 mb-4">Plan sustainable meals for the week based on seasonal ingredients and your dietary preferences.</p>
+                  <Button className="bg-green-600 hover:bg-green-700" onClick={generateMealPlan}>
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Generate Meal Plan
+                  </Button>
+                </div>
+
+                {mealPlan.length > 0 && (
+                  <div className="bg-white/80 rounded-xl p-6 border border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Your Weekly Meal Plan</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {mealPlan.map((meal, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-medium text-gray-800">{meal.day}</h4>
+                            <Badge className={`text-white ${getScoreColor(meal.recipe.sustainabilityScore)}`}>
+                              {meal.recipe.sustainabilityScore}
+                            </Badge>
+                          </div>
+                          <img 
+                            src={`https://images.unsplash.com/${meal.recipe.image}?w=300&h=200&fit=crop`}
+                            alt={meal.recipe.name}
+                            className="w-full h-32 object-cover rounded mb-2"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=200&fit=crop';
+                            }}
+                          />
+                          <h5 className="font-medium text-sm">{meal.recipe.name}</h5>
+                          <p className="text-xs text-gray-600">{meal.recipe.cookTime} • {meal.recipe.servings} servings</p>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="w-full mt-2"
+                            onClick={() => handleViewRecipe(meal.recipe)}
+                          >
+                            View Recipe
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>

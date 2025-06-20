@@ -1,10 +1,11 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Users, 
   Trophy, 
@@ -15,11 +16,21 @@ import {
   Share2,
   Award,
   Leaf,
-  Recycle
+  Recycle,
+  Send
 } from 'lucide-react';
+import { useUserData } from '@/contexts/UserDataContext';
+import { useToast } from '@/hooks/use-toast';
 
 const CommunityHub = () => {
+  const { userStats, addPoints } = useUserData();
+  const { toast } = useToast();
   const [activeChallenge, setActiveChallenge] = useState(null);
+  const [likedPosts, setLikedPosts] = useState(new Set());
+  const [showComments, setShowComments] = useState(new Set());
+  const [newComment, setNewComment] = useState('');
+  const [postComments, setPostComments] = useState({});
+  const [joinedGroups, setJoinedGroups] = useState(new Set());
 
   const challenges = [
     {
@@ -28,7 +39,7 @@ const CommunityHub = () => {
       description: 'Reduce your waste to zero for 7 consecutive days',
       participants: 1247,
       daysLeft: 5,
-      progress: 68,
+      progress: Math.min((userStats.totalScans / 7) * 100, 100),
       reward: '500 EcoPoints',
       difficulty: 'Medium',
       category: 'waste',
@@ -36,31 +47,31 @@ const CommunityHub = () => {
     },
     {
       id: 2,
-      title: 'Plant-Based February',
-      description: 'Adopt a plant-based diet for the entire month',
+      title: 'Sustainable Shopping',
+      description: 'Scan 10 eco-friendly products this month',
       participants: 892,
       daysLeft: 12,
-      progress: 45,
+      progress: Math.min((userStats.totalScans / 10) * 100, 100),
       reward: '1000 EcoPoints',
-      difficulty: 'Hard',
-      category: 'food',
+      difficulty: 'Easy',
+      category: 'shopping',
       icon: Leaf
     },
     {
       id: 3,
-      title: 'Carbon-Free Commute',
-      description: 'Use only sustainable transport for 2 weeks',
+      title: 'Carbon Tracker Master',
+      description: 'Track 5kg of CO2 emissions',
       participants: 634,
       daysLeft: 8,
-      progress: 72,
+      progress: Math.min((userStats.co2Saved / 5) * 100, 100),
       reward: '750 EcoPoints',
-      difficulty: 'Easy',
-      category: 'transport',
+      difficulty: 'Medium',
+      category: 'carbon',
       icon: Target
     }
   ];
 
-  const communityPosts = [
+  const [communityPosts, setCommunityPosts] = useState([
     {
       id: 1,
       author: 'EcoWarrior23',
@@ -91,15 +102,170 @@ const CommunityHub = () => {
       timeAgo: '1 day ago',
       achievement: 'Eco Educator'
     }
-  ];
+  ]);
 
   const leaderboard = [
     { rank: 1, name: 'EcoMaster', points: 15420, change: '+2' },
     { rank: 2, name: 'GreenQueen', points: 14890, change: '-1' },
     { rank: 3, name: 'PlantPapa', points: 14256, change: '+1' },
-    { rank: 4, name: 'You', points: 12890, change: '+3' },
+    { rank: 4, name: 'You', points: userStats.totalPoints, change: '+3' },
     { rank: 5, name: 'EcoNinja', points: 12340, change: '-2' }
   ];
+
+  const handleJoinChallenge = (challengeId) => {
+    if (activeChallenge === challengeId) {
+      setActiveChallenge(null);
+      toast({
+        title: "Challenge Left",
+        description: "You have left the challenge.",
+      });
+    } else {
+      setActiveChallenge(challengeId);
+      addPoints(25);
+      toast({
+        title: "Challenge Joined!",
+        description: "You earned 25 points for joining a challenge!",
+      });
+    }
+  };
+
+  const handleLikePost = (postId) => {
+    const newLikedPosts = new Set(likedPosts);
+    const posts = [...communityPosts];
+    const postIndex = posts.findIndex(p => p.id === postId);
+    
+    if (newLikedPosts.has(postId)) {
+      newLikedPosts.delete(postId);
+      posts[postIndex].likes -= 1;
+      toast({
+        title: "Post Unliked",
+        description: "You removed your like from this post.",
+      });
+    } else {
+      newLikedPosts.add(postId);
+      posts[postIndex].likes += 1;
+      addPoints(5);
+      toast({
+        title: "Post Liked!",
+        description: "You earned 5 points for engaging with the community!",
+      });
+    }
+    
+    setLikedPosts(newLikedPosts);
+    setCommunityPosts(posts);
+  };
+
+  const handleToggleComments = (postId) => {
+    const newShowComments = new Set(showComments);
+    if (newShowComments.has(postId)) {
+      newShowComments.delete(postId);
+    } else {
+      newShowComments.add(postId);
+    }
+    setShowComments(newShowComments);
+  };
+
+  const handleAddComment = (postId) => {
+    if (newComment.trim()) {
+      const comments = postComments[postId] || [];
+      const updatedComments = [
+        ...comments,
+        {
+          id: Date.now(),
+          author: 'You',
+          content: newComment,
+          timeAgo: 'just now'
+        }
+      ];
+      
+      setPostComments({
+        ...postComments,
+        [postId]: updatedComments
+      });
+      
+      const posts = [...communityPosts];
+      const postIndex = posts.findIndex(p => p.id === postId);
+      posts[postIndex].comments += 1;
+      setCommunityPosts(posts);
+      
+      setNewComment('');
+      addPoints(10);
+      toast({
+        title: "Comment Added!",
+        description: "You earned 10 points for commenting!",
+      });
+    }
+  };
+
+  const handleSharePost = (post) => {
+    try {
+      if (navigator.share && navigator.canShare) {
+        navigator.share({
+          title: `Post by ${post.author}`,
+          text: post.content,
+          url: window.location.href
+        }).then(() => {
+          addPoints(5);
+          toast({
+            title: "Post Shared!",
+            description: "You earned 5 points for sharing!",
+          });
+        }).catch((error) => {
+          console.log('Share cancelled or failed:', error);
+          fallbackShare(post);
+        });
+      } else {
+        fallbackShare(post);
+      }
+    } catch (error) {
+      console.log('Share not supported:', error);
+      fallbackShare(post);
+    }
+  };
+
+  const fallbackShare = (post) => {
+    const shareText = `${post.content} - Shared from EcoApp`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareText).then(() => {
+        addPoints(5);
+        toast({
+          title: "Post Shared!",
+          description: "Post content copied to clipboard! You earned 5 points!",
+        });
+      }).catch(() => {
+        toast({
+          title: "Share Failed",
+          description: "Unable to copy to clipboard.",
+          variant: "destructive"
+        });
+      });
+    } else {
+      toast({
+        title: "Share Content",
+        description: shareText,
+      });
+      addPoints(5);
+    }
+  };
+
+  const handleJoinGroup = (groupName) => {
+    const newJoinedGroups = new Set(joinedGroups);
+    if (newJoinedGroups.has(groupName)) {
+      newJoinedGroups.delete(groupName);
+      toast({
+        title: "Left Group",
+        description: `You have left ${groupName}.`,
+      });
+    } else {
+      newJoinedGroups.add(groupName);
+      addPoints(10);
+      toast({
+        title: "Group Joined!",
+        description: `Welcome to ${groupName}! You earned 10 points!`,
+      });
+    }
+    setJoinedGroups(newJoinedGroups);
+  };
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
@@ -119,6 +285,17 @@ const CommunityHub = () => {
             <span>Community Hub</span>
           </CardTitle>
           <p className="text-gray-600">Connect, compete, and collaborate for a sustainable future</p>
+          <div className="flex items-center space-x-4 mt-2">
+            <Badge className="bg-blue-100 text-blue-700">
+              {userStats.totalPoints} Points
+            </Badge>
+            <Badge className="bg-green-100 text-green-700">
+              {userStats.totalScans} Scans
+            </Badge>
+            <Badge className="bg-purple-100 text-purple-700">
+              Level {userStats.level}
+            </Badge>
+          </div>
         </CardHeader>
       </Card>
 
@@ -152,8 +329,8 @@ const CommunityHub = () => {
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Progress</span>
-                      <span className="font-medium">{challenge.progress}%</span>
+                      <span className="text-gray-600">Your Progress</span>
+                      <span className="font-medium">{Math.round(challenge.progress)}%</span>
                     </div>
                     <Progress value={challenge.progress} className="h-2" />
                     
@@ -171,7 +348,7 @@ const CommunityHub = () => {
                     <Button 
                       className="w-full" 
                       variant={activeChallenge === challenge.id ? "secondary" : "default"}
-                      onClick={() => setActiveChallenge(activeChallenge === challenge.id ? null : challenge.id)}
+                      onClick={() => handleJoinChallenge(challenge.id)}
                     >
                       {activeChallenge === challenge.id ? 'Leave Challenge' : 'Join Challenge'}
                     </Button>
@@ -203,19 +380,65 @@ const CommunityHub = () => {
                       </div>
                       <p className="text-gray-700 mb-3">{post.content}</p>
                       <div className="flex items-center space-x-4">
-                        <Button variant="ghost" size="sm" className="flex items-center space-x-1">
-                          <ThumbsUp className="w-4 h-4" />
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={`flex items-center space-x-1 ${likedPosts.has(post.id) ? 'text-red-500' : ''}`}
+                          onClick={() => handleLikePost(post.id)}
+                        >
+                          <ThumbsUp className={`w-4 h-4 ${likedPosts.has(post.id) ? 'fill-current' : ''}`} />
                           <span>{post.likes}</span>
                         </Button>
-                        <Button variant="ghost" size="sm" className="flex items-center space-x-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="flex items-center space-x-1"
+                          onClick={() => handleToggleComments(post.id)}
+                        >
                           <MessageCircle className="w-4 h-4" />
                           <span>{post.comments}</span>
                         </Button>
-                        <Button variant="ghost" size="sm" className="flex items-center space-x-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="flex items-center space-x-1"
+                          onClick={() => handleSharePost(post)}
+                        >
                           <Share2 className="w-4 h-4" />
                           <span>Share</span>
                         </Button>
                       </div>
+                      
+                      {showComments.has(post.id) && (
+                        <div className="mt-4 pt-4 border-t">
+                          <div className="space-y-3 mb-4">
+                            {(postComments[post.id] || []).map((comment) => (
+                              <div key={comment.id} className="flex items-start space-x-2">
+                                <div className="w-6 h-6 bg-gray-300 rounded-full flex-shrink-0"></div>
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-sm font-medium">{comment.author}</span>
+                                    <span className="text-xs text-gray-500">{comment.timeAgo}</span>
+                                  </div>
+                                  <p className="text-sm text-gray-700">{comment.content}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex space-x-2">
+                            <Input
+                              placeholder="Add a comment..."
+                              value={newComment}
+                              onChange={(e) => setNewComment(e.target.value)}
+                              className="flex-1"
+                              onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id)}
+                            />
+                            <Button size="sm" onClick={() => handleAddComment(post.id)}>
+                              <Send className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -271,7 +494,13 @@ const CommunityHub = () => {
                   <p className="text-sm text-gray-600 mb-3">{group.category}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-500">{group.members} members</span>
-                    <Button size="sm">Join Group</Button>
+                    <Button 
+                      size="sm" 
+                      variant={joinedGroups.has(group.name) ? "secondary" : "default"}
+                      onClick={() => handleJoinGroup(group.name)}
+                    >
+                      {joinedGroups.has(group.name) ? 'Leave Group' : 'Join Group'}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

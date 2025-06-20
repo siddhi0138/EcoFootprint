@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useUserData } from '@/contexts/UserDataContext';
 import { 
   LineChart, 
   Line, 
@@ -34,38 +35,12 @@ import {
 } from 'lucide-react';
 
 const CarbonTracker = () => {
+  const { carbonEntries, addCarbonEntry, userStats } = useUserData();
   const [newEntry, setNewEntry] = useState({
     category: 'transport',
     amount: '',
     description: ''
   });
-
-  const monthlyData = [
-    { month: 'Jan', emissions: 2.3, target: 2.0 },
-    { month: 'Feb', emissions: 2.1, target: 2.0 },
-    { month: 'Mar', emissions: 1.9, target: 2.0 },
-    { month: 'Apr', emissions: 1.7, target: 2.0 },
-    { month: 'May', emissions: 1.5, target: 2.0 },
-    { month: 'Jun', emissions: 1.3, target: 2.0 }
-  ];
-
-  const categoryData = [
-    { name: 'Transport', value: 35, color: '#3b82f6' },
-    { name: 'Energy', value: 28, color: '#10b981' },
-    { name: 'Food', value: 20, color: '#f59e0b' },
-    { name: 'Shopping', value: 12, color: '#ef4444' },
-    { name: 'Other', value: 5, color: '#8b5cf6' }
-  ];
-
-  const weeklyTrend = [
-    { day: 'Mon', emissions: 0.4 },
-    { day: 'Tue', emissions: 0.3 },
-    { day: 'Wed', emissions: 0.5 },
-    { day: 'Thu', emissions: 0.2 },
-    { day: 'Fri', emissions: 0.6 },
-    { day: 'Sat', emissions: 0.1 },
-    { day: 'Sun', emissions: 0.2 }
-  ];
 
   const categories = [
     { id: 'transport', label: 'Transport', icon: Car, color: 'blue' },
@@ -75,28 +50,65 @@ const CarbonTracker = () => {
     { id: 'travel', label: 'Travel', icon: Plane, color: 'purple' }
   ];
 
-  const recentActivities = [
-    { id: 1, category: 'transport', description: 'Car commute to work', emissions: 0.15, date: '2024-06-16' },
-    { id: 2, category: 'food', description: 'Lunch at restaurant', emissions: 0.08, date: '2024-06-16' },
-    { id: 3, category: 'energy', description: 'Home electricity usage', emissions: 0.12, date: '2024-06-15' },
-    { id: 4, category: 'shopping', description: 'Online shopping delivery', emissions: 0.05, date: '2024-06-15' }
-  ];
-
   const handleAddEntry = () => {
     if (newEntry.amount && newEntry.description) {
-      console.log('Adding new carbon entry:', newEntry);
+      addCarbonEntry({
+        category: newEntry.category,
+        amount: parseFloat(newEntry.amount),
+        description: newEntry.description,
+        date: new Date().toISOString().split('T')[0]
+      });
       setNewEntry({ category: 'transport', amount: '', description: '' });
     }
   };
 
-  const getCurrentMonthEmissions = () => {
-    return monthlyData[monthlyData.length - 1]?.emissions || 0;
+  // Generate monthly data from user entries
+  const generateMonthlyData = () => {
+    if (carbonEntries.length === 0) {
+      return [
+        { month: 'This Month', emissions: 0, target: 2.0 }
+      ];
+    }
+
+    const monthlyEmissions = carbonEntries.reduce((acc, entry) => {
+      const month = new Date(entry.date).toLocaleDateString('en', { month: 'short' });
+      acc[month] = (acc[month] || 0) + entry.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(monthlyEmissions).map(([month, emissions]) => ({
+      month,
+      emissions: parseFloat(emissions.toFixed(2)),
+      target: 2.0
+    }));
   };
 
-  const getEmissionsTrend = () => {
-    const current = getCurrentMonthEmissions();
-    const previous = monthlyData[monthlyData.length - 2]?.emissions || 0;
-    return current < previous ? 'down' : 'up';
+  // Generate category breakdown from user entries
+  const generateCategoryData = () => {
+    if (carbonEntries.length === 0) {
+      return [];
+    }
+
+    const categoryTotals = carbonEntries.reduce((acc, entry) => {
+      acc[entry.category] = (acc[entry.category] || 0) + entry.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const total = Object.values(categoryTotals).reduce((sum, val) => sum + val, 0);
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+    return Object.entries(categoryTotals).map(([category, value], index) => ({
+      name: categories.find(c => c.id === category)?.label || category,
+      value: Math.round((value / total) * 100),
+      color: colors[index % colors.length]
+    }));
+  };
+
+  const monthlyData = generateMonthlyData();
+  const categoryData = generateCategoryData();
+
+  const getCurrentMonthEmissions = () => {
+    return userStats.co2Saved || 0;
   };
 
   return (
@@ -114,128 +126,44 @@ const CarbonTracker = () => {
             <div className="bg-white p-4 rounded-lg border">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">This Month</p>
-                  <p className="text-2xl font-bold text-green-600">{getCurrentMonthEmissions()} tons</p>
+                  <p className="text-sm text-gray-600">Total CO₂ Tracked</p>
+                  <p className="text-2xl font-bold text-green-600">{getCurrentMonthEmissions().toFixed(1)} kg</p>
                 </div>
-                {getEmissionsTrend() === 'down' ? (
-                  <TrendingDown className="w-8 h-8 text-green-500" />
-                ) : (
-                  <TrendingUp className="w-8 h-8 text-red-500" />
-                )}
+                <TrendingDown className="w-8 h-8 text-green-500" />
               </div>
             </div>
             <div className="bg-white p-4 rounded-lg border">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Target</p>
-                  <p className="text-2xl font-bold text-blue-600">2.0 tons</p>
+                  <p className="text-sm text-gray-600">Entries</p>
+                  <p className="text-2xl font-bold text-blue-600">{carbonEntries.length}</p>
                 </div>
                 <Target className="w-8 h-8 text-blue-500" />
               </div>
             </div>
             <div className="bg-white p-4 rounded-lg border">
               <div>
-                <p className="text-sm text-gray-600">Reduction</p>
-                <p className="text-2xl font-bold text-purple-600">43%</p>
+                <p className="text-sm text-gray-600">This Week</p>
+                <p className="text-2xl font-bold text-purple-600">{userStats.currentWeekScans}</p>
               </div>
             </div>
             <div className="bg-white p-4 rounded-lg border">
               <div>
-                <p className="text-sm text-gray-600">Saved This Year</p>
-                <p className="text-2xl font-bold text-orange-600">5.2 tons</p>
+                <p className="text-sm text-gray-600">Points Earned</p>
+                <p className="text-2xl font-bold text-orange-600">{Math.floor(userStats.co2Saved * 10)}</p>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs defaultValue="tracker" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="tracker">Add Entry</TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
           <TabsTrigger value="goals">Goals</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Monthly Emissions Trend</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={monthlyData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="emissions" stroke="#10b981" strokeWidth={3} />
-                      <Line type="monotone" dataKey="target" stroke="#6b7280" strokeDasharray="5 5" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Emissions by Category</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={categoryData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}%`}
-                      >
-                        {categoryData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activities</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentActivities.map((activity) => {
-                  const category = categories.find(c => c.id === activity.category);
-                  return (
-                    <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-full bg-${category?.color}-100`}>
-                          <category.icon className={`w-4 h-4 text-${category?.color}-600`} />
-                        </div>
-                        <div>
-                          <p className="font-medium">{activity.description}</p>
-                          <p className="text-sm text-gray-600">{activity.date}</p>
-                        </div>
-                      </div>
-                      <Badge variant="outline">
-                        {activity.emissions} kg CO₂
-                      </Badge>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="tracker" className="space-y-4">
           <Card>
@@ -292,39 +220,142 @@ const CarbonTracker = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="breakdown" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Weekly Emissions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={weeklyTrend}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="emissions" stroke="#10b981" fill="#10b981" fillOpacity={0.3} />
-                  </AreaChart>
-                </ResponsiveContainer>
+        <TabsContent value="overview" className="space-y-4">
+          {carbonEntries.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Leaf className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">No entries yet</h3>
+                <p className="text-gray-500">Start tracking your carbon footprint by adding your first entry!</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Monthly Emissions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={monthlyData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis />
+                          <Tooltip />
+                          <Line type="monotone" dataKey="emissions" stroke="#10b981" strokeWidth={3} />
+                          <Line type="monotone" dataKey="target" stroke="#6b7280" strokeDasharray="5 5" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {categoryData.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Emissions by Category</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={categoryData}
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={80}
+                              dataKey="value"
+                              label={({ name, value }) => `${name}: ${value}%`}
+                            >
+                              {categoryData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
-            </CardContent>
-          </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Activities</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {carbonEntries.slice(0, 5).map((activity) => {
+                      const category = categories.find(c => c.id === activity.category);
+                      return (
+                        <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <div className={`p-2 rounded-full bg-${category?.color}-100`}>
+                              <category.icon className={`w-4 h-4 text-${category?.color}-600`} />
+                            </div>
+                            <div>
+                              <p className="font-medium">{activity.description}</p>
+                              <p className="text-sm text-gray-600">{activity.date}</p>
+                            </div>
+                          </div>
+                          <Badge variant="outline">
+                            {activity.amount} kg CO₂
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="breakdown" className="space-y-4">
+          {carbonEntries.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">No data to show</h3>
+                <p className="text-gray-500">Add some carbon entries to see your breakdown!</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Category Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {categoryData.map((category, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="font-medium">{category.name}</span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 rounded" style={{ backgroundColor: category.color }}></div>
+                        <span>{category.value}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="goals" className="space-y-4">
           <div className="grid gap-4">
             {[
-              { title: 'Reduce transport emissions by 50%', progress: 73, target: '1.2 tons', current: '0.6 tons' },
-              { title: 'Switch to renewable energy', progress: 45, target: '100%', current: '45%' },
-              { title: 'Achieve carbon neutrality', progress: 28, target: '0 tons', current: '1.3 tons' }
+              { title: 'Track 10 carbon activities', progress: Math.min((carbonEntries.length / 10) * 100, 100), target: '10 entries', current: `${carbonEntries.length} entries` },
+              { title: 'Reduce weekly emissions', progress: userStats.currentWeekScans > 0 ? 60 : 0, target: '5 kg CO₂', current: `${userStats.co2Saved.toFixed(1)} kg CO₂` },
+              { title: 'Earn 500 points from tracking', progress: Math.min((userStats.totalPoints / 500) * 100, 100), target: '500 points', current: `${userStats.totalPoints} points` }
             ].map((goal, index) => (
               <Card key={index}>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-medium">{goal.title}</h3>
-                    <Badge variant="outline">{goal.progress}%</Badge>
+                    <Badge variant="outline">{Math.round(goal.progress)}%</Badge>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm text-gray-600">
