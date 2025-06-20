@@ -1,13 +1,14 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Search, ShoppingCart, Star, Leaf, Award, Filter, Heart, Share2, Eye, TrendingUp, Download, BarChart3 } from 'lucide-react';
 import { productsData, searchProducts, getProductsByCategory } from '@/data/productsData';
+import { useUserData } from '@/contexts/UserDataContext';
+import { useToast } from '@/hooks/use-toast';
 
 const SustainabilityMarketplace = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -16,7 +17,8 @@ const SustainabilityMarketplace = () => {
   const [favorites, setFavorites] = useState([]);
   const [cart, setCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
+  const { addPoints } = useUserData();
+  const { toast } = useToast();
 
   // Get products based on search and filters
   const getFilteredProducts = () => {
@@ -53,37 +55,76 @@ const SustainabilityMarketplace = () => {
   ];
 
   const toggleFavorite = (productId) => {
-    setFavorites(prev => 
-      prev.includes(productId) 
+    setFavorites(prev => {
+      const newFavorites = prev.includes(productId) 
         ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
+        : [...prev, productId];
+      
+      if (!prev.includes(productId)) {
+        addPoints(5);
+        toast({
+          title: "Product Favorited!",
+          description: "You earned 5 points for favoriting a product!",
+        });
+      }
+      
+      return newFavorites;
+    });
   };
 
   const addToCart = (product) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
+      let newCart;
       if (existing) {
-        return prev.map(item => 
+        newCart = prev.map(item => 
           item.id === product.id 
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
+      } else {
+        newCart = [...prev, { ...product, quantity: 1 }];
+        addPoints(10);
+        toast({
+          title: "Added to Cart!",
+          description: `${product.name} added to cart. You earned 10 points!`,
+        });
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return newCart;
     });
   };
 
   const shareProduct = (product) => {
+    const shareText = `Check out this sustainable product: ${product.name} by ${product.brand} - Sustainability Score: ${product.sustainabilityScore}`;
+    
     if (navigator.share) {
       navigator.share({
         title: product.name,
-        text: `Check out this sustainable product: ${product.name} by ${product.brand}`,
+        text: shareText,
         url: window.location.href
+      }).then(() => {
+        addPoints(5);
+        toast({
+          title: "Product Shared!",
+          description: "You earned 5 points for sharing!",
+        });
+      }).catch(() => {
+        fallbackShare(shareText);
       });
     } else {
-      navigator.clipboard.writeText(`${product.name} by ${product.brand} - Sustainability Score: ${product.sustainabilityScore}`);
-      alert('Product link copied to clipboard!');
+      fallbackShare(shareText);
+    }
+  };
+
+  const fallbackShare = (text) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        addPoints(5);
+        toast({
+          title: "Product Shared!",
+          description: "Product link copied to clipboard! You earned 5 points!",
+        });
+      });
     }
   };
 
@@ -95,22 +136,19 @@ Brand: ${product.brand}
 Sustainability Score: ${product.sustainabilityScore}/100
 
 ENVIRONMENTAL IMPACT:
-${product.detailedAnalysis.environmentalImpact}
+${product.detailedAnalysis?.environmentalImpact || 'No detailed analysis available'}
 
 SOCIAL IMPACT:
-${product.detailedAnalysis.socialImpact}
+${product.detailedAnalysis?.socialImpact || 'No detailed analysis available'}
 
 ECONOMIC IMPACT:
-${product.detailedAnalysis.economicImpact}
+${product.detailedAnalysis?.economicImpact || 'No detailed analysis available'}
 
-RECOMMENDATIONS:
-${product.detailedAnalysis.recommendations.join('\n')}
-
-Carbon Footprint: ${product.carbonFootprint.total}
-Water Usage: ${product.waterUsage}
-Energy Source: ${product.energySource}
-Materials: ${product.materials.join(', ')}
-Certifications: ${product.certifications.join(', ')}
+Carbon Footprint: ${product.carbonFootprint?.total || 'N/A'}
+Water Usage: ${product.waterUsage || 'N/A'}
+Energy Source: ${product.energySource || 'N/A'}
+Materials: ${product.materials?.join(', ') || 'N/A'}
+Certifications: ${product.certifications?.join(', ') || 'N/A'}
     `;
     
     const blob = new Blob([report], { type: 'text/plain' });
@@ -120,6 +158,12 @@ Certifications: ${product.certifications.join(', ')}
     a.download = `${product.name.replace(/[^a-zA-Z0-9]/g, '_')}_sustainability_report.txt`;
     a.click();
     URL.revokeObjectURL(url);
+    
+    addPoints(15);
+    toast({
+      title: "Report Downloaded!",
+      description: "You earned 15 points for downloading a sustainability report!",
+    });
   };
 
   const getScoreColor = (score) => {
@@ -195,13 +239,16 @@ Certifications: ${product.certifications.join(', ')}
           {/* Products Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProducts.map((product) => (
-              <Card key={product.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative">
+              <Card key={product.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
                 {/* Product Image */}
-                <div className="relative overflow-hidden rounded-t-lg">
+                <div className="relative overflow-hidden h-48 bg-gray-100">
                   <img 
-                    src={product.image} 
+                    src={`https://images.unsplash.com/${product.image}?w=400&h=300&fit=crop`}
                     alt={product.name}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=300&fit=crop';
+                    }}
                   />
                   
                   {/* Badges */}
@@ -223,7 +270,10 @@ Certifications: ${product.certifications.join(', ')}
                       size="sm"
                       variant="outline"
                       className="w-8 h-8 p-0 bg-white/90 hover:bg-white"
-                      onClick={() => toggleFavorite(product.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(product.id);
+                      }}
                     >
                       <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
                     </Button>
@@ -231,83 +281,13 @@ Certifications: ${product.certifications.join(', ')}
                       size="sm"
                       variant="outline"
                       className="w-8 h-8 p-0 bg-white/90 hover:bg-white"
-                      onClick={() => shareProduct(product)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        shareProduct(product);
+                      }}
                     >
                       <Share2 className="w-4 h-4 text-gray-500" />
                     </Button>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-8 h-8 p-0 bg-white/90 hover:bg-white"
-                          onClick={() => setSelectedProduct(product)}
-                        >
-                          <Eye className="w-4 h-4 text-gray-500" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>{product.name}</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <img src={product.image} alt={product.name} className="w-full h-64 object-cover rounded-lg" />
-                            <div className="space-y-4">
-                              <div>
-                                <h3 className="text-xl font-bold">{product.name}</h3>
-                                <p className="text-gray-600">{product.brand}</p>
-                                <Badge className={getScoreColor(product.sustainabilityScore)}>
-                                  Score: {product.sustainabilityScore}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <span className="text-2xl font-bold text-green-600">${product.price}</span>
-                                {product.originalPrice > product.price && (
-                                  <span className="text-lg text-gray-500 line-through">${product.originalPrice}</span>
-                                )}
-                              </div>
-                              <p className="text-gray-700">{product.description}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <h4 className="font-semibold mb-2">Environmental Impact</h4>
-                              <p className="text-sm text-gray-600">{product.detailedAnalysis.environmentalImpact}</p>
-                            </div>
-                            <div>
-                              <h4 className="font-semibold mb-2">Social Impact</h4>
-                              <p className="text-sm text-gray-600">{product.detailedAnalysis.socialImpact}</p>
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <h4 className="font-semibold mb-2">Carbon Footprint</h4>
-                            <div className="grid grid-cols-3 gap-4 text-sm">
-                              <div>Production: {product.carbonFootprint.production}</div>
-                              <div>Transport: {product.carbonFootprint.transport}</div>
-                              <div>Total: {product.carbonFootprint.total}</div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-2">
-                            <Button 
-                              className="flex-1"
-                              onClick={() => addToCart(product)}
-                              disabled={!product.inStock}
-                            >
-                              <ShoppingCart className="w-4 h-4 mr-2" />
-                              Add to Cart
-                            </Button>
-                            <Button variant="outline" onClick={() => downloadReport(product)}>
-                              <Download className="w-4 h-4 mr-2" />
-                              Report
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
                   </div>
                 </div>
 
@@ -337,12 +317,12 @@ Certifications: ${product.certifications.join(', ')}
 
                     {/* Features */}
                     <div className="flex flex-wrap gap-1">
-                      {product.features.slice(0, 3).map((feature, index) => (
+                      {product.features?.slice(0, 3).map((feature, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {feature}
                         </Badge>
                       ))}
-                      {product.features.length > 3 && (
+                      {product.features?.length > 3 && (
                         <Badge variant="outline" className="text-xs">
                           +{product.features.length - 3} more
                         </Badge>
@@ -389,9 +369,84 @@ Certifications: ${product.certifications.join(', ')}
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm" className="px-3" onClick={() => setSelectedProduct(product)}>
-                            <BarChart3 className="w-4 h-4" />
+                            <Eye className="w-4 h-4" />
                           </Button>
                         </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>{product.name}</DialogTitle>
+                            <DialogDescription>
+                              Detailed sustainability analysis and product information
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <img 
+                                src={`https://images.unsplash.com/${product.image}?w=600&h=400&fit=crop`}
+                                alt={product.name} 
+                                className="w-full h-64 object-cover rounded-lg"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop';
+                                }}
+                              />
+                              <div className="space-y-4">
+                                <div>
+                                  <h3 className="text-xl font-bold">{product.name}</h3>
+                                  <p className="text-gray-600">{product.brand}</p>
+                                  <Badge className={getScoreColor(product.sustainabilityScore)}>
+                                    Score: {product.sustainabilityScore}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-2xl font-bold text-green-600">${product.price}</span>
+                                  {product.originalPrice > product.price && (
+                                    <span className="text-lg text-gray-500 line-through">${product.originalPrice}</span>
+                                  )}
+                                </div>
+                                <p className="text-gray-700">{product.description}</p>
+                              </div>
+                            </div>
+                            
+                            {product.detailedAnalysis && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                  <h4 className="font-semibold mb-2">Environmental Impact</h4>
+                                  <p className="text-sm text-gray-600">{product.detailedAnalysis.environmentalImpact}</p>
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold mb-2">Social Impact</h4>
+                                  <p className="text-sm text-gray-600">{product.detailedAnalysis.socialImpact}</p>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {product.carbonFootprint && (
+                              <div>
+                                <h4 className="font-semibold mb-2">Carbon Footprint</h4>
+                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                  <div>Production: {product.carbonFootprint.production}</div>
+                                  <div>Transport: {product.carbonFootprint.transport}</div>
+                                  <div>Total: {product.carbonFootprint.total}</div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            <div className="flex gap-2">
+                              <Button 
+                                className="flex-1"
+                                onClick={() => addToCart(product)}
+                                disabled={!product.inStock}
+                              >
+                                <ShoppingCart className="w-4 h-4 mr-2" />
+                                Add to Cart
+                              </Button>
+                              <Button variant="outline" onClick={() => downloadReport(product)}>
+                                <Download className="w-4 h-4 mr-2" />
+                                Report
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
                       </Dialog>
                     </div>
                   </div>

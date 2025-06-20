@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,10 +19,14 @@ import {
   Download,
   Share2
 } from 'lucide-react';
+import { useUserData } from '@/contexts/UserDataContext';
 
 const EducationCenter = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedArticle, setSelectedArticle] = useState(null);
+  const { userStats, incrementCourseCompleted } = useUserData();
 
   const courses = [
     {
@@ -32,13 +35,23 @@ const EducationCenter = () => {
       description: 'Learn the fundamentals of eco-friendly lifestyle choices',
       duration: '2 hours',
       level: 'Beginner',
-      progress: 75,
+      progress: userStats.coursesCompleted >= 1 ? 100 : 0,
       rating: 4.8,
       students: 1234,
       category: 'lifestyle',
       thumbnail: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400',
       lessons: 8,
-      completed: 6
+      completed: userStats.coursesCompleted >= 1 ? 8 : 0,
+      content: [
+        'Introduction to Sustainable Living',
+        'Energy Conservation at Home',
+        'Waste Reduction Strategies',
+        'Sustainable Transportation',
+        'Green Shopping Guide',
+        'Water Conservation Tips',
+        'Eco-Friendly Diet Choices',
+        'Building Sustainable Habits'
+      ]
     },
     {
       id: 2,
@@ -46,13 +59,13 @@ const EducationCenter = () => {
       description: 'Advanced strategies to minimize your environmental impact',
       duration: '3 hours',
       level: 'Intermediate',
-      progress: 30,
+      progress: userStats.coursesCompleted >= 2 ? 100 : userStats.coursesCompleted >= 1 ? 30 : 0,
       rating: 4.9,
       students: 892,
       category: 'carbon',
       thumbnail: 'https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=400',
       lessons: 12,
-      completed: 4
+      completed: userStats.coursesCompleted >= 2 ? 12 : userStats.coursesCompleted >= 1 ? 4 : 0
     },
     {
       id: 3,
@@ -60,13 +73,13 @@ const EducationCenter = () => {
       description: 'How to implement green practices in your organization',
       duration: '4 hours',
       level: 'Advanced',
-      progress: 0,
+      progress: userStats.coursesCompleted >= 3 ? 100 : 0,
       rating: 4.7,
       students: 567,
       category: 'business',
       thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400',
       lessons: 15,
-      completed: 0
+      completed: userStats.coursesCompleted >= 3 ? 15 : 0
     }
   ];
 
@@ -79,7 +92,23 @@ const EducationCenter = () => {
       author: 'Dr. Sarah Green',
       category: 'waste-reduction',
       image: 'https://images.unsplash.com/photo-1583183416581-c9b803aa1149?w=400',
-      tags: ['Plastic', 'Zero Waste', 'DIY']
+      tags: ['Plastic', 'Zero Waste', 'DIY'],
+      content: `
+        Plastic waste is one of the biggest environmental challenges we face today. Here are 10 practical ways to reduce your plastic consumption:
+        
+        1. Use reusable bags for shopping
+        2. Carry a refillable water bottle
+        3. Choose products with minimal packaging
+        4. Use glass containers for food storage
+        5. Avoid single-use utensils and straws
+        6. Buy in bulk to reduce packaging
+        7. Choose bar soaps over liquid soaps in plastic bottles
+        8. Use bamboo or wooden alternatives
+        9. Repair items instead of replacing them
+        10. Support brands committed to reducing plastic use
+        
+        Making these small changes can significantly impact the environment while saving you money in the long run.
+      `
     },
     {
       id: 2,
@@ -129,10 +158,10 @@ const EducationCenter = () => {
   ];
 
   const achievements = [
-    { id: 1, name: 'Course Completion Badge', earned: true },
-    { id: 2, name: 'Sustainability Advocate', earned: true },
-    { id: 3, name: 'Carbon Warrior', earned: false },
-    { id: 4, name: 'Eco Expert', earned: false }
+    { id: 1, name: 'Course Completion Badge', earned: userStats.coursesCompleted >= 1 },
+    { id: 2, name: 'Sustainability Advocate', earned: userStats.coursesCompleted >= 2 },
+    { id: 3, name: 'Carbon Warrior', earned: userStats.coursesCompleted >= 3 },
+    { id: 4, name: 'Eco Expert', earned: userStats.coursesCompleted >= 5 }
   ];
 
   const categories = [
@@ -144,6 +173,36 @@ const EducationCenter = () => {
     { id: 'waste-reduction', label: 'Waste' },
     { id: 'fashion', label: 'Fashion' }
   ];
+
+  const handleContinueLearning = (course) => {
+    setSelectedCourse(course);
+    if (course.progress < 100) {
+      // Simulate course completion
+      incrementCourseCompleted();
+    }
+  };
+
+  const handleStartCourse = (course) => {
+    setSelectedCourse(course);
+    incrementCourseCompleted();
+  };
+
+  const handleReadArticle = (article) => {
+    setSelectedArticle(article);
+  };
+
+  const handleShareArticle = (article) => {
+    if (navigator.share) {
+      navigator.share({
+        title: article.title,
+        text: article.excerpt,
+        url: window.location.href
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      alert('Article link copied to clipboard!');
+    }
+  };
 
   const getLevelColor = (level) => {
     switch (level) {
@@ -168,6 +227,104 @@ const EducationCenter = () => {
 
   return (
     <div className="space-y-6">
+      {/* Course Detail Modal */}
+      {selectedCourse && (
+        <Card className="bg-white/95 rounded-xl border border-blue-100 mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">{selectedCourse.title}</h2>
+                <p className="text-gray-600 mt-2">{selectedCourse.description}</p>
+                <div className="flex items-center space-x-2 mt-2">
+                  <Badge className={getLevelColor(selectedCourse.level)}>
+                    {selectedCourse.level}
+                  </Badge>
+                  <Badge variant="outline">{selectedCourse.duration}</Badge>
+                </div>
+              </div>
+              <Button variant="ghost" onClick={() => setSelectedCourse(null)}>
+                ✕
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="font-semibold mb-3">Course Progress</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Completed: {selectedCourse.completed}/{selectedCourse.lessons} lessons</span>
+                    <span>{Math.round(selectedCourse.progress)}%</span>
+                  </div>
+                  <Progress value={selectedCourse.progress} className="h-3" />
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-3">Course Details</h3>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div className="flex items-center space-x-2">
+                    <Users className="w-4 h-4" />
+                    <span>{selectedCourse.students} students enrolled</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Star className="w-4 h-4 text-yellow-400" />
+                    <span>{selectedCourse.rating}/5.0 rating</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {selectedCourse.content && (
+              <div className="mt-6">
+                <h3 className="font-semibold mb-3">Course Content</h3>
+                <div className="space-y-2">
+                  {selectedCourse.content.map((lesson, index) => (
+                    <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
+                      <CheckCircle className={`w-4 h-4 ${index < selectedCourse.completed ? 'text-green-500' : 'text-gray-300'}`} />
+                      <span className={index < selectedCourse.completed ? 'text-gray-800' : 'text-gray-500'}>
+                        {lesson}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Article Detail Modal */}
+      {selectedArticle && (
+        <Card className="bg-white/95 rounded-xl border border-blue-100 mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">{selectedArticle.title}</h2>
+                <p className="text-gray-600 mt-2">By {selectedArticle.author} • {selectedArticle.readTime}</p>
+              </div>
+              <Button variant="ghost" onClick={() => setSelectedArticle(null)}>
+                ✕
+              </Button>
+            </div>
+
+            <div className="prose max-w-none">
+              <img src={selectedArticle.image} alt={selectedArticle.title} className="w-full h-64 object-cover rounded-lg mb-4" />
+              <div className="whitespace-pre-line text-gray-700">
+                {selectedArticle.content || selectedArticle.excerpt}
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 mt-6 pt-4 border-t">
+              {selectedArticle.tags?.map((tag, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -271,6 +428,7 @@ const EducationCenter = () => {
                     <Button 
                       className="w-full" 
                       variant={course.progress > 0 ? "secondary" : "default"}
+                      onClick={() => course.progress > 0 ? handleContinueLearning(course) : handleStartCourse(course)}
                     >
                       {course.progress > 0 ? 'Continue Learning' : 'Start Course'}
                     </Button>
@@ -302,7 +460,7 @@ const EducationCenter = () => {
                     </div>
 
                     <div className="flex flex-wrap gap-1">
-                      {article.tags.map((tag, index) => (
+                      {article.tags?.map((tag, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {tag}
                         </Badge>
@@ -315,8 +473,10 @@ const EducationCenter = () => {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button className="flex-1">Read Article</Button>
-                      <Button variant="outline" size="sm">
+                      <Button className="flex-1" onClick={() => handleReadArticle(article)}>
+                        Read Article
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleShareArticle(article)}>
                         <Share2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -391,15 +551,15 @@ const EducationCenter = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span>Courses Completed</span>
-                  <span className="font-semibold">3/10</span>
+                  <span className="font-semibold">{userStats.coursesCompleted}/10</span>
                 </div>
-                <Progress value={30} className="h-2" />
+                <Progress value={(userStats.coursesCompleted / 10) * 100} className="h-2" />
                 
                 <div className="flex items-center justify-between">
                   <span>Articles Read</span>
-                  <span className="font-semibold">15/50</span>
+                  <span className="font-semibold">{userStats.recipesViewed}/50</span>
                 </div>
-                <Progress value={30} className="h-2" />
+                <Progress value={(userStats.recipesViewed / 50) * 100} className="h-2" />
                 
                 <div className="flex items-center justify-between">
                   <span>Webinars Attended</span>

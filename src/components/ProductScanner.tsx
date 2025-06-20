@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { 
   Camera, 
@@ -24,14 +23,10 @@ import {
   FileImage
 } from 'lucide-react';
 import { getRandomProducts } from '@/data/productsData';
+import { useUserData } from '@/contexts/UserDataContext';
 
-interface ProductScannerProps {
-  onProductScanned: (product: any) => void; // Or a more specific product type
-  addToCart: (product: any) => void;
-  setActiveTab: (tab: string) => void;
-}
-
-const ProductScanner = ({ onProductScanned, addToCart, setActiveTab }: ProductScannerProps) => {
+const ProductScanner = () => {
+  const { scannedProducts, addScannedProduct } = useUserData();
   const [isScanning, setIsScanning] = useState(false);
   const [detectedProduct, setDetectedProduct] = useState(null);
   const [scanMode, setScanMode] = useState(false);
@@ -43,10 +38,9 @@ const ProductScanner = ({ onProductScanned, addToCart, setActiveTab }: ProductSc
   const mockScan = () => {
     setIsScanning(true);
     setTimeout(() => {
-      // Get a random product from our data
       const randomProduct = getRandomProducts(1)[0];
       
-      const scannedProduct = {
+      const productData = {
         id: randomProduct.id,
         name: randomProduct.name,
         brand: randomProduct.brand,
@@ -76,8 +70,17 @@ const ProductScanner = ({ onProductScanned, addToCart, setActiveTab }: ProductSc
           overall: randomProduct.sustainabilityScore
         }
       };
-      setDetectedProduct(scannedProduct);
-      onProductScanned(scannedProduct);
+      
+      setDetectedProduct(productData);
+      
+      // Add to user's scanned products
+      addScannedProduct({
+        name: randomProduct.name,
+        brand: randomProduct.brand,
+        sustainabilityScore: randomProduct.sustainabilityScore,
+        category: randomProduct.category
+      });
+      
       setIsScanning(false);
     }, 2000);
   };
@@ -97,7 +100,6 @@ const ProductScanner = ({ onProductScanned, addToCart, setActiveTab }: ProductSc
       const reader = new FileReader();
       reader.onload = (e) => {
         setUploadedImage(e.target.result);
-        // Simulate scanning the uploaded image
         mockScan();
       };
       reader.readAsDataURL(file);
@@ -106,7 +108,6 @@ const ProductScanner = ({ onProductScanned, addToCart, setActiveTab }: ProductSc
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      // Simulate searching for a product
       mockScan();
     }
   };
@@ -123,6 +124,37 @@ const ProductScanner = ({ onProductScanned, addToCart, setActiveTab }: ProductSc
 
   return (
     <div className="space-y-6">
+      {/* Recent Scans Section */}
+      {scannedProducts.length > 0 && (
+        <Card className="bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-lg rounded-2xl">
+          <CardHeader>
+            <CardTitle className="text-slate-800">Recent Scans</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {scannedProducts.slice(0, 6).map((product) => (
+                <div key={product.id} className="p-4 border border-slate-200 rounded-lg hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="font-semibold text-slate-800">{product.name}</h3>
+                      <p className="text-sm text-slate-600">{product.brand}</p>
+                    </div>
+                    <Badge className={getScoreColor(product.sustainabilityScore)}>
+                      {product.sustainabilityScore}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-500">{product.category}</span>
+                    <span className="text-slate-500">{product.date}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Main Scanner Interface */}
       <Card className="bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-lg rounded-2xl">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center justify-between text-slate-800">
@@ -350,7 +382,7 @@ const ProductScanner = ({ onProductScanned, addToCart, setActiveTab }: ProductSc
                   </div>
                 </div>
 
-                {/* Product Details */}
+                {/* Environmental Impact and Product Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
                     <h4 className="font-semibold text-slate-800 mb-2">Environmental Impact</h4>
@@ -435,24 +467,13 @@ const ProductScanner = ({ onProductScanned, addToCart, setActiveTab }: ProductSc
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-3 mt-6">
-                  <Button 
-                    className="bg-slate-800 hover:bg-slate-900"
-                    onClick={() => setActiveTab('analysis')}
-                  >
+                  <Button className="bg-slate-800 hover:bg-slate-900">
                     View Full Analysis
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    className="border-slate-300"
-                    onClick={() => setActiveTab('comparison')}
-                  >
+                  <Button variant="outline" className="border-slate-300">
                     Compare Products
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    className="border-green-300 text-green-700 hover:bg-green-50"
-                    onClick={() => detectedProduct && addToCart(detectedProduct)}
-                  >
+                  <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-50">
                     <ShoppingCart className="w-4 h-4 mr-2" />
                     Add to Cart
                   </Button>
