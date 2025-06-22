@@ -44,11 +44,26 @@ interface Recommendation {
   actionData: any;
 }
 
+// Define a new interface for the recommendation data stored in Firestore
+interface StoredRecommendation {
+  id: number;
+  type: string;
+  title: string;
+  description: string;
+  impact: string;
+  confidence: number;
+  category: string;
+  priority: string;
+  timeToImplement: string;
+  difficulty: string;
+  carbonSaving: string;
+  actionType: string;
+}
 interface ActionProgress {
   type: string;
   status: string;
   data: any;
-  recommendation: Recommendation;
+  recommendation: StoredRecommendation;
 }
 
 const AIRecommendations = () => {
@@ -208,7 +223,21 @@ const AIRecommendations = () => {
             type: 'product_search',
             status: 'in_progress',
             data: relevantProducts,
-            recommendation
+            recommendation: { // Explicitly create StoredRecommendation object
+              id: recommendation.id,
+              type: recommendation.type,
+              title: recommendation.title,
+              description: recommendation.description,
+              impact: recommendation.impact,
+              confidence: recommendation.confidence,
+              category: recommendation.category,
+ priority: recommendation.priority,
+              // icon is intentionally excluded
+              timeToImplement: recommendation.timeToImplement,
+              difficulty: recommendation.difficulty,
+              carbonSaving: recommendation.carbonSaving,
+              actionType: recommendation.actionType,
+            }
           }
         }));
         break;
@@ -226,7 +255,22 @@ const AIRecommendations = () => {
               startDate: new Date().toISOString(),
               progress: 0
             },
-            recommendation
+            recommendation: {
+              // Use StoredRecommendation structure
+ id: recommendation.id,
+              type: recommendation.type,
+              title: recommendation.title,
+              description: recommendation.description,
+              impact: recommendation.impact,
+              confidence: recommendation.confidence,
+              category: recommendation.category,
+              // icon is intentionally excluded
+ priority: recommendation.priority,
+              timeToImplement: recommendation.timeToImplement,
+              difficulty: recommendation.difficulty,
+              carbonSaving: recommendation.carbonSaving,
+              actionType: recommendation.actionType,
+            }
           }
         }));
         break;
@@ -243,7 +287,22 @@ const AIRecommendations = () => {
               completedSteps: [],
               createdDate: new Date().toISOString()
             },
-            recommendation
+            recommendation: {
+              // Use StoredRecommendation structure
+ id: recommendation.id,
+              type: recommendation.type,
+              title: recommendation.title,
+              description: recommendation.description,
+              impact: recommendation.impact,
+              confidence: recommendation.confidence,
+              category: recommendation.category,
+              // icon is intentionally excluded
+ priority: recommendation.priority,
+              timeToImplement: recommendation.timeToImplement,
+              difficulty: recommendation.difficulty,
+              carbonSaving: recommendation.carbonSaving,
+              actionType: recommendation.actionType,
+            }
           }
         }));
         break;
