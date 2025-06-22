@@ -1,11 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Building, TrendingUp, TrendingDown, Award, Users, Globe, Search } from 'lucide-react';
+import { db } from '../firebase'; // Adjust the path if necessary
+import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 const CompanyProfile = () => {
@@ -13,6 +16,8 @@ const CompanyProfile = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const companies = {
+    // NOTE: Use consistent IDs like 'patagonia', 'unilever' that match the keys
+    //       This is important for storing and retrieving in Firebase
     patagonia: {
       name: "Patagonia",
       logo: "🏔️",
@@ -82,6 +87,48 @@ const CompanyProfile = () => {
   };
 
   const company = companies[selectedCompany];
+  const [following, setFollowing] = useState<string[]>([]); // Initialize as string array
+
+  const { currentUser } = useAuth(); // Get currentUser from useAuth context
+
+  const handleFollowToggle = async () => { // Define the async function
+    if (!currentUser) return; // Ensure user is authenticated
+
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    try {
+      if (following.includes(selectedCompany)) {
+        // Unfollow
+        await updateDoc(userDocRef, {
+          following: arrayRemove(selectedCompany)
+        });
+      } else {
+        // Follow
+        await updateDoc(userDocRef, {
+          following: arrayUnion(selectedCompany)
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling follow:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser) return; // Use currentUser from context
+
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        setFollowing(userData.following || []);
+      } else {
+        setFollowing([]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]); // Depend on currentUser
+
+  const isFollowing = currentUser && following.includes(selectedCompany); // Check following status
 
   const performanceData = [
     { month: 'Jan', score: 91 },
@@ -183,6 +230,17 @@ const CompanyProfile = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Follow Button */}
+            <div className="flex justify-end">
+              <Button
+                onClick={handleFollowToggle}
+                disabled={!currentUser} // Disable if not authenticated
+                variant={isFollowing ? 'outline' : 'default'}
+              >
+                {isFollowing ? 'Following' : 'Follow Company'}
+              </Button>
+            </div>
+
             {/* Company Info */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
@@ -242,6 +300,21 @@ const CompanyProfile = () => {
         </Card>
 
         {/* Sidebar Info */}
+        <div className="space-y-6">
+          <Card className="bg-white/60 backdrop-blur-sm border-green-100">
+            <CardContent className="p-4 flex justify-center">
+              {/* This button seems redundant, remove or replace with other info */}
+              {/* Keeping the button for now, ensure it uses `currentUser` */}
+              {/* <Button
+                onClick={handleFollowToggle} // Use the correct handler
+                disabled={!user} // Disable if not authenticated
+                variant={isFollowing ? 'outline' : 'default'}
+              >
+                {isFollowing ? 'Following' : 'Follow Company'}
+              </Button> */}
+            </CardContent> {/* Close CardContent */}
+        </Card>
+        </div>
         <div className="space-y-6">
           {/* Performance Trend */}
           <Card className="bg-white/60 backdrop-blur-sm border-green-100">

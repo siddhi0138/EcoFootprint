@@ -1,7 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Trash2, Save } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { 
@@ -15,9 +17,13 @@ import {
   Clock,
   DollarSign,
   Navigation,
+  Bookmark,
   Zap,
   TreePine
 } from 'lucide-react';
+import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
+import { doc, onSnapshot, collection, addDoc, deleteDoc } from 'firebase/firestore';
 
 const TransportationPlanner = () => {
   const [fromLocation, setFromLocation] = useState('');
@@ -105,6 +111,34 @@ const TransportationPlanner = () => {
     }
   ];
 
+  const { currentUser } = useAuth();
+  const [savedRoutes, setSavedRoutes] = useState([]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (currentUser) {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const savedRoutesCollectionRef = collection(userDocRef, 'savedRoutes');
+      const unsubscribe = onSnapshot(savedRoutesCollectionRef, (snapshot) => {
+        const routesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data() as any,
+        }));
+        setSavedRoutes(routesData);
+      }, (error) => {
+        console.error("Error fetching saved routes: ", error);
+        toast({
+          title: "Error",
+          description: "Failed to load saved routes.",
+          variant: "destructive",
+        });
+      });
+      return () => unsubscribe();
+    } else {
+      setSavedRoutes([]);
+    }
+  }, [currentUser, toast]);
+
   const planRoute = () => {
     if (fromLocation && toLocation) {
       setRoutes(mockRoutes);
@@ -117,6 +151,48 @@ const TransportationPlanner = () => {
     if (score >= 50) return { color: 'bg-yellow-500', label: 'Fair' };
     return { color: 'bg-red-500', label: 'Poor' };
   };
+
+  const handleSaveRoute = async (routeToSave) => {
+    if (!currentUser) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to save routes.",
+ variant: "default",
+      });
+      return;
+    }
+
+    try {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const savedRoutesCollectionRef = collection(userDocRef, 'savedRoutes');
+      await addDoc(savedRoutesCollectionRef, {
+        fromLocation,
+        toLocation,
+        route: routeToSave,
+        savedAt: new Date(),
+      });
+      toast({
+        title: "Route Saved",
+        description: `${routeToSave.name} route from ${fromLocation} to ${toLocation} saved successfully.`,
+      });
+    } catch (error) {
+      console.error("Error saving route: ", error);
+      toast({
+        title: "Error",
+        description: "Failed to save route.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteRoute = async (routeId) => {
+    try {
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'savedRoutes', routeId));
+      toast({ title: "Route Deleted", description: "Route removed from saved list." });
+    } catch (error) {
+      console.error("Error deleting route: ", error);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -220,9 +296,15 @@ const TransportationPlanner = () => {
                           </div>
                         </div>
                       </div>
-                      <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                        Select Route
-                      </Button>
+                      {currentUser && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveRoute(route)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <Save className="w-4 h-4 mr-2" /> Save Route
+                        </Button>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
@@ -258,6 +340,40 @@ const TransportationPlanner = () => {
                         ))}
                       </div>
                     </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Saved Routes */}
+          {currentUser && savedRoutes.length > 0 && (
+            <div className="mt-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
+                <Bookmark className="w-5 h-5 text-purple-600" />
+                <span>Saved Routes</span>
+              </h3>
+              {savedRoutes.map((savedRoute) => {
+                const route = savedRoute.route;
+                const sustainabilityBadge = getSustainabilityBadge(route.sustainability);
+                return (
+                  <div key={savedRoute.id} className="bg-white/80 rounded-xl p-4 border border-gray-100 flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-10 h-10 ${route.color} rounded-lg flex items-center justify-center`}>
+                        <route.icon className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-gray-800">{route.name} from {savedRoute.fromLocation} to {savedRoute.toLocation}</div>
+                        <div className="text-sm text-gray-600 flex items-center space-x-3 mt-1">
+                          <span>{route.duration}</span>
+                          <span>{route.distance}</span>
+                          <Badge className={`text-white text-xs ${sustainabilityBadge.color}`}>{sustainabilityBadge.label}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <Button variant="destructive" size="sm" onClick={() => handleDeleteRoute(savedRoute.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 );
               })}

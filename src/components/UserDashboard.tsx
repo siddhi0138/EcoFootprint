@@ -1,17 +1,33 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Award, Target, TrendingUp, Users, Leaf, Star, Trophy, Calendar } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
+import { DocumentData } from 'firebase/firestore';
+import { UserStats } from '../contexts/UserDataContext';
+import { doc, onSnapshot, collection, query, orderBy } from 'firebase/firestore';
 
-const UserDashboard = ({ stats }) => {
-  const achievements = [
+const UserDashboard = () => {
+  const { user } = useAuth();
+  const [userStats, setUserStats] = useState({
+    totalScans: 0,
+    avgScore: 0,
+    co2Saved: 0,
+    rank: 0,
+    badges: 0,
+  });
+  const [userAchievements, setUserAchievements] = useState([]);
+
+  // Static achievements data (will be merged with user's unlocked status)
+  const allAchievements = [
     { name: "First Scan", icon: "🔍", unlocked: true, date: "2024-05-01" },
     { name: "Eco Warrior", icon: "🌱", unlocked: true, date: "2024-05-15" },
     { name: "Data Detective", icon: "🕵️", unlocked: true, date: "2024-05-28" },
-    { name: "Green Champion", icon: "🏆", unlocked: false, requirement: "50 more scans" },
+ { name: "Green Champion", icon: "🏆", unlocked: false, requirement: "Unlock 5 Eco Warrior achievements" },
     { name: "Planet Protector", icon: "🌍", unlocked: false, requirement: "Save 100kg CO₂" },
     { name: "Sustainability Guru", icon: "🧙‍♂️", unlocked: false, requirement: "Reach level 10" }
   ];
@@ -33,15 +49,44 @@ const UserDashboard = ({ stats }) => {
     { name: 'Home & Garden', value: 8, color: '#ef4444' }
   ];
 
-  const currentLevel = Math.floor(stats.totalScans / 25) + 1;
-  const nextLevelProgress = (stats.totalScans % 25) / 25 * 100;
-  const scansToNextLevel = 25 - (stats.totalScans % 25);
+  const currentLevel = Math.floor(userStats.totalScans / 25) + 1;
+  const nextLevelProgress = (userStats.totalScans % 25) / 25 * 100;
+  const scansToNextLevel = 25 - (userStats.totalScans % 25);
+
+  useEffect(() => {
+    if (!user) {
+      // Handle unauthenticated user: reset stats and achievements
+      setUserStats({
+        totalScans: 0,
+        avgScore: 0,
+        co2Saved: 0,
+        rank: 0,
+        badges: 0,
+      });
+      setUserAchievements([]);
+      return;
+    }
+
+    const profileRef = doc(db, 'users', user.uid, 'profile');
+    const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setUserStats(docSnap.data() as UserStats);
+      }
+    });
+
+    const achievementsQuery = query(collection(db, 'users', user.uid, 'achievements'), orderBy('unlockedDate'));
+    const unsubscribeAchievements = onSnapshot(achievementsQuery, (snapshot) => {
+      setUserAchievements(snapshot.docs.map(doc => doc.data()));
+    });
+
+    return () => { unsubscribeProfile(); unsubscribeAchievements(); };
+  }, [user]);
 
   const leaderboard = [
-    { rank: 1, name: "EcoMaster_2024", scans: 2156, co2Saved: 124.3 },
+ { rank: 1, name: "EcoMaster_2024", scans: 2156, co2Saved: 124.3 }, // Static placeholder
     { rank: 2, name: "GreenGuardian", scans: 1892, co2Saved: 108.7 },
     { rank: 3, name: "SustainableLife", scans: 1654, co2Saved: 95.2 },
-    { rank: stats.rank, name: "You", scans: stats.totalScans, co2Saved: stats.co2Saved, highlight: true }
+    { rank: userStats.rank, name: "You", scans: userStats.totalScans, co2Saved: userStats.co2Saved, highlight: true }
   ];
 
   return (
@@ -53,7 +98,7 @@ const UserDashboard = ({ stats }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-100 text-sm">Total Scans</p>
-                <p className="text-2xl font-bold">{stats.totalScans}</p>
+                <p className="text-2xl font-bold">{userStats.totalScans}</p>
               </div>
               <Target className="w-8 h-8 text-green-200" />
             </div>
@@ -65,7 +110,7 @@ const UserDashboard = ({ stats }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100 text-sm">Avg Score</p>
-                <p className="text-2xl font-bold">{stats.avgScore}</p>
+                <p className="text-2xl font-bold">{userStats.avgScore}</p>
               </div>
               <TrendingUp className="w-8 h-8 text-blue-200" />
             </div>
@@ -77,7 +122,7 @@ const UserDashboard = ({ stats }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-100 text-sm">CO₂ Saved</p>
-                <p className="text-2xl font-bold">{stats.co2Saved}kg</p>
+                <p className="text-2xl font-bold">{userStats.co2Saved}kg</p>
               </div>
               <Leaf className="w-8 h-8 text-purple-200" />
             </div>
@@ -89,7 +134,7 @@ const UserDashboard = ({ stats }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-orange-100 text-sm">Global Rank</p>
-                <p className="text-2xl font-bold">#{stats.rank}</p>
+                <p className="text-2xl font-bold">#{userStats.rank}</p>
               </div>
               <Trophy className="w-8 h-8 text-orange-200" />
             </div>
@@ -115,19 +160,19 @@ const UserDashboard = ({ stats }) => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Progress to Level {currentLevel + 1}</span>
-                <span>{scansToNextLevel} scans to go</span>
+                <span>{scansToNextLevel} scans to go (est.)</span>
               </div>
               <Progress value={nextLevelProgress} className="h-3" />
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-center">
               <div className="p-3 bg-green-50 rounded-lg">
-                <div className="text-lg font-bold text-green-600">{stats.badges}</div>
-                <div className="text-sm text-green-700">Badges Earned</div>
+                <div className="text-lg font-bold text-green-600">{userStats.badges}</div>
+ <div className="text-sm text-green-700">Achievements</div>
               </div>
               <div className="p-3 bg-blue-50 rounded-lg">
-                <div className="text-lg font-bold text-blue-600">{Math.round(stats.totalScans / 7)}</div>
-                <div className="text-sm text-blue-700">Weekly Avg</div>
+                <div className="text-lg font-bold text-blue-600">{Math.round(userStats.totalScans / 7)}</div>
+                <div className="text-sm text-blue-700">Avg Scans/Wk</div>
               </div>
             </div>
           </CardContent>
@@ -174,11 +219,14 @@ const UserDashboard = ({ stats }) => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
-              {achievements.map((achievement, index) => (
-                <div 
+ {allAchievements.map((achievement, index) => {
+                const userUnlocked = userAchievements.find(ua => ua.name === achievement.name);
+                const isUnlocked = !!userUnlocked;
+
+                return <div
                   key={index}
                   className={`p-3 rounded-lg border-2 transition-all ${
-                    achievement.unlocked 
+ isUnlocked
                       ? 'border-green-200 bg-green-50' 
                       : 'border-gray-200 bg-gray-50 opacity-60'
                   }`}
@@ -189,7 +237,7 @@ const UserDashboard = ({ stats }) => {
                     {achievement.unlocked ? (
                       <div className="text-xs text-green-600 mt-1">
                         <Calendar className="w-3 h-3 inline mr-1" />
-                        {achievement.date}
+ {userUnlocked?.unlockedDate?.toDate().toLocaleDateString()}
                       </div>
                     ) : (
                       <div className="text-xs text-gray-500 mt-1">
@@ -198,7 +246,7 @@ const UserDashboard = ({ stats }) => {
                     )}
                   </div>
                 </div>
-              ))}
+ })}
             </div>
           </CardContent>
         </Card>

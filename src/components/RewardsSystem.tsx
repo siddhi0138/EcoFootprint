@@ -1,13 +1,15 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useUserData } from '@/contexts/UserDataContext';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
 import { 
   Gift, 
-  Trophy, 
+  Trophy,
   Star, 
   Coins,
   Target,
@@ -17,8 +19,32 @@ import {
   Crown
 } from 'lucide-react';
 
+import { doc, onSnapshot, setDoc, updateDoc, increment, arrayUnion } from 'firebase/firestore';
+
+interface UserRewardsData {
+  totalPoints: number;
+  level: number;
+  unlockedAchievements: number[];
+  redeemedRewards: number[];
+  // Add other relevant stats like totalScans, co2Saved if needed for achievements/challenges
+}
+
 const RewardsSystem = () => {
-  const { userStats, redeemReward, addPoints } = useUserData();
+  const { userStats } = useUserData();
+  const { user } = useAuth();
+  const [userRewards, setUserRewards] = useState<UserRewardsData>({
+    totalPoints: 0,
+    level: 1,
+    unlockedAchievements: [],
+    redeemedRewards: [],
+  });
+
+  // Mocked user stats for achievement/challenge progress (replace with actual data fetching if available)
+  const [mockUserStats, setMockUserStats] = useState({ 
+    totalScans: 15, // Example data
+    co2Saved: 8, // Example data (in kg)
+    currentWeekScans: 4, // Example data
+  });
   const nextRewardThreshold = 1000;
 
   const achievements = [
@@ -27,41 +53,44 @@ const RewardsSystem = () => {
       name: 'First Steps',
       description: 'Complete your first scan',
       points: 50,
-      unlocked: userStats.totalScans >= 1,
+      unlocked: mockUserStats.totalScans >= 1,
       icon: Target,
       color: 'bg-emerald-500'
     },
     {
       id: 2,
       name: 'Eco Explorer',
-      description: 'Scan 10 products',
+      description: 'Scan 15 products',
       points: 100,
-      unlocked: userStats.totalScans >= 10,
-      progress: Math.min((userStats.totalScans / 10) * 100, 100),
+      unlocked: mockUserStats.totalScans >= 15,
+      progress: Math.min((mockUserStats.totalScans / 15) * 100, 100),
       icon: Users,
       color: 'bg-blue-500'
     },
     {
       id: 3,
       name: 'Carbon Tracker',
-      description: 'Track 5kg of CO₂',
+      description: 'Track 8kg of CO₂',
       points: 200,
-      unlocked: userStats.co2Saved >= 5,
-      progress: Math.min((userStats.co2Saved / 5) * 100, 100),
+      unlocked: mockUserStats.co2Saved >= 8,
+      progress: Math.min((mockUserStats.co2Saved / 8) * 100, 100),
       icon: Leaf,
       color: 'bg-green-500'
     },
     {
       id: 4,
       name: 'Sustainability Champion',
-      description: 'Reach 1000 points',
+      description: 'Reach 500 points',
       points: 500,
-      unlocked: userStats.totalPoints >= 1000,
-      progress: Math.min((userStats.totalPoints / 1000) * 100, 100),
+      unlocked: userRewards.totalPoints >= 500,
+      progress: Math.min((userRewards.totalPoints / 500) * 100, 100),
       icon: Crown,
       color: 'bg-purple-500'
     }
   ];
+
+  // Filter achievements to check for unlocked based on current userRewards
+  const unlockedAchievements = achievements.filter(a => userRewards.unlockedAchievements.includes(a.id));
 
   const rewards = [
     {
@@ -98,36 +127,78 @@ const RewardsSystem = () => {
       description: '30-min sustainability expert call',
       type: 'service',
       icon: Users,
-      available: userStats.totalPoints >= 1000
+      available: userRewards.totalPoints >= 1000 // Check availability based on Firebase points
     }
   ];
 
   const dailyChallenges = [
     {
       task: 'Scan 3 eco-friendly products',
-      progress: Math.min(userStats.currentWeekScans, 3),
+      progress: Math.min(mockUserStats.currentWeekScans, 3),
       total: 3,
       points: 50,
-      completed: userStats.currentWeekScans >= 3
+      completed: mockUserStats.currentWeekScans >= 3
     },
     {
       task: 'Track carbon emission',
-      progress: userStats.co2Saved > 0 ? 1 : 0,
+      progress: mockUserStats.co2Saved > 0 ? 1 : 0,
       total: 1,
       points: 25,
-      completed: userStats.co2Saved > 0
+      completed: mockUserStats.co2Saved > 0
     },
     {
       task: 'Earn 100 points',
-      progress: Math.min(userStats.totalPoints, 100),
+      progress: Math.min(userRewards.totalPoints, 100), // Check progress based on Firebase points
       total: 100,
       points: 30,
-      completed: userStats.totalPoints >= 100
+      completed: userRewards.totalPoints >= 100 // Check completion based on Firebase points
     }
   ];
 
-  const handleRedeemReward = (reward: typeof rewards[0]) => {
-    if (redeemReward(reward.cost)) {
+  // Fetch user's rewards data from Firebase
+  useEffect(() => {
+    if (!user) {
+      setUserRewards({ 
+        totalPoints: 0,
+        level: 1,
+        unlockedAchievements: [],
+        redeemedRewards: [],
+      });
+      return;
+    }
+
+    const userRewardsRef = doc(db, 'users', user.uid, 'rewards', 'data');
+    const unsubscribeRewards = onSnapshot(userRewardsRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as UserRewardsData;
+        setUserRewards(data);
+      } else {
+        // Initialize if no data exists
+        setDoc(userRewardsRef, {
+          totalPoints: 0,
+          level: 1,
+          unlockedAchievements: [],
+          redeemedRewards: [],
+        }).catch(error => console.error("Error initializing user rewards data:", error));
+      }
+    }, (error) => {
+      console.error('Error fetching user rewards data:', error);
+    });
+
+    return () => unsubscribeRewards();
+  }, [user]);
+
+  const handleRedeemReward = async (reward: typeof rewards[0]) => {
+    if (!user) return;
+
+    const userRewardsRef = doc(db, 'users', user.uid, 'rewards', 'data');
+
+    // Check if user has enough points and reward is available and not already redeemed
+    if (userRewards.totalPoints >= reward.cost && reward.available && !userRewards.redeemedRewards.includes(reward.id)) {
+      await updateDoc(userRewardsRef, {
+        totalPoints: increment(-reward.cost),
+        redeemedRewards: arrayUnion(reward.id),
+      });
       console.log(`Redeemed: ${reward.name}`);
       // Here you could add toast notification or other feedback
     }
@@ -142,21 +213,21 @@ const RewardsSystem = () => {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-2xl font-bold">{userStats.totalPoints.toLocaleString()} Points</h2>
-              <p className="text-emerald-100">Level {userStats.level} • {getUnlockedAchievements()} achievements unlocked</p>
+              <h2 className="text-2xl font-bold">{userRewards.totalPoints.toLocaleString()} Points</h2>
+              <p className="text-emerald-100">Level {userRewards.level} • {unlockedAchievements.length} achievements unlocked</p>
             </div>
             <div className="flex items-center space-x-2">
               <Coins className="w-8 h-8" />
               <Trophy className="w-6 h-6" />
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Progress to premium rewards</span>
-              <span>{Math.max(nextRewardThreshold - userStats.totalPoints, 0)} points to go</span>
+              <span>{Math.max(nextRewardThreshold - userRewards.totalPoints, 0)} points to go</span>
             </div>
-            <Progress 
+            <Progress
               value={Math.min((userStats.totalPoints / nextRewardThreshold) * 100, 100)} 
               className="h-2 bg-emerald-400"
             />
@@ -178,13 +249,13 @@ const RewardsSystem = () => {
               <div key={index} className="bg-green-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-medium text-green-800">{challenge.task}</span>
-                  <Badge variant={challenge.completed ? "default" : "secondary"} className="bg-emerald-100 text-emerald-700">
+                  <Badge variant={challenge.completed ? "outline" : "secondary"} className={`${challenge.completed ? 'border-emerald-500 text-emerald-800 bg-emerald-100' : 'bg-gray-100 text-gray-600'}`}>
                     +{challenge.points}
                   </Badge>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Progress 
-                    value={(challenge.progress / challenge.total) * 100} 
+                    value={challenge.completed ? 100 : (challenge.progress / challenge.total) * 100}
                     className="flex-1 h-2"
                   />
                   <span className="text-sm text-green-600">
@@ -222,7 +293,7 @@ const RewardsSystem = () => {
                       <Progress value={achievement.progress} className="h-1 mt-2" />
                     )}
                   </div>
-                  <Badge variant={achievement.unlocked ? "default" : "secondary"} className="bg-emerald-100 text-emerald-700">
+                  <Badge variant={achievement.unlocked ? "outline" : "secondary"} className={`${achievement.unlocked ? 'border-emerald-500 text-emerald-800 bg-emerald-100' : 'bg-gray-100 text-gray-600'}`}>
                     +{achievement.points}
                   </Badge>
                 </div>
@@ -237,7 +308,7 @@ const RewardsSystem = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-green-700">
             <Gift className="w-5 h-5" />
-            <span>Rewards Store</span>
+            <span>Rewards Store</span> 
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -260,15 +331,15 @@ const RewardsSystem = () => {
                       <p className="text-sm text-green-600">{reward.description}</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-1">
                       <Coins className="w-4 h-4 text-amber-500" />
                       <span className="font-semibold text-green-800">{reward.cost}</span>
                     </div>
-                    <Button 
-                      size="sm" 
-                      disabled={!reward.available || userStats.totalPoints < reward.cost}
+                    <Button
+                      size="sm"
+                      disabled={!reward.available || userRewards.totalPoints < reward.cost || userRewards.redeemedRewards.includes(reward.id)}
                       className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                       onClick={() => handleRedeemReward(reward)}
                     >

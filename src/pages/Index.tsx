@@ -34,18 +34,18 @@ import ARProductScanner from '@/components/ARProductScanner';
 import InvestmentTracker from '@/components/InvestmentTracker';
 import ESGAnalyzer from '@/components/ESGAnalyzer';
 import TransportationPlanner from '@/components/TransportationPlanner';
-import EcoRecipeFinder from '@/components/EcoRecipeFinder';
+import { EcoRecipeFinder } from '@/components/EcoRecipeFinder';
 import EcoChatbot from '@/components/EcoChatbot';
 import AuthModal from '@/components/AuthModal';
-import { useAuthContext } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserDataProvider } from '@/contexts/UserDataContext';
 import { collection, doc, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/firebase";
-
 
 const Index = () => {
   console.log('Index component starting to render...');
 
-  const { user } = useAuthContext();
+  const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,16 +53,9 @@ const Index = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [recentScans, setRecentScans] = useState([]);
 
-
-  console.log('State initialized, activeTab:', activeTab);
-
+  console.log('State initialized');
 
   console.log('About to define handler functions...');
-
-  const handleNavigation = (tab) => {
-    console.log('Navigating to tab:', tab);
-    setActiveTab(tab);
-  };
 
   const handleGetStarted = () => {
     console.log('Get started clicked');
@@ -82,20 +75,21 @@ const Index = () => {
 
   useEffect(() => {
     const fetchRecentScans = async () => {
-      if (user) {
-        const scansCollectionRef = collection(db, "users", user.uid, "recentScans");
-        const scansQuery = query(scansCollectionRef, orderBy("timestamp", "desc"));
-        const querySnapshot = await getDocs(scansQuery);
-        const scansData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setRecentScans(scansData);
-      } else {
-        setRecentScans([]);
-      }
+      if (!user) return; // Only fetch if user is logged in
+      const scansCollectionRef = collection(db, "users", user.uid, "recentScans");
+      const scansQuery = query(scansCollectionRef, orderBy("timestamp", "desc"));
+      const querySnapshot = await getDocs(scansQuery);
+      const scansData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setRecentScans(scansData);
     };
 
     fetchRecentScans();
   }, [user]);
 
+  const handleNavigation = (tab: string) => {
+    console.log('Navigating to tab:', tab);
+    setActiveTab(tab);
+  };
 
   console.log('Handler functions defined, checking activeTab for render logic:', activeTab);
 
@@ -138,7 +132,7 @@ const Index = () => {
         <div className="container mx-auto px-6 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsContent value="scanner" className="mt-6">
-              <ProductScanner setScannedProduct={setScannedProduct} />
+              <ProductScanner />
             </TabsContent>
 
             <TabsContent value="ar-scanner" className="mt-6">
@@ -200,10 +194,10 @@ const Index = () => {
                             <span className="text-gray-500 bg-gray-100 px-3 py-1 rounded-xl dark:text-gray-400 dark:bg-gray-600">{product.category}</span>
                             {/* Assuming 'timestamp' is stored in Firebase and you want to display a formatted date */}
                             {product.timestamp && (
-                               <span className="text-gray-500 dark:text-gray-400">
-                                 {new Date(product.timestamp.seconds * 1000).toLocaleDateString()}
-                               </span>
-                             )}
+                              <span className="text-gray-500 dark:text-gray-400">
+                                {new Date(product.timestamp.seconds * 1000).toLocaleDateString()}
+                              </span>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
@@ -309,4 +303,10 @@ const Index = () => {
   );
 };
 
-export default Index;
+const IndexWithUserDataProvider = () => (
+  <UserDataProvider>
+    <Index />
+  </UserDataProvider>
+);
+
+export default IndexWithUserDataProvider;

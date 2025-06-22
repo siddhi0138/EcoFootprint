@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '../contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUserData } from '@/contexts/UserDataContext';
@@ -20,7 +21,8 @@ import {
   PieChart,
   Pie,
   Cell
-} from 'recharts';
+} from 'recharts';import { db } from '../firebase';
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { 
   Car, 
   Plane, 
@@ -28,14 +30,23 @@ import {
   ShoppingBag, 
   Utensils, 
   TrendingDown, 
-  TrendingUp, 
   Target,
   Calculator,
-  Leaf
+  Leaf,
+TrendingUp,
 } from 'lucide-react';
+import { useEffect } from 'react';
 
 const CarbonTracker = () => {
-  const { carbonEntries, addCarbonEntry, userStats } = useUserData();
+  interface CarbonEntry {
+    id: string;
+    category: string;
+    amount: number;
+    description: string;
+    date: string;
+  }
+  const { currentUser } = useAuth();
+  const { userStats } = useUserData();
   const [newEntry, setNewEntry] = useState({
     category: 'transport',
     amount: '',
@@ -50,15 +61,48 @@ const CarbonTracker = () => {
     { id: 'travel', label: 'Travel', icon: Plane, color: 'purple' }
   ];
 
-  const handleAddEntry = () => {
-    if (newEntry.amount && newEntry.description) {
-      addCarbonEntry({
+  const [carbonEntries, setCarbonEntries] = useState<CarbonEntry[]>([]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setCarbonEntries([]);
+      return;
+    }
+
+    const entriesCollectionRef = collection(db, `users/${currentUser.uid}/carbonEntries`);
+    const q = query(entriesCollectionRef, orderBy('timestamp', 'desc') as any);
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const entries: CarbonEntry[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+ category: doc.data().category,
+ amount: doc.data().amount, // Assuming 'amount' is stored as a number in Firebase
+ description: doc.data().description,
+ date: doc.data().timestamp?.toDate().toISOString().split('T')[0] || '', // Convert timestamp to date string
+
+      }));
+      setCarbonEntries(entries);
+    });
+
+    return () => unsubscribe(); // Cleanup subscription on unmount
+  }, [currentUser]);
+
+  const handleAddEntry = async () => {
+    if (!currentUser) {
+      // Handle not authenticated case (e.g., show login prompt)
+      console.log("User not authenticated. Cannot add entry.");
+      return;
+      }
+
+    if (newEntry.amount && newEntry.description && parseFloat(newEntry.amount) > 0) {
+      const entriesCollectionRef = collection(db, `users/${currentUser.uid}/carbonEntries`);
+      await addDoc(entriesCollectionRef, {
         category: newEntry.category,
-        amount: parseFloat(newEntry.amount),
+        amount: parseFloat(newEntry.amount), // Store as number
         description: newEntry.description,
-        date: new Date().toISOString().split('T')[0]
+        timestamp: serverTimestamp() // Use server timestamp
       });
-      setNewEntry({ category: 'transport', amount: '', description: '' });
+      setNewEntry({ category: 'transport', amount: '', description: '' }); // Clear input fields
     }
   };
 
@@ -108,7 +152,7 @@ const CarbonTracker = () => {
   const categoryData = generateCategoryData();
 
   const getCurrentMonthEmissions = () => {
-    return userStats.co2Saved || 0;
+    return carbonEntries.reduce((sum, entry) => sum + entry.amount, 0);
   };
 
   return (
@@ -143,16 +187,16 @@ const CarbonTracker = () => {
             </div>
             <div className="bg-white p-4 rounded-lg border">
               <div>
-                <p className="text-sm text-gray-600">This Week</p>
-                <p className="text-2xl font-bold text-purple-600">{userStats.currentWeekScans}</p>
+                <p className="text-sm text-gray-600">Carbon Entries</p>
+                <p className="text-2xl font-bold text-blue-600">{carbonEntries.length}</p>
               </div>
             </div>
             <div className="bg-white p-4 rounded-lg border">
               <div>
                 <p className="text-sm text-gray-600">Points Earned</p>
-                <p className="text-2xl font-bold text-orange-600">{Math.floor(userStats.co2Saved * 10)}</p>
+                <p className="text-2xl font-bold text-orange-600">{Math.floor(getCurrentMonthEmissions() * 10)}</p>
               </div>
-            </div>
+            </div> 
           </div>
         </CardContent>
       </Card>
@@ -160,7 +204,7 @@ const CarbonTracker = () => {
       <Tabs defaultValue="tracker" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="tracker">Add Entry</TabsTrigger>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="overview">Recent Activity</TabsTrigger>
           <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
           <TabsTrigger value="goals">Goals</TabsTrigger>
         </TabsList>
@@ -253,7 +297,7 @@ const CarbonTracker = () => {
                 </Card>
 
                 {categoryData.length > 0 && (
-                  <Card>
+                  <Card className="hidden md:block"> {/* Hide on small screens */}
                     <CardHeader>
                       <CardTitle>Emissions by Category</CardTitle>
                     </CardHeader>
@@ -281,7 +325,7 @@ const CarbonTracker = () => {
                   </Card>
                 )}
               </div>
-
+              
               <Card>
                 <CardHeader>
                   <CardTitle>Recent Activities</CardTitle>
@@ -347,8 +391,8 @@ const CarbonTracker = () => {
         <TabsContent value="goals" className="space-y-4">
           <div className="grid gap-4">
             {[
-              { title: 'Track 10 carbon activities', progress: Math.min((carbonEntries.length / 10) * 100, 100), target: '10 entries', current: `${carbonEntries.length} entries` },
-              { title: 'Reduce weekly emissions', progress: userStats.currentWeekScans > 0 ? 60 : 0, target: '5 kg CO₂', current: `${userStats.co2Saved.toFixed(1)} kg CO₂` },
+              { title: 'Track 10 carbon activities', progress: Math.min((carbonEntries.length / 10) * 100, 100), target: '10 entries', current: `${carbonEntries.length} entries` }, // Updated progress
+              { title: 'Reduce weekly emissions', progress: getCurrentMonthEmissions() > 0 ? 60 : 0, target: '5 kg CO₂', current: `${getCurrentMonthEmissions().toFixed(1)} kg CO₂` }, // Updated current value
               { title: 'Earn 500 points from tracking', progress: Math.min((userStats.totalPoints / 500) * 100, 100), target: '500 points', current: `${userStats.totalPoints} points` }
             ].map((goal, index) => (
               <Card key={index}>

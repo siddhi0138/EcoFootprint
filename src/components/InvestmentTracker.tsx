@@ -1,21 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { collection, doc, onSnapshot, addDoc } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { 
-  TrendingUp, 
-  DollarSign, 
-  Leaf, 
-  PieChart,
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  TrendingUp,
   ArrowUp,
+  ArrowDownLeft,
   ArrowDown,
   Plus,
   Target,
+  Leaf,
   Globe,
   Zap,
+  DollarSign,
   Search,
   Filter
 } from 'lucide-react';
@@ -26,16 +30,54 @@ const InvestmentTracker = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedInvestment, setSelectedInvestment] = useState(null);
   const [investmentAmount, setInvestmentAmount] = useState('');
+  const [portfolio, setPortfolio] = useState({ 
+    totalValue: 0, 
+    sustainabilityScore: 0, 
+    greenPercentage: 0, 
+    carbonOffset: 0, 
+    monthlyReturn: 0, 
+    esgRating: 'N/A' 
+  } as any);
+  const [userInvestments, setUserInvestments] = useState([]);
   const { incrementInvestment, addPoints, userStats } = useUserData();
+  const { currentUser } = useAuth() as { currentUser: any };
 
-  const portfolio = {
-    totalValue: 125000 + (userStats.investmentsMade * 10000),
-    sustainabilityScore: 78 + Math.min(userStats.investmentsMade * 2, 22),
-    greenPercentage: 65 + Math.min(userStats.investmentsMade * 3, 35),
-    carbonOffset: 15.2 + (userStats.investmentsMade * 2.5),
-    monthlyReturn: 8.5,
-    esgRating: userStats.investmentsMade >= 3 ? 'AAA' : userStats.investmentsMade >= 1 ? 'AA' : 'A'
-  };
+  // Calculate portfolio metrics from userInvestments
+  useEffect(() => {
+    const investmentsCollectionRef = collection(db, `users/${currentUser.uid}/investments`);
+    const unsubscribe = onSnapshot(investmentsCollectionRef, (snapshot: any) => {
+      const investmentsData: any = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setUserInvestments(investmentsData);
+
+      // Calculate portfolio data from investmentsData
+      const portfolioData = investmentsData.reduce((acc: any, investment: any) => {
+        acc.totalValue += investment.value || 0;
+        acc.sustainabilityScore += (investment.sustainabilityScore || 0) * (investment.value || 0);
+        acc.greenPercentage += (investment.category === 'Clean Energy' || investment.category === 'Renewable Energy' || investment.category === 'Green Tech') ? investment.value : 0;
+        acc.carbonOffset += parseFloat(investment.impact?.replace(/[^0-9.-]+/g,"") || 0); // Assuming impact is in kg CO2 and converting to tonnes
+        // You'll need to implement logic to calculate monthlyReturn and esgRating based on your investment data structure and goals. This is a placeholder.
+        return acc;
+      }, {
+        totalValue: 0, 
+        sustainabilityScore: 0, 
+        greenPercentage: 0, 
+        carbonOffset: 0, 
+        monthlyReturn: 0, 
+        esgRating: 'N/A' 
+      });
+
+      // Calculate weighted averages for scores/percentages
+      if (portfolioData.totalValue > 0) {
+        portfolioData.sustainabilityScore = portfolioData.sustainabilityScore / portfolioData.totalValue;
+        portfolioData.greenPercentage = portfolioData.greenPercentage / portfolioData.totalValue;
+      }
+
+      // You'll need to implement logic to calculate monthlyReturn and esgRating based on your investment data structure and goals. This is a placeholder.
+
+      setPortfolio(portfolioData);
+    });
+    return () => unsubscribe();
+  }, [userInvestments, currentUser]); // Depend on userInvestments and currentUser
 
   const investments = [
     {
@@ -121,15 +163,37 @@ const InvestmentTracker = () => {
     }
   ];
 
-  const handleViewDetails = (investment) => {
+  const handleViewDetails = (investment: any) => {
     setSelectedInvestment(investment);
     addPoints(5);
   };
 
-  const handleAddInvestment = (investment) => {
+  const addInvestmentToFirestore = async (investmentData: any) => {
+    if (currentUser) {
+      try {
+        const investmentsCollectionRef = collection(db, `users/${currentUser.uid}/investments`);
+        await addDoc(investmentsCollectionRef, investmentData);
+        addPoints(100); // Award points for adding an investment
+      } catch (error) {
+        console.error("Error adding investment to Firestore: ", error);
+      }
+    }
+  };
+
+  const handleAddInvestment = async (investment: any) => {
     if (investmentAmount && parseFloat(investmentAmount) >= investment.minInvestment) {
+      const newInvestment = {
+        name: investment.name,
+        symbol: investment.symbol,
+        value: parseFloat(investmentAmount),
+        sustainabilityScore: investment.sustainabilityScore,
+        category: investment.category,
+        impact: investment.impact, // You might want to calculate actual impact based on amount
+        type: 'Stock', // Or determine type based on source
+        timestamp: new Date(),
+      };
+      await addInvestmentToFirestore(newInvestment);
       incrementInvestment();
-      addPoints(100);
       alert(`Successfully added $${investmentAmount} to ${investment.name}!`);
       setInvestmentAmount('');
       setSelectedInvestment(null);
@@ -138,22 +202,29 @@ const InvestmentTracker = () => {
     }
   };
 
-  const handleInvestNow = (fund) => {
+  const handleInvestNow = async (fund: any) => {
     if (investmentAmount && parseFloat(investmentAmount) >= fund.minInvestment) {
+      const newInvestment = {
+        name: fund.name,
+        type: fund.type,
+        value: parseFloat(investmentAmount),
+        sustainabilityScore: fund.score,
+        description: fund.description,
+        timestamp: new Date(),
+      };
+      await addInvestmentToFirestore(newInvestment);
       incrementInvestment();
-      addPoints(100);
       alert(`Successfully invested $${investmentAmount} in ${fund.name}!`);
       setInvestmentAmount('');
     } else {
       alert(`Minimum investment for ${fund.name} is $${fund.minInvestment}`);
     }
   };
-
-  const filteredInvestments = investments.filter(investment =>
+  
+  const filteredInvestments = userInvestments.filter((investment: any) =>
     investment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     investment.symbol.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
   const filteredFunds = sustainableFunds.filter(fund =>
     fund.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -243,7 +314,7 @@ const InvestmentTracker = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white/70 rounded-xl p-4 text-center">
               <DollarSign className="w-6 h-6 mx-auto mb-2 text-emerald-600" />
-              <div className="text-2xl font-bold text-gray-800">${portfolio.totalValue.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-gray-800">${portfolio?.totalValue?.toLocaleString() || '0'}</div>
               <div className="text-sm text-gray-600">Total Value</div>
             </div>
             <div className="bg-white/70 rounded-xl p-4 text-center">
@@ -263,6 +334,7 @@ const InvestmentTracker = () => {
             </div>
           </div>
 
+          {/* Tabs for Portfolio, Discover, and Impact */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="portfolio">My Portfolio</TabsTrigger>
@@ -419,7 +491,7 @@ const InvestmentTracker = () => {
                       <span className="font-medium">Carbon Offset Progress</span>
                     </div>
                     <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-sm text-gray-700">
                         <span>Annual Goal: 20T CO₂</span>
                         <span>{portfolio.carbonOffset}T achieved</span>
                       </div>
@@ -433,7 +505,7 @@ const InvestmentTracker = () => {
                       <span className="font-medium">ESG Alignment</span>
                     </div>
                     <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-sm text-gray-700">
                         <span>Target: 80% Green</span>
                         <span>{portfolio.greenPercentage}% achieved</span>
                       </div>
@@ -456,7 +528,7 @@ const InvestmentTracker = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                   <div className="text-center p-4 bg-white rounded-lg border">
                     <div className="text-2xl font-bold text-emerald-600">{userStats.investmentsMade}</div>
-                    <div className="text-sm text-gray-600">Investments Made</div>
+                    <div className="text-sm text-gray-600">Investments Added</div>
                   </div>
                   <div className="text-center p-4 bg-white rounded-lg border">
                     <div className="text-2xl font-bold text-blue-600">{portfolio.esgRating}</div>

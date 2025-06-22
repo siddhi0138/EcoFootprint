@@ -1,26 +1,104 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { 
-  AlertTriangle, 
-  MapPin, 
-  Cloud, 
+import {
+  AlertTriangle,
+  MapPin,
+  Cloud,
   Thermometer,
   Wind,
   Droplets,
   Bell,
   Settings,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
 } from 'lucide-react';
+import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+} from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+
+interface Alert {
+  id: number;
+  type: string;
+  severity: 'high' | 'medium' | 'low';
+  title: string;
+  location: string;
+  description: string;
+  time: string; // Consider using a timestamp
+  icon: any;
+  color: string; // Consider deriving color from severity
+  trend: 'worsening' | 'stable' | 'improving';
+}
+
+interface UserEnvironmentalAlertsData {
+    alertsEnabled: boolean;
+    preferredLocation: string; // Example field
+    preferredAlertTypes: string[]; // Example field
+    dismissedAlerts: number[]; // Array of dismissed alert IDs
+}
+
 
 const EnvironmentalAlerts = () => {
-  const [alertsEnabled, setAlertsEnabled] = useState(true);
+  const { user } = useAuth(); // Get user from useAuth
+  const [firebaseUserAlertsData, setFirebaseUserAlertsData] = useState<UserEnvironmentalAlertsData>({ // New state for Firebase data
+      alertsEnabled: true, // Default value
+      preferredLocation: 'Your Area', // Default value
+      preferredAlertTypes: [], // Default value
+      dismissedAlerts: [], // Default value
+  });
 
-  const alerts = [
+  // Fetch user environmental alerts data
+  useEffect(() => {
+    if (!user) {
+      setFirebaseUserAlertsData({
+          alertsEnabled: true,
+          preferredLocation: 'Your Area',
+          preferredAlertTypes: [],
+          dismissedAlerts: [],
+      });
+      return;
+    }
+
+    const userAlertsRef = doc(db, 'users', user.uid, 'environmentalAlerts', 'preferences');
+    const unsubscribeAlertsData = onSnapshot(userAlertsRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as UserEnvironmentalAlertsData; // Cast with proper type
+        setFirebaseUserAlertsData(data);
+      } else {
+        // Initialize if no data exists
+         setFirebaseUserAlertsData({
+             alertsEnabled: true,
+             preferredLocation: 'Your Area',
+             preferredAlertTypes: [],
+             dismissedAlerts: [],
+         });
+        // Optionally create the document with initial empty values
+         setDoc(userAlertsRef, {
+           alertsEnabled: true,
+           preferredLocation: 'Your Area',
+           preferredAlertTypes: [],
+           dismissedAlerts: [],
+         }).catch(error => console.error("Error initializing user environmental alerts data:", error));
+      }
+    }, (error) => {
+      console.error('Error fetching user environmental alerts data:', error);
+    });
+
+    return () => unsubscribeAlertsData();
+  }, [user]);
+
+
+  const alerts: Alert[] = [ // Specify type
     {
       id: 1,
       type: 'air-quality',
@@ -31,7 +109,7 @@ const EnvironmentalAlerts = () => {
       time: '2 hours ago',
       icon: Cloud,
       color: 'bg-red-500',
-      trend: 'worsening'
+      trend: 'worsening',
     },
     {
       id: 2,
@@ -43,7 +121,7 @@ const EnvironmentalAlerts = () => {
       time: '4 hours ago',
       icon: Thermometer,
       color: 'bg-orange-500',
-      trend: 'stable'
+      trend: 'stable',
     },
     {
       id: 3,
@@ -55,8 +133,8 @@ const EnvironmentalAlerts = () => {
       time: '6 hours ago',
       icon: Wind,
       color: 'bg-green-500',
-      trend: 'improving'
-    }
+      trend: 'improving',
+    },
   ];
 
   const metrics = [
@@ -66,7 +144,7 @@ const EnvironmentalAlerts = () => {
       unit: 'AQI',
       status: 'Unhealthy',
       icon: Cloud,
-      color: 'text-red-600'
+      color: 'text-red-600',
     },
     {
       label: 'UV Index',
@@ -74,7 +152,7 @@ const EnvironmentalAlerts = () => {
       unit: 'High',
       status: 'Use Protection',
       icon: Thermometer,
-      color: 'text-orange-600'
+      color: 'text-orange-600',
     },
     {
       label: 'Pollen Count',
@@ -82,11 +160,36 @@ const EnvironmentalAlerts = () => {
       unit: 'Medium',
       status: 'Moderate',
       icon: Droplets,
-      color: 'text-yellow-600'
-    }
+      color: 'text-yellow-600',
+    },
   ];
 
-  const getSeverityColor = (severity) => {
+  const handleAlertsEnabledChange = async (checked: boolean) => { // Make async, specify type
+    if (!user) return;
+
+    const userAlertsRef = doc(db, 'users', user.uid, 'environmentalAlerts', 'preferences');
+     await updateDoc(userAlertsRef, {
+       alertsEnabled: checked, // Update alertsEnabled in Firebase
+     });
+
+    // State will be updated by the onSnapshot listener
+  };
+
+  const handleDismissAlert = async (alertId: number) => { // New function, make async, specify type
+      if (!user) return;
+
+      const userAlertsRef = doc(db, 'users', user.uid, 'environmentalAlerts', 'preferences');
+
+      if (!firebaseUserAlertsData.dismissedAlerts.includes(alertId)) {
+          await updateDoc(userAlertsRef, {
+              dismissedAlerts: arrayUnion(alertId) // Add alert ID to dismissedAlerts array
+          });
+           // State will be updated by the onSnapshot listener
+      }
+  };
+
+
+  const getSeverityColor = (severity: string) => { // Specify type
     switch (severity) {
       case 'high': return 'bg-red-100 text-red-800 border-red-200';
       case 'medium': return 'bg-orange-100 text-orange-800 border-orange-200';
@@ -94,6 +197,10 @@ const EnvironmentalAlerts = () => {
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
+
+   // Filter alerts based on dismissed alerts
+   const filteredAlerts = alerts.filter(alert => !firebaseUserAlertsData.dismissedAlerts.includes(alert.id));
+
 
   return (
     <div className="space-y-6">
@@ -105,9 +212,10 @@ const EnvironmentalAlerts = () => {
               <span>Environmental Alerts</span>
             </CardTitle>
             <div className="flex items-center space-x-2">
-              <Switch 
-                checked={alertsEnabled} 
-                onCheckedChange={setAlertsEnabled}
+              <Switch
+                checked={firebaseUserAlertsData.alertsEnabled} // Use Firebase data
+                onCheckedChange={handleAlertsEnabledChange}
+                disabled={!user} // Disable if no user
               />
               <span className="text-sm text-sage-600">Live Updates</span>
             </div>
@@ -139,8 +247,9 @@ const EnvironmentalAlerts = () => {
               <Bell className="w-4 h-4" />
               <span>Active Alerts</span>
             </h3>
-            
-            {alerts.map((alert) => (
+
+            {/* Use filteredAlerts */}
+            {filteredAlerts.map((alert) => (
               <div key={alert.id} className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-sage-100">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-3">
@@ -158,21 +267,19 @@ const EnvironmentalAlerts = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Badge className={getSeverityColor(alert.severity)}>
-                      {alert.severity}
-                    </Badge>
+                    <Badge className={getSeverityColor(alert.severity)}>{alert.severity}</Badge>
                     {alert.trend === 'worsening' && <TrendingDown className="w-4 h-4 text-red-500" />}
                     {alert.trend === 'improving' && <TrendingUp className="w-4 h-4 text-green-500" />}
                   </div>
                 </div>
-                
+
                 <p className="text-sage-700 mb-4">{alert.description}</p>
-                
+
                 <div className="flex items-center justify-between">
                   <Button variant="outline" size="sm" className="border-sage-200 hover:bg-sage-50">
                     View Details
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-sage-600">
+                  <Button variant="ghost" size="sm" className="text-sage-600" onClick={() => handleDismissAlert(alert.id)}> {/* Add dismiss handler */}
                     Dismiss
                   </Button>
                 </div>

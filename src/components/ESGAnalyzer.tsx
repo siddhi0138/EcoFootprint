@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { 
-  Building2, 
-  Search, 
-  TrendingUp, 
+import {
+  Building2,
+  Search,
+  TrendingUp,
   TrendingDown,
   Leaf,
   Users,
@@ -21,151 +21,228 @@ import {
   Award,
   ExternalLink,
   Download,
-  FileText
+  FileText,
 } from 'lucide-react';
 import { useUserData } from '@/contexts/UserDataContext';
+import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+} from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
 
 const ESGAnalyzer = () => {
+  const { user } = useAuth(); // Get user from useAuth
+  const { incrementESGReport, addPoints } = useUserData();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [analyzedCompanies, setAnalyzedCompanies] = useState(new Set());
-  const [comparisonList, setComparisonList] = useState([]);
-  const { incrementESGReport, addPoints } = useUserData();
+  const [firebaseAnalyzedCompanies, setFirebaseAnalyzedCompanies] = useState(new Set<string>()); // Store tickers
+  const [firebaseComparisonList, setFirebaseComparisonList] = useState<any[]>([]); // Store company objects or tickers
+
+  // Fetch user's ESG analysis data
+  useEffect(() => {
+    if (!user) {
+      setFirebaseAnalyzedCompanies(new Set());
+      setFirebaseComparisonList([]);
+      return;
+    }
+
+    const userEsgRef = doc(db, 'users', user.uid, 'esgAnalysis', 'data');
+    const unsubscribeEsg = onSnapshot(userEsgRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setFirebaseAnalyzedCompanies(new Set(data.analyzedCompanies || []));
+        // Fetch full company data for comparison list if storing tickers
+        if (data.comparisonList && data.comparisonList.length > 0) {
+             const companiesToCompare = companies.filter(company => data.comparisonList.includes(company.ticker));
+             setFirebaseComparisonList(companiesToCompare);
+        } else {
+             setFirebaseComparisonList([]);
+        }
+
+      } else {
+        // Initialize if no data exists
+        setFirebaseAnalyzedCompanies(new Set());
+        setFirebaseComparisonList([]);
+        // Optionally create the document with initial empty values
+         setDoc(userEsgRef, {
+           analyzedCompanies: [],
+           comparisonList: []
+         }).catch(error => console.error("Error initializing user ESG analysis data:", error));
+      }
+    }, (error) => {
+      console.error('Error fetching user ESG analysis data:', error);
+    });
+
+    return () => unsubscribeEsg();
+  }, [user]);
+
 
   const companies = [
     {
-      name: "Microsoft Corporation",
-      ticker: "MSFT",
+      name: 'Microsoft Corporation',
+      ticker: 'MSFT',
       esgScore: 91,
       environmental: 88,
       social: 92,
       governance: 93,
-      rating: "AAA",
-      trend: "up",
-      marketCap: "2.8T",
-      sector: "Technology",
+      rating: 'AAA',
+      trend: 'up',
+      marketCap: '2.8T',
+      sector: 'Technology',
       initiatives: [
-        "Carbon negative by 2030",
-        "100% renewable energy by 2025",
-        "Inclusive hiring practices",
-        "AI for Good programs"
+        'Carbon negative by 2030',
+        '100% renewable energy by 2025',
+        'Inclusive hiring practices',
+        'AI for Good programs',
       ],
-      risks: ["Data privacy regulations", "Antitrust scrutiny"],
-      certifications: ["B-Corp", "UN Global Compact", "CDP A-List"],
+      risks: ['Data privacy regulations', 'Antitrust scrutiny'],
+      certifications: ['B-Corp', 'UN Global Compact', 'CDP A-List'],
       report: {
-        sustainability: "Leading carbon reduction initiatives with measurable impact",
-        governance: "Strong board diversity and transparent reporting",
-        social: "Comprehensive diversity and inclusion programs"
-      }
+        sustainability: 'Leading carbon reduction initiatives with measurable impact',
+        governance: 'Strong board diversity and transparent reporting',
+        social: 'Comprehensive diversity and inclusion programs',
+      },
     },
     {
-      name: "Tesla, Inc.",
-      ticker: "TSLA", 
+      name: 'Tesla, Inc.',
+      ticker: 'TSLA',
       esgScore: 85,
       environmental: 95,
       social: 78,
       governance: 82,
-      rating: "AA",
-      trend: "up",
-      marketCap: "800B",
-      sector: "Automotive",
+      rating: 'AA',
+      trend: 'up',
+      marketCap: '800B',
+      sector: 'Automotive',
       initiatives: [
-        "Accelerating sustainable transport",
-        "Solar energy solutions",
-        "Battery recycling program",
-        "Gigafactory renewable energy"
+        'Accelerating sustainable transport',
+        'Solar energy solutions',
+        'Battery recycling program',
+        'Gigafactory renewable energy',
       ],
-      risks: ["Labor relations", "Executive governance"],
-      certifications: ["ISO 14001", "LEED Certified Facilities"]
+      risks: ['Labor relations', 'Executive governance'],
+      certifications: ['ISO 14001', 'LEED Certified Facilities'],
     },
     {
-      name: "ExxonMobil Corporation",
-      ticker: "XOM",
+      name: 'ExxonMobil Corporation',
+      ticker: 'XOM',
       esgScore: 42,
       environmental: 35,
       social: 48,
       governance: 44,
-      rating: "C",
-      trend: "down",
-      marketCap: "450B",
-      sector: "Energy",
+      rating: 'C',
+      trend: 'down',
+      marketCap: '450B',
+      sector: 'Energy',
       initiatives: [
-        "Low-carbon solutions research",
-        "Methane reduction targets",
-        "Community investment programs"
+        'Low-carbon solutions research',
+        'Methane reduction targets',
+        'Community investment programs',
       ],
-      risks: ["Climate litigation", "Stranded assets", "Regulatory pressure"],
-      certifications: ["API Environmental Excellence"]
-    }
+      risks: ['Climate litigation', 'Stranded assets', 'Regulatory pressure'],
+      certifications: ['API Environmental Excellence'],
+    },
   ];
 
-  const handleCompanySelect = (company) => {
+  const handleCompanySelect = async (company) => { // Make async
     setSelectedCompany(company);
-    if (!analyzedCompanies.has(company.ticker)) {
-      setAnalyzedCompanies(new Set([...analyzedCompanies, company.ticker]));
-      incrementESGReport();
+    if (!user) return;
+
+    const userEsgRef = doc(db, 'users', user.uid, 'esgAnalysis', 'data');
+
+    if (!firebaseAnalyzedCompanies.has(company.ticker)) {
+      await updateDoc(userEsgRef, {
+         analyzedCompanies: arrayUnion(company.ticker) // Add ticker to analyzedCompanies array
+      });
+      incrementESGReport(); // This will update userStats in Firebase via useUserData
     }
   };
 
   const handleAnalyze = () => {
     if (searchQuery.trim()) {
       // Simulate analysis of searched company
-      addPoints(20);
+      // In a real application, you would call an API here to get ESG data
+      addPoints(20); // This will update userStats in Firebase via useUserData
       alert(`Analyzing ${searchQuery}... Analysis complete!`);
     }
   };
 
   const handleViewFullReport = (company) => {
-    addPoints(15);
+    addPoints(15); // This will update userStats in Firebase via useUserData
     alert(`Full ESG report for ${company.name} downloaded! This would typically open a detailed PDF report.`);
   };
 
-  const handleCompareCompanies = (company) => {
-    const newComparisonList = [...comparisonList];
-    const existingIndex = newComparisonList.findIndex(c => c.ticker === company.ticker);
-    
+  const handleCompareCompanies = async (company) => { // Make async
+    if (!user) return;
+
+    const userEsgRef = doc(db, 'users', user.uid, 'esgAnalysis', 'data');
+    const comparisonTickers = firebaseComparisonList.map(c => c.ticker); // Get tickers from comparison list
+
+    const existingIndex = comparisonTickers.findIndex(ticker => ticker === company.ticker);
+
     if (existingIndex >= 0) {
-      newComparisonList.splice(existingIndex, 1);
-    } else if (newComparisonList.length < 3) {
-      newComparisonList.push(company);
+      // Remove from comparison
+      await updateDoc(userEsgRef, {
+        comparisonList: arrayRemove(company.ticker) // Remove ticker from comparisonList array
+      });
+    } else if (comparisonTickers.length < 3) {
+      // Add to comparison
+       await updateDoc(userEsgRef, {
+         comparisonList: arrayUnion(company.ticker) // Add ticker to comparisonList array
+      });
+      addPoints(10); // This will update userStats in Firebase via useUserData
     } else {
       alert('You can compare up to 3 companies at once.');
       return;
     }
-    
-    setComparisonList(newComparisonList);
-    addPoints(10);
+
+    // State will be updated by the onSnapshot listener
   };
 
+   const handleClearComparison = async () => { // Make async
+       if (!user) return;
+       const userEsgRef = doc(db, 'users', user.uid, 'esgAnalysis', 'data');
+       await updateDoc(userEsgRef, {
+           comparisonList: [] // Clear the comparisonList array
+       });
+   };
+
+
   const getScoreColor = (score) => {
-    if (score >= 80) return "text-slate-800 bg-slate-100";
-    if (score >= 60) return "text-slate-700 bg-slate-200";
-    return "text-slate-600 bg-slate-300";
+    if (score >= 80) return 'text-slate-800 bg-slate-100';
+    if (score >= 60) return 'text-slate-700 bg-slate-200';
+    return 'text-slate-600 bg-slate-300';
   };
 
   const getRatingColor = (rating) => {
-    if (rating.startsWith('A')) return "bg-slate-800";
-    if (rating.startsWith('B')) return "bg-slate-600";
-    if (rating.startsWith('C')) return "bg-slate-400";
-    return "bg-slate-300";
+    if (rating.startsWith('A')) return 'bg-slate-800';
+    if (rating.startsWith('B')) return 'bg-slate-600';
+    if (rating.startsWith('C')) return 'bg-slate-400';
+    return 'bg-slate-300';
   };
 
   return (
     <div className="space-y-6">
       {/* Company Comparison Panel */}
-      {comparisonList.length > 0 && (
+      {firebaseComparisonList.length > 0 && (
         <Card className="bg-blue-50 border-blue-200">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Company Comparison ({comparisonList.length}/3)</span>
-              <Button variant="outline" onClick={() => setComparisonList([])}>
+              <span>Company Comparison ({firebaseComparisonList.length}/3)</span>
+              <Button variant="outline" onClick={handleClearComparison}> {/* Use new handler */}
                 Clear All
               </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {comparisonList.map((company, index) => (
+              {firebaseComparisonList.map((company, index) => (
                 <div key={index} className="bg-white p-4 rounded-lg border">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold">{company.name}</h4>
@@ -234,8 +311,8 @@ const ESGAnalyzer = () => {
           {/* Company Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {companies.map((company, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="bg-white border border-slate-200 rounded-xl p-5 cursor-pointer hover:shadow-md transition-all duration-200 hover:border-slate-300"
                 onClick={() => handleCompanySelect(company)}
               >
@@ -243,7 +320,9 @@ const ESGAnalyzer = () => {
                   <div className="flex-1">
                     <h3 className="font-bold text-slate-800 text-lg">{company.name}</h3>
                     <div className="flex items-center space-x-2 mt-2">
-                      <Badge variant="outline" className="text-xs border-slate-300 text-slate-700">{company.ticker}</Badge>
+                      <Badge variant="outline" className="text-xs border-slate-300 text-slate-700">
+                        {company.ticker}
+                      </Badge>
                       <Badge className={`text-xs text-white ${getRatingColor(company.rating)}`}>
                         {company.rating}
                       </Badge>
@@ -251,9 +330,7 @@ const ESGAnalyzer = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-slate-800">
-                      {company.esgScore}
-                    </div>
+                    <div className="text-2xl font-bold text-slate-800">{company.esgScore}</div>
                     {company.trend === 'up' ? (
                       <TrendingUp className="w-4 h-4 text-slate-600 ml-auto" />
                     ) : (
@@ -261,20 +338,22 @@ const ESGAnalyzer = () => {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-600">Environmental</span>
-                    <span className="font-semibold text-slate-800">{company.environmental}</span>
+                    <span className="font-semibold text-slate-800">
+                      {company.environmental}
+                    </span>
                   </div>
                   <Progress value={company.environmental} className="h-1.5" />
-                  
+
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-600">Social</span>
                     <span className="font-semibold text-slate-800">{company.social}</span>
                   </div>
                   <Progress value={company.social} className="h-1.5" />
-                  
+
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-600">Governance</span>
                     <span className="font-semibold text-slate-800">{company.governance}</span>
@@ -292,11 +371,15 @@ const ESGAnalyzer = () => {
                 <div>
                   <h2 className="text-2xl font-bold text-slate-800">{selectedCompany.name}</h2>
                   <div className="flex items-center space-x-3 mt-3">
-                    <Badge variant="outline" className="border-slate-300 text-slate-700">{selectedCompany.ticker}</Badge>
+                    <Badge variant="outline" className="border-slate-300 text-slate-700">
+                      {selectedCompany.ticker}
+                    </Badge>
                     <Badge className={`text-white ${getRatingColor(selectedCompany.rating)}`}>
                       ESG Rating: {selectedCompany.rating}
                     </Badge>
-                    <span className="text-sm text-slate-600">Market Cap: ${selectedCompany.marketCap}</span>
+                    <span className="text-sm text-slate-600">
+                      Market Cap: ${selectedCompany.marketCap}
+                    </span>
                     <span className="text-sm text-slate-600">{selectedCompany.sector}</span>
                   </div>
                 </div>
@@ -333,7 +416,10 @@ const ESGAnalyzer = () => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {selectedCompany.initiatives.map((initiative, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-200/50">
+                    <div
+                      key={index}
+                      className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-200/50"
+                    >
                       <CheckCircle className="w-4 h-4 text-slate-600 flex-shrink-0" />
                       <span className="text-sm text-slate-800">{initiative}</span>
                     </div>
@@ -349,7 +435,10 @@ const ESGAnalyzer = () => {
                 </h3>
                 <div className="space-y-3">
                   {selectedCompany.risks.map((risk, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-200/50">
+                    <div
+                      key={index}
+                      className="flex items-center space-x-3 p-3 bg-slate-50 rounded-lg border border-slate-200/50"
+                    >
                       <AlertTriangle className="w-4 h-4 text-slate-600 flex-shrink-0" />
                       <span className="text-sm text-slate-800">{risk}</span>
                     </div>
@@ -365,7 +454,11 @@ const ESGAnalyzer = () => {
                 </h3>
                 <div className="flex flex-wrap gap-3">
                   {selectedCompany.certifications.map((cert, index) => (
-                    <Badge key={index} variant="outline" className="border-slate-300 text-slate-700 bg-white px-4 py-2">
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className="border-slate-300 text-slate-700 bg-white px-4 py-2"
+                    >
                       <CheckCircle className="w-3 h-3 mr-2" />
                       {cert}
                     </Badge>
@@ -375,21 +468,23 @@ const ESGAnalyzer = () => {
 
               {/* Action Buttons */}
               <div className="flex space-x-3 mt-8 pt-6 border-t border-slate-200">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="border-slate-300 hover:bg-slate-50 text-slate-700"
                   onClick={() => handleViewFullReport(selectedCompany)}
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   View Full Report
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="border-slate-300 hover:bg-slate-50 text-slate-700"
                   onClick={() => handleCompareCompanies(selectedCompany)}
                 >
                   <BarChart3 className="w-4 h-4 mr-2" />
-                  {comparisonList.find(c => c.ticker === selectedCompany.ticker) ? 'Remove from Comparison' : 'Compare Companies'}
+                  {firebaseComparisonList.find((c) => c.ticker === selectedCompany.ticker)
+                    ? 'Remove from Comparison'
+                    : 'Compare Companies'}
                 </Button>
               </div>
             </div>

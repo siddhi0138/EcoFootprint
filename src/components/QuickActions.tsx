@@ -13,6 +13,9 @@ import {
   Eye,
   Brain
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const QuickActions = ({ onNavigate }) => {
   const quickActions = [
@@ -72,6 +75,22 @@ const QuickActions = ({ onNavigate }) => {
       textColor: 'text-indigo-700'
     }
   ];
+
+  const { user } = useAuth();
+
+  const handleActionClick = async (actionId: string) => {
+    if (user) {
+      try {
+        await addDoc(collection(db, `users/${user.uid}/quickActions`), {
+          actionId,
+          timestamp: serverTimestamp(),
+        });
+      } catch (error) {
+        console.error("Error logging quick action:", error);
+      }
+    }
+    onNavigate(actionId);
+  };
 
   return (
     <Card className="bg-white border-gray-200">

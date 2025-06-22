@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,12 +17,49 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
+import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 
 const SmartInsights = () => {
+  const { user } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState('week');
+  const [scannedProducts, setScannedProducts] = useState<any[]>([]);
+  const [carbonEntries, setCarbonEntries] = useState<any[]>([]);
 
+  // Fetch user's scanned products
+  useEffect(() => {
+    if (!user) {
+      setScannedProducts([]);
+      return;
+    }
+
+    const q = query(collection(db, `users/${user.uid}/scannedProducts`), orderBy('timestamp', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const productsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setScannedProducts(productsData);
+    }, (error) => {
+      console.error('Error fetching scanned products:', error);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // Fetch user's carbon entries
+  useEffect(() => {
+    if (!user) {
+      setCarbonEntries([]);
+      return;
+    }
+
+    const q = query(collection(db, `users/${user.uid}/carbonEntries`), orderBy('date', 'desc')); // Assuming 'date' is the field name
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const entriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCarbonEntries(entriesData);
+    }, (error) => console.error('Error fetching carbon entries:', error));
+    return () => unsubscribe();
+  }, [user]);
   const insights = [
-    {
+ {
       type: 'trend',
       title: 'Sustainability Score Trending Up',
       description: 'Your average score increased by 12% this month',
@@ -51,15 +88,32 @@ const SmartInsights = () => {
     }
   ];
 
-  const weeklyData = [
-    { day: 'Mon', scans: 5, avgScore: 78 },
-    { day: 'Tue', scans: 8, avgScore: 82 },
-    { day: 'Wed', scans: 3, avgScore: 75 },
-    { day: 'Thu', scans: 12, avgScore: 85 },
-    { day: 'Fri', scans: 7, avgScore: 80 },
-    { day: 'Sat', scans: 15, avgScore: 88 },
-    { day: 'Sun', scans: 9, avgScore: 83 }
-  ];
+ // Calculate weekly data based on fetched scanned products
+  const calculateWeeklyData = () => {
+ if (scannedProducts.length === 0) return [];
+
+    const today = new Date();
+    const oneWeekAgo = new Date(today.setDate(today.getDate() - 7));
+
+    const weeklyScans = scannedProducts.filter(product => {
+      const scanDate = new Date(product.timestamp?.toDate() || product.timestamp); // Handle Firestore Timestamp or Date
+      return scanDate >= oneWeekAgo;
+    });
+
+    const dailyData: { [key: string]: { scans: number, avgScore: number[], totalScore: number } } = {};
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    weeklyScans.forEach(scan => {
+      const scanDate = new Date(scan.timestamp?.toDate() || scan.timestamp);
+      const dayName = daysOfWeek[scanDate.getDay()];
+      if (!dailyData[dayName]) {
+        dailyData[dayName] = { scans: 0, avgScore: [], totalScore: 0 };
+      }
+      dailyData[dayName].scans++;
+      dailyData[dayName].totalScore += scan.sustainabilityScore;
+    });
+    return daysOfWeek.map(day => ({ day, scans: dailyData[day]?.scans || 0, avgScore: dailyData[day]?.scans ? Math.round(dailyData[day].totalScore / dailyData[day].scans) : 0 }));
+ };
 
   const personalizedTips = [
     {
@@ -140,7 +194,7 @@ const SmartInsights = () => {
                   <span>Weekly Activity</span>
                 </h3>
                 <div className="space-y-3">
-                  {weeklyData.map((day, index) => (
+                  {calculateWeeklyData().map((day, index) => (
                     <div key={index} className="flex items-center space-x-4">
                       <div className="w-12 text-sm font-medium text-gray-600">{day.day}</div>
                       <div className="flex-1 bg-gray-200 rounded-full h-3">
@@ -182,12 +236,21 @@ const SmartInsights = () => {
 
             <TabsContent value="month" className="mt-6">
               <div className="bg-white/80 rounded-xl p-6 border border-gray-100 text-center">
-                <PieChart className="w-12 h-12 mx-auto mb-4 text-indigo-600" />
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Monthly Analytics</h3>
-                <p className="text-gray-600">Detailed monthly insights and trends coming soon!</p>
+                {!user ? (
+                   <>
+                    <PieChart className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">Monthly Analytics</h3>
+                    <p className="text-gray-500">Log in to view your monthly sustainability trends.</p>
+                   </>
+                ) : (
+                  <>
+                    <PieChart className="w-12 h-12 mx-auto mb-4 text-indigo-600" />
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Monthly Analytics</h3>
+                    <p className="text-gray-600">Detailed monthly insights and trends coming soon!</p>
+                  </>
+                )}
               </div>
             </TabsContent>
-
             <TabsContent value="year" className="mt-6">
               <div className="bg-white/80 rounded-xl p-6 border border-gray-100 text-center">
                 <Calendar className="w-12 h-12 mx-auto mb-4 text-indigo-600" />

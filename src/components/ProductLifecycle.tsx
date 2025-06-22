@@ -6,22 +6,18 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { 
-  Package, 
-  Truck, 
-  Factory, 
-  Recycle,
-  Leaf,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  MapPin,
-  Zap,
-  Droplets,
-  Globe
+ Package, Truck, Factory, Recycle, Leaf, AlertCircle, CheckCircle, Clock, MapPin, Zap, Droplets, Globe 
 } from 'lucide-react';
+import { db } from '../firebase'; // Import Firebase database instance
+import { doc, setDoc, getDocs, collection } from 'firebase/firestore'; // Import Firebase functions
+import { useAuth } from '../contexts/AuthContext'; // Import AuthContext
+
 
 const ProductLifecycle = () => {
   const [selectedProduct, setSelectedProduct] = useState('organic-cotton-shirt');
+  const { user } = useAuth(); // Get the current user
+  const [viewedProducts, setViewedProducts] = useState({}); // State to store viewed products
+
 
   const products = {
     'organic-cotton-shirt': {
@@ -98,6 +94,25 @@ const ProductLifecycle = () => {
     }
   };
 
+  // Fetch viewed products from Firebase on component mount or user change
+  React.useEffect(() => {
+    const fetchViewedProducts = async () => {
+      if (user) {
+        const viewedProductsRef = collection(db, `users/${user.uid}/productLifecycle/viewedProducts`);
+        const snapshot = await getDocs(viewedProductsRef);
+        const data = {};
+        snapshot.forEach(doc => {
+          data[doc.id] = doc.data();
+        });
+        setViewedProducts(data);
+      } else {
+        setViewedProducts({}); // Clear viewed products if no user
+      }
+    };
+
+    fetchViewedProducts();
+  }, [user]);
+
   const currentProduct = products[selectedProduct];
   const totalImpact = currentProduct.stages.reduce((acc, stage) => ({
     co2: acc.co2 + stage.impact.co2,
@@ -123,6 +138,17 @@ const ProductLifecycle = () => {
     }
   };
 
+  // Function to add viewed product to Firebase
+  const addViewedProduct = async (productId) => {
+    if (user) {
+      const productRef = doc(db, `users/${user.uid}/productLifecycle/viewedProducts`, productId);
+      await setDoc(productRef, {
+        viewedAt: new Date(),
+        productId: productId // Store the product ID as well
+      }, { merge: true }); // Use merge to avoid overwriting
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card className="bg-white/80 backdrop-blur-sm border-sage-200">
@@ -130,6 +156,7 @@ const ProductLifecycle = () => {
           <CardTitle className="flex items-center space-x-2 text-sage-700">
             <Package className="w-6 h-6" />
             <span>Product Lifecycle Tracking</span>
+            {/* {user && viewedProducts[selectedProduct] && <Badge>Viewed: {new Date(viewedProducts[selectedProduct].viewedAt.toDate()).toLocaleDateString()}</Badge>} */}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -177,7 +204,7 @@ const ProductLifecycle = () => {
               <TabsTrigger value="impact">Impact Analysis</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="timeline" className="space-y-6">
+            <TabsContent value="timeline" className="space-y-6" onPointerEnter={() => addViewedProduct(selectedProduct)}> {/* Trigger addViewedProduct on tab enter */}
               {/* Lifecycle Stages */}
               <div className="space-y-4">
                 {currentProduct.stages.map((stage, index) => (

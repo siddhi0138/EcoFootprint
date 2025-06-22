@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,13 +19,35 @@ import {
   Heart
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { getRandomProducts } from '@/data/productsData';
+import { productsData } from '@/data/productsData';
+
+import { database } from '@/firebase';
+import { ref, set, get } from 'firebase/database';
+import { AuthContext } from '@/contexts/AuthContext';
 
 const ProductAnalysis = ({ product }) => {
   console.log('ProductAnalysis component rendered, product:', product);
   
   const [selectedTimeframe, setSelectedTimeframe] = useState('6months');
   const [selectedView, setSelectedView] = useState('overview');
+
+  const { currentUser } = useContext(AuthContext);
+
+  useEffect(() => {
+    if (currentUser && product) {
+      const userId = currentUser.uid;
+      const analysisRef = ref(database, `users/${userId}/productAnalysis/${product.id}`);
+      
+      // Save the product analysis data to Firebase
+      set(analysisRef, product)
+        .then(() => {
+          console.log(`Product analysis for ${product.name} saved successfully for user ${userId}`);
+        })
+        .catch((error) => {
+          console.error("Error saving product analysis:", error);
+        });
+    }
+  }, [currentUser, product]); // Depend on currentUser and product
 
   if (!product) {
     console.log('No product provided, showing empty state');
@@ -87,7 +109,7 @@ const ProductAnalysis = ({ product }) => {
   ];
 
   // Generate competitors from our product data
-  const competitorProducts = getRandomProducts(4);
+  const competitorProducts = productsData.slice(0, 4); // Using a slice for simplicity
   const competitors = competitorProducts.map(comp => ({
     name: comp.brand,
     score: comp.sustainabilityScore,

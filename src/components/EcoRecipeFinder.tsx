@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
-import { 
-  ChefHat, 
-  Search, 
-  Leaf, 
+import {
+  ChefHat,
+  Search,
+  Leaf,
   Clock,
   Users,
   Star,
@@ -20,227 +20,340 @@ import {
   Globe,
   Calendar,
   Plus,
-  X
+  X,
 } from 'lucide-react';
 import { useUserData } from '@/contexts/UserDataContext';
 import { useToast } from '@/hooks/use-toast';
+import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+} from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
 
-const EcoRecipeFinder = () => {
+interface Recipe {
+  id: number;
+  name: string;
+  image: string;
+  sustainabilityScore: number;
+  carbonFootprint: string;
+  waterUsage: string;
+  cookTime: string;
+  servings: number;
+  difficulty: string;
+  tags: string[];
+  ingredients: string[];
+  instructions: string[];
+  nutrition: {
+    calories: number;
+    protein: string;
+    carbs: string;
+    fat: string;
+  };
+  sustainability: {
+    seasonal: boolean;
+    local: boolean;
+    organic: boolean;
+    lowWaste: boolean;
+  };
+}
+
+interface MealPlanEntry {
+    day: string;
+    recipeId: number; // Store recipe ID instead of full object
+}
+
+export const EcoRecipeFinder = () => {
+  const { user } = useAuth(); // Get user from useAuth
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null); // Specify type
   const [activeTab, setActiveTab] = useState('recipes');
-  const [favoriteRecipes, setFavoriteRecipes] = useState(new Set());
-  const [mealPlan, setMealPlan] = useState([]);
+  const [firebaseFavoriteRecipes, setFirebaseFavoriteRecipes] = useState<Set<number>>(new Set()); // Specify type
+  const [firebaseMealPlan, setFirebaseMealPlan] = useState<MealPlanEntry[]>([]); // Specify type
   const { incrementRecipeViewed, addPoints } = useUserData();
   const { toast } = useToast();
 
-  const recipes = [
+  // Fetch user recipe data
+  useEffect(() => {
+    if (!user) {
+      setFirebaseFavoriteRecipes(new Set());
+      setFirebaseMealPlan([]);
+      return;
+    }
+
+    const userRecipeRef = doc(db, 'users', user.uid, 'recipeData', 'data');
+    const unsubscribeRecipeData = onSnapshot(userRecipeRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setFirebaseFavoriteRecipes(new Set(data.favoriteRecipes || []));
+        setFirebaseMealPlan(data.mealPlan || []);
+        // Optionally set activeTab and searchQuery here if you want to persist them
+      } else {
+        // Initialize if no data exists
+        setFirebaseFavoriteRecipes(new Set());
+        setFirebaseMealPlan([]);
+        // Optionally create the document with initial empty values
+         setDoc(userRecipeRef, {
+           favoriteRecipes: [],
+           mealPlan: []
+         }).catch(error => console.error("Error initializing user recipe data:", error));
+      }
+    }, (error) => {
+      console.error('Error fetching user recipe data:', error);
+    });
+
+    return () => unsubscribeRecipeData();
+  }, [user]);
+
+
+  const recipes: Recipe[] = [ // Specify type
     {
       id: 1,
-      name: "Rainbow Quinoa Buddha Bowl",
-      image: "photo-1512621776951-a57141f2eefd",
+      name: 'Rainbow Quinoa Buddha Bowl',
+      image: 'photo-1512621776951-a57141f2eefd',
       sustainabilityScore: 95,
-      carbonFootprint: "0.8 kg CO₂",
-      waterUsage: "250L",
-      cookTime: "25 min",
+      carbonFootprint: '0.8 kg CO₂',
+      waterUsage: '250L',
+      cookTime: '25 min',
       servings: 4,
-      difficulty: "Easy",
-      tags: ["Vegan", "Gluten-Free", "Local"],
+      difficulty: 'Easy',
+      tags: ['Vegan', 'Gluten-Free', 'Local'],
       ingredients: [
-        "1 cup quinoa (locally sourced)",
-        "2 cups seasonal vegetables",
-        "1/2 cup chickpeas",
-        "Tahini dressing",
-        "Mixed greens"
+        '1 cup quinoa (locally sourced)',
+        '2 cups seasonal vegetables',
+        '1/2 cup chickpeas',
+        'Tahini dressing',
+        'Mixed greens',
       ],
       instructions: [
-        "Cook quinoa according to package directions",
-        "Roast seasonal vegetables with olive oil",
-        "Prepare tahini dressing",
-        "Assemble bowl with all ingredients"
+        'Cook quinoa according to package directions',
+        'Roast seasonal vegetables with olive oil',
+        'Prepare tahini dressing',
+        'Assemble bowl with all ingredients',
       ],
       nutrition: {
         calories: 420,
-        protein: "18g",
-        carbs: "52g",
-        fat: "16g"
+        protein: '18g',
+        carbs: '52g',
+        fat: '16g',
       },
       sustainability: {
         seasonal: true,
         local: true,
         organic: true,
-        lowWaste: true
-      }
+        lowWaste: true,
+      },
     },
     {
       id: 2,
-      name: "Plant-Based Lentil Shepherd's Pie",
-      image: "photo-1574484284002-952d92456975",
+      name: 'Plant-Based Lentil Shepherd\'s Pie',
+      image: 'photo-1574484284002-952d92456975',
       sustainabilityScore: 92,
-      carbonFootprint: "1.2 kg CO₂",
-      waterUsage: "180L",
-      cookTime: "45 min",
+      carbonFootprint: '1.2 kg CO₂',
+      waterUsage: '180L',
+      cookTime: '45 min',
       servings: 6,
-      difficulty: "Medium",
-      tags: ["Vegan", "Protein-Rich", "Comfort Food"],
+      difficulty: 'Medium',
+      tags: ['Vegan', 'Protein-Rich', 'Comfort Food'],
       ingredients: [
-        "2 cups green lentils",
-        "3 lbs local potatoes",
-        "Seasonal root vegetables",
-        "Vegetable broth",
-        "Fresh herbs"
+        '2 cups green lentils',
+        '3 lbs local potatoes',
+        'Seasonal root vegetables',
+        'Vegetable broth',
+        'Fresh herbs',
       ],
       instructions: [
-        "Cook lentils with vegetables and herbs",
-        "Prepare mashed potato topping",
-        "Layer in baking dish",
-        "Bake until golden brown"
+        'Cook lentils with vegetables and herbs',
+        'Prepare mashed potato topping',
+        'Layer in baking dish',
+        'Bake until golden brown',
       ],
       nutrition: {
         calories: 385,
-        protein: "16g",
-        carbs: "58g",
-        fat: "12g"
+        protein: '16g',
+        carbs: '58g',
+        fat: '12g',
       },
       sustainability: {
         seasonal: true,
         local: true,
         organic: false,
-        lowWaste: true
-      }
+        lowWaste: true,
+      },
     },
     {
       id: 3,
-      name: "Zero-Waste Vegetable Broth",
-      image: "photo-1547592180-85f173990554",
+      name: 'Zero-Waste Vegetable Broth',
+      image: 'photo-1547592180-85f173990554',
       sustainabilityScore: 98,
-      carbonFootprint: "0.2 kg CO₂",
-      waterUsage: "50L",
-      cookTime: "60 min",
+      carbonFootprint: '0.2 kg CO₂',
+      waterUsage: '50L',
+      cookTime: '60 min',
       servings: 8,
-      difficulty: "Easy",
-      tags: ["Zero-Waste", "Vegan", "Base Recipe"],
+      difficulty: 'Easy',
+      tags: ['Zero-Waste', 'Vegan', 'Base Recipe'],
       ingredients: [
-        "Vegetable scraps and peels",
-        "Herb stems",
-        "Onion skins",
-        "Mushroom stems",
-        "Bay leaves"
+        'Vegetable scraps and peels',
+        'Herb stems',
+        'Onion skins',
+        'Mushroom stems',
+        'Bay leaves',
       ],
       instructions: [
-        "Collect vegetable scraps in freezer",
-        "Simmer scraps in water for 1 hour",
-        "Strain and store broth",
-        "Compost remaining solids"
+        'Collect vegetable scraps in freezer',
+        'Simmer scraps in water for 1 hour',
+        'Strain and store broth',
+        'Compost remaining solids',
       ],
       nutrition: {
         calories: 15,
-        protein: "1g",
-        carbs: "3g",
-        fat: "0g"
+        protein: '1g',
+        carbs: '3g',
+        fat: '0g',
       },
       sustainability: {
         seasonal: true,
         local: true,
         organic: true,
-        lowWaste: true
-      }
-    }
+        lowWaste: true,
+      },
+    },
   ];
 
   const sustainabilityTips = [
     {
-      title: "Choose Seasonal Produce",
-      description: "Seasonal fruits and vegetables have a 60% lower carbon footprint",
+      title: 'Choose Seasonal Produce',
+      description: 'Seasonal fruits and vegetables have a 60% lower carbon footprint',
       icon: Apple,
-      impact: "60% less CO₂"
+      impact: '60% less CO₂',
     },
     {
-      title: "Reduce Food Waste",
-      description: "Use vegetable scraps for broths and composting",
+      title: 'Reduce Food Waste',
+      description: 'Use vegetable scraps for broths and composting',
       icon: TreePine,
-      impact: "40% waste reduction"
+      impact: '40% waste reduction',
     },
     {
-      title: "Plant-Based Proteins",
-      description: "Legumes and grains use 75% less water than meat",
+      title: 'Plant-Based Proteins',
+      description: 'Legumes and grains use 75% less water than meat',
       icon: Droplets,
-      impact: "75% water savings"
+      impact: '75% water savings',
     },
     {
-      title: "Local Sourcing",
-      description: "Local ingredients reduce transportation emissions",
+      title: 'Local Sourcing',
+      description: 'Local ingredients reduce transportation emissions',
       icon: Globe,
-      impact: "50% transport reduction"
-    }
+      impact: '50% transport reduction',
+    },
   ];
 
-  const handleViewRecipe = (recipe) => {
+  const handleViewRecipe = (recipe: Recipe) => { // Specify recipe type
     setSelectedRecipe(recipe);
-    incrementRecipeViewed();
-    addPoints(5);
+    incrementRecipeViewed(); // This will update userStats in Firebase via useUserData
+    addPoints(5); // This will update userStats in Firebase via useUserData
     toast({
-      title: "Recipe Viewed!",
-      description: "You earned 5 points for viewing a recipe!",
+      title: 'Recipe Viewed!',
+      description: 'You earned 5 points for viewing a recipe!',
     });
   };
 
-  const handleFavoriteRecipe = (recipeId) => {
-    const newFavorites = new Set(favoriteRecipes);
+  const handleFavoriteRecipe = async (recipeId: number) => { // Make async, specify type
+    if (!user) return;
+
+    const userRecipeRef = doc(db, 'users', user.uid, 'recipeData', 'data');
+    const newFavorites = new Set(firebaseFavoriteRecipes);
+
     if (newFavorites.has(recipeId)) {
+      // Unfavorite
       newFavorites.delete(recipeId);
+      await updateDoc(userRecipeRef, {
+        favoriteRecipes: arrayRemove(recipeId) // Remove from Firebase array
+      });
       toast({
-        title: "Recipe Removed",
-        description: "Recipe removed from favorites.",
+        title: 'Recipe Removed',
+        description: 'Recipe removed from favorites.',
       });
     } else {
+      // Favorite
       newFavorites.add(recipeId);
-      addPoints(5);
+       await updateDoc(userRecipeRef, {
+        favoriteRecipes: arrayUnion(recipeId) // Add to Firebase array
+      });
+      addPoints(5); // This will update userStats in Firebase via useUserData
       toast({
-        title: "Recipe Favorited!",
-        description: "You earned 5 points for favoriting a recipe!",
+        title: 'Recipe Favorited!',
+        description: 'You earned 5 points for favoriting a recipe!',
       });
     }
-    setFavoriteRecipes(newFavorites);
+     // State will be updated by the onSnapshot listener
   };
 
-  const handleAddToMealPlan = (recipe, day = 'Monday') => {
-    const newMealPlan = [...mealPlan];
+  const handleAddToMealPlan = async (recipe: Recipe, day: string = 'Monday') => { // Make async, specify types
+    if (!user) return;
+
+    const userRecipeRef = doc(db, 'users', user.uid, 'recipeData', 'data');
+    const newMealPlan = [...firebaseMealPlan];
     const existingIndex = newMealPlan.findIndex(meal => meal.day === day);
-    
+
+    const mealPlanEntry: MealPlanEntry = { // Create meal plan entry object
+        day,
+        recipeId: recipe.id,
+    };
+
     if (existingIndex >= 0) {
-      newMealPlan[existingIndex] = { day, recipe };
+      newMealPlan[existingIndex] = mealPlanEntry;
     } else {
-      newMealPlan.push({ day, recipe });
+      newMealPlan.push(mealPlanEntry);
     }
-    
-    setMealPlan(newMealPlan);
-    addPoints(10);
+
+     await updateDoc(userRecipeRef, {
+        mealPlan: newMealPlan // Update entire mealPlan array in Firebase
+      });
+
+    addPoints(10); // This will update userStats in Firebase via useUserData
     toast({
-      title: "Added to Meal Plan!",
-      description: "You earned 10 points for meal planning!",
+      title: 'Added to Meal Plan!',
+      description: 'You earned 10 points for meal planning!',
     });
+     // State will be updated by the onSnapshot listener
   };
 
-  const generateMealPlan = () => {
+  const generateMealPlan = async () => { // Make async
+    if (!user) return;
+
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const newMealPlan = days.map(day => ({
+    const newMealPlan: MealPlanEntry[] = days.map(day => ({ // Specify type
       day,
-      recipe: recipes[Math.floor(Math.random() * recipes.length)]
+      recipeId: recipes[Math.floor(Math.random() * recipes.length)].id // Store recipe ID
     }));
-    setMealPlan(newMealPlan);
-    addPoints(25);
+
+    const userRecipeRef = doc(db, 'users', user.uid, 'recipeData', 'data');
+     await updateDoc(userRecipeRef, {
+        mealPlan: newMealPlan // Update entire mealPlan array in Firebase
+      });
+
+    addPoints(25); // This will update userStats in Firebase via useUserData
     toast({
-      title: "Meal Plan Generated!",
-      description: "You earned 25 points for generating a meal plan!",
+      title: 'Meal Plan Generated!',
+      description: 'You earned 25 points for generating a meal plan!',
     });
+     // State will be updated by the onSnapshot listener
   };
 
-  const getScoreColor = (score) => {
-    if (score >= 90) return "bg-green-500";
-    if (score >= 80) return "bg-emerald-500";
-    if (score >= 70) return "bg-yellow-500";
-    return "bg-red-500";
+   const getRecipeForMealPlanEntry = (entry: MealPlanEntry) => { // Helper to get recipe from meal plan entry
+       return recipes.find(r => r.id === entry.recipeId);
+   }
+
+  const getScoreColor = (score: number) => { // Specify type
+    if (score >= 90) return 'bg-green-500';
+    if (score >= 80) return 'bg-emerald-500';
+    if (score >= 70) return 'bg-yellow-500';
+    return 'bg-red-500';
   };
 
   return (
@@ -287,7 +400,7 @@ const EcoRecipeFinder = () => {
                 {recipes.map((recipe) => (
                   <div key={recipe.id} className="bg-white/80 rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow">
                     <div className="h-48 bg-gray-200 relative">
-                      <img 
+                      <img
                         src={`https://images.unsplash.com/${recipe.image}?w=400&h=300&fit=crop`}
                         alt={recipe.name}
                         className="w-full h-full object-cover"
@@ -301,20 +414,20 @@ const EcoRecipeFinder = () => {
                         </Badge>
                       </div>
                       <div className="absolute top-3 right-3">
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           className="bg-white/80 hover:bg-white"
                           onClick={() => handleFavoriteRecipe(recipe.id)}
                         >
-                          <Heart className={`w-4 h-4 ${favoriteRecipes.has(recipe.id) ? 'fill-current text-red-500' : ''}`} />
+                          <Heart className={`w-4 h-4 ${firebaseFavoriteRecipes.has(recipe.id) ? 'fill-current text-red-500' : ''}`} />
                         </Button>
                       </div>
                     </div>
-                    
+
                     <div className="p-4">
                       <h3 className="font-semibold text-gray-800 mb-2">{recipe.name}</h3>
-                      
+
                       <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
                         <div className="flex items-center space-x-1">
                           <Clock className="w-4 h-4" />
@@ -351,7 +464,7 @@ const EcoRecipeFinder = () => {
 
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button 
+                          <Button
                             className="w-full bg-green-600 hover:bg-green-700"
                             onClick={() => handleViewRecipe(recipe)}
                           >
@@ -376,7 +489,7 @@ const EcoRecipeFinder = () => {
 
                           <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <img 
+                              <img
                                 src={`https://images.unsplash.com/${recipe.image}?w=600&h=400&fit=crop`}
                                 alt={recipe.name}
                                 className="w-full h-64 object-cover rounded-lg"
@@ -384,7 +497,7 @@ const EcoRecipeFinder = () => {
                                   (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop';
                                 }}
                               />
-                              
+
                               <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                   <div className="flex items-center space-x-1">
@@ -443,25 +556,31 @@ const EcoRecipeFinder = () => {
                                   ))}
                                 </ul>
                               </div>
-                              
+
                               <div>
                                 <h3 className="font-semibold mb-2">Instructions:</h3>
                                 <ol className="text-sm text-gray-700 space-y-1">
                                   {recipe.instructions.map((step, index) => (
-                                    <li key={index}>{index + 1}. {step}</li>
+                                    <li key={index}>
+                                      {index + 1}. {step}
+                                    </li>
                                   ))}
                                 </ol>
                               </div>
                             </div>
 
                             <div className="flex gap-2 pt-4 border-t">
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 onClick={() => handleFavoriteRecipe(recipe.id)}
-                                className={favoriteRecipes.has(recipe.id) ? 'bg-red-50 text-red-600' : ''}
+                                className={firebaseFavoriteRecipes.has(recipe.id) ? 'bg-red-50 text-red-600' : ''}
                               >
-                                <Heart className={`w-4 h-4 mr-2 ${favoriteRecipes.has(recipe.id) ? 'fill-current' : ''}`} />
-                                {favoriteRecipes.has(recipe.id) ? 'Favorited' : 'Add to Favorites'}
+                                <Heart
+                                  className={`w-4 h-4 mr-2 ${
+                                    firebaseFavoriteRecipes.has(recipe.id) ? 'fill-current' : ''
+                                  }`}
+                                />
+                                {firebaseFavoriteRecipes.has(recipe.id) ? 'Favorited' : 'Add to Favorites'}
                               </Button>
                               <Button onClick={() => handleAddToMealPlan(recipe, 'Monday')}>
                                 <Plus className="w-4 h-4 mr-2" />
@@ -488,9 +607,7 @@ const EcoRecipeFinder = () => {
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-800 mb-2">{tip.title}</h4>
                       <p className="text-gray-600 mb-2">{tip.description}</p>
-                      <Badge className="bg-green-500 text-white">
-                        Impact: {tip.impact}
-                      </Badge>
+                      <Badge className="bg-green-500 text-white">Impact: {tip.impact}</Badge>
                     </div>
                   </div>
                 </div>
@@ -509,38 +626,43 @@ const EcoRecipeFinder = () => {
                   </Button>
                 </div>
 
-                {mealPlan.length > 0 && (
+                {firebaseMealPlan.length > 0 && ( // Use firebaseMealPlan state
                   <div className="bg-white/80 rounded-xl p-6 border border-gray-100">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">Your Weekly Meal Plan</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {mealPlan.map((meal, index) => (
-                        <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      {firebaseMealPlan.map((meal, index) => {
+                          const recipe = getRecipeForMealPlanEntry(meal); // Get recipe using helper
+                          if (!recipe) return null; // Handle case where recipe is not found
+
+                        return (
+                          <div key={index} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="font-medium text-gray-800">{meal.day}</h4>
-                            <Badge className={`text-white ${getScoreColor(meal.recipe.sustainabilityScore)}`}>
-                              {meal.recipe.sustainabilityScore}
+                            <Badge className={`text-white ${getScoreColor(recipe.sustainabilityScore)}`}>
+                              {recipe.sustainabilityScore}
                             </Badge>
                           </div>
-                          <img 
-                            src={`https://images.unsplash.com/${meal.recipe.image}?w=300&h=200&fit=crop`}
-                            alt={meal.recipe.name}
+                          <img
+                            src={`https://images.unsplash.com/${recipe.image}?w=300&h=200&fit=crop`}
+                            alt={recipe.name}
                             className="w-full h-32 object-cover rounded mb-2"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=200&fit=crop';
                             }}
                           />
-                          <h5 className="font-medium text-sm">{meal.recipe.name}</h5>
-                          <p className="text-xs text-gray-600">{meal.recipe.cookTime} • {meal.recipe.servings} servings</p>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
+                          <h5 className="font-medium text-sm">{recipe.name}</h5>
+                          <p className="text-xs text-gray-600">{recipe.cookTime} • {recipe.servings} servings</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             className="w-full mt-2"
-                            onClick={() => handleViewRecipe(meal.recipe)}
+                            onClick={() => handleViewRecipe(recipe)}
                           >
                             View Recipe
                           </Button>
                         </div>
-                      ))}
+                       );
+                       })}
                     </div>
                   </div>
                 )}

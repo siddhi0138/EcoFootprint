@@ -1,47 +1,157 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { 
-  BookOpen, 
-  Play, 
-  Award, 
-  Clock, 
-  Users, 
+import {
+  BookOpen,
+  Play,
+  Award,
+  Clock,
+  Users,
   Star,
   Search,
   Filter,
   CheckCircle,
   PlayCircle,
   Download,
-  Share2
+  Share2,
 } from 'lucide-react';
 import { useUserData } from '@/contexts/UserDataContext';
+import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+} from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+
+interface Course {
+  id: number;
+  title: string;
+  description: string;
+  duration: string;
+  level: string;
+  rating: number;
+  students: number;
+  category: string;
+  thumbnail: string;
+  lessons: number;
+  content: string[];
+}
+
+interface Article {
+  id: number;
+  title: string;
+  excerpt: string;
+  readTime: string;
+  author: string;
+  category: string;
+  image: string;
+  tags: string[];
+  content?: string;
+}
+
+interface Webinar {
+  id: number;
+  title: string;
+  speaker: string;
+  date: string;
+  time: string;
+  duration: string;
+  attendees: number;
+  status: 'upcoming' | 'recorded';
+  thumbnail: string;
+}
+
+interface UserEducationData {
+    completedCourses: number[];
+    courseProgress: Record<number, number[]>; // Map course ID to array of completed lesson indices
+    readArticles: number[];
+    attendedWebinars: number[];
+    registeredWebinars: number[];
+    // Optionally add searchQuery and selectedCategory
+}
 
 const EducationCenter = () => {
+  const { user } = useAuth(); // Get user from useAuth
+  const { userStats, incrementCourseCompleted } = useUserData(); // userStats might still be useful for displaying overall stats
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [selectedArticle, setSelectedArticle] = useState(null);
-  const { userStats, incrementCourseCompleted } = useUserData();
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null); // Specify type
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null); // Specify type
+  const [firebaseUserEducationData, setFirebaseUserEducationData] = useState<UserEducationData>({ // New state for Firebase data
+      completedCourses: [],
+      courseProgress: {},
+      readArticles: [],
+      attendedWebinars: [],
+      registeredWebinars: [],
+  });
 
-  const courses = [
+
+  // Fetch user education data
+  useEffect(() => {
+    if (!user) {
+      setFirebaseUserEducationData({
+          completedCourses: [],
+          courseProgress: {},
+          readArticles: [],
+          attendedWebinars: [],
+          registeredWebinars: [],
+      });
+      return;
+    }
+
+    const userEducationRef = doc(db, 'users', user.uid, 'education', 'data');
+    const unsubscribeEducationData = onSnapshot(userEducationRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as UserEducationData; // Cast with proper type
+        setFirebaseUserEducationData(data);
+        // Optionally set searchQuery and selectedCategory here if you want to persist them
+      } else {
+        // Initialize if no data exists
+         setFirebaseUserEducationData({
+            completedCourses: [],
+            courseProgress: {},
+            readArticles: [],
+            attendedWebinars: [],
+            registeredWebinars: [],
+         });
+        // Optionally create the document with initial empty values
+         setDoc(userEducationRef, {
+           completedCourses: [],
+           courseProgress: {},
+           readArticles: [],
+           attendedWebinars: [],
+           registeredWebinars: [],
+         }).catch(error => console.error("Error initializing user education data:", error));
+      }
+    }, (error) => {
+      console.error('Error fetching user education data:', error);
+    });
+
+    return () => unsubscribeEducationData();
+  }, [user]);
+
+
+  const courses: Course[] = [ // Specify type
     {
       id: 1,
       title: 'Sustainable Living Basics',
       description: 'Learn the fundamentals of eco-friendly lifestyle choices',
       duration: '2 hours',
       level: 'Beginner',
-      progress: userStats.coursesCompleted >= 1 ? 100 : 0,
       rating: 4.8,
       students: 1234,
       category: 'lifestyle',
       thumbnail: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400',
       lessons: 8,
-      completed: userStats.coursesCompleted >= 1 ? 8 : 0,
       content: [
         'Introduction to Sustainable Living',
         'Energy Conservation at Home',
@@ -50,8 +160,8 @@ const EducationCenter = () => {
         'Green Shopping Guide',
         'Water Conservation Tips',
         'Eco-Friendly Diet Choices',
-        'Building Sustainable Habits'
-      ]
+        'Building Sustainable Habits',
+      ],
     },
     {
       id: 2,
@@ -59,13 +169,12 @@ const EducationCenter = () => {
       description: 'Advanced strategies to minimize your environmental impact',
       duration: '3 hours',
       level: 'Intermediate',
-      progress: userStats.coursesCompleted >= 2 ? 100 : userStats.coursesCompleted >= 1 ? 30 : 0,
       rating: 4.9,
       students: 892,
       category: 'carbon',
       thumbnail: 'https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=400',
       lessons: 12,
-      completed: userStats.coursesCompleted >= 2 ? 12 : userStats.coursesCompleted >= 1 ? 4 : 0
+      content: [ /* Add lesson titles */ ]
     },
     {
       id: 3,
@@ -73,17 +182,16 @@ const EducationCenter = () => {
       description: 'How to implement green practices in your organization',
       duration: '4 hours',
       level: 'Advanced',
-      progress: userStats.coursesCompleted >= 3 ? 100 : 0,
       rating: 4.7,
       students: 567,
       category: 'business',
       thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400',
       lessons: 15,
-      completed: userStats.coursesCompleted >= 3 ? 15 : 0
-    }
+      content: [ /* Add lesson titles */ ]
+    },
   ];
 
-  const articles = [
+  const articles: Article[] = [ // Specify type
     {
       id: 1,
       title: '10 Simple Ways to Reduce Plastic Waste',
@@ -95,7 +203,7 @@ const EducationCenter = () => {
       tags: ['Plastic', 'Zero Waste', 'DIY'],
       content: `
         Plastic waste is one of the biggest environmental challenges we face today. Here are 10 practical ways to reduce your plastic consumption:
-        
+
         1. Use reusable bags for shopping
         2. Carry a refillable water bottle
         3. Choose products with minimal packaging
@@ -106,9 +214,9 @@ const EducationCenter = () => {
         8. Use bamboo or wooden alternatives
         9. Repair items instead of replacing them
         10. Support brands committed to reducing plastic use
-        
+
         Making these small changes can significantly impact the environment while saving you money in the long run.
-      `
+      `,
     },
     {
       id: 2,
@@ -118,7 +226,7 @@ const EducationCenter = () => {
       author: 'Emma Thompson',
       category: 'fashion',
       image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
-      tags: ['Fashion', 'Sustainability', 'Ethics']
+      tags: ['Fashion', 'Sustainability', 'Ethics'],
     },
     {
       id: 3,
@@ -128,11 +236,11 @@ const EducationCenter = () => {
       author: 'Mike Rodriguez',
       category: 'energy',
       image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400',
-      tags: ['Solar', 'Wind', 'Home Energy']
-    }
+      tags: ['Solar', 'Wind', 'Home Energy'],
+    },
   ];
 
-  const webinars = [
+  const webinars: Webinar[] = [ // Specify type
     {
       id: 1,
       title: 'Climate Action: What Individuals Can Do',
@@ -142,7 +250,7 @@ const EducationCenter = () => {
       duration: '1 hour',
       attendees: 342,
       status: 'upcoming',
-      thumbnail: 'https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?w=400'
+      thumbnail: 'https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?w=400',
     },
     {
       id: 2,
@@ -153,15 +261,16 @@ const EducationCenter = () => {
       duration: '45 minutes',
       attendees: 156,
       status: 'recorded',
-      thumbnail: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400'
-    }
+      thumbnail: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=400',
+    },
   ];
 
+  // Achievements data - should be based on userStats or firebaseUserEducationData
   const achievements = [
-    { id: 1, name: 'Course Completion Badge', earned: userStats.coursesCompleted >= 1 },
-    { id: 2, name: 'Sustainability Advocate', earned: userStats.coursesCompleted >= 2 },
-    { id: 3, name: 'Carbon Warrior', earned: userStats.coursesCompleted >= 3 },
-    { id: 4, name: 'Eco Expert', earned: userStats.coursesCompleted >= 5 }
+    { id: 1, name: 'Course Completion Badge', earned: firebaseUserEducationData.completedCourses.length >= 1 },
+    { id: 2, name: 'Sustainability Advocate', earned: firebaseUserEducationData.completedCourses.length >= 2 },
+    { id: 3, name: 'Carbon Warrior', earned: firebaseUserEducationData.completedCourses.length >= 3 },
+    { id: 4, name: 'Eco Expert', earned: firebaseUserEducationData.completedCourses.length >= 5 }, // Example goal
   ];
 
   const categories = [
@@ -171,32 +280,121 @@ const EducationCenter = () => {
     { id: 'business', label: 'Business' },
     { id: 'energy', label: 'Energy' },
     { id: 'waste-reduction', label: 'Waste' },
-    { id: 'fashion', label: 'Fashion' }
+    { id: 'fashion', label: 'Fashion' },
   ];
 
-  const handleContinueLearning = (course) => {
+  const handleCompleteLesson = async (courseId: number, lessonIndex: number) => { // New function to mark lesson complete
+      if (!user) return;
+
+      const userEducationRef = doc(db, 'users', user.uid, 'education', 'data');
+      const currentCourseProgress = firebaseUserEducationData.courseProgress[courseId] || [];
+
+      if (!currentCourseProgress.includes(lessonIndex)) {
+          const updatedCourseProgress = {
+              ...firebaseUserEducationData.courseProgress,
+              [courseId]: [...currentCourseProgress, lessonIndex],
+          };
+
+          await updateDoc(userEducationRef, {
+              courseProgress: updatedCourseProgress,
+          });
+
+          // Check if course is completed
+          const course = courses.find(c => c.id === courseId);
+          if (course && updatedCourseProgress[courseId].length === course.lessons) {
+              await updateDoc(userEducationRef, {
+                  completedCourses: arrayUnion(courseId)
+              });
+               incrementCourseCompleted(); // Update userStats in Firebase via useUserData
+          }
+
+           // State will be updated by the onSnapshot listener
+      }
+  };
+
+
+  const handleContinueLearning = (course: Course) => { // Specify type
     setSelectedCourse(course);
-    if (course.progress < 100) {
-      // Simulate course completion
-      incrementCourseCompleted();
-    }
+     // Logic to display the course content and track lesson completion will be needed here
+     // You will call handleCompleteLesson when a user finishes a lesson
   };
 
-  const handleStartCourse = (course) => {
+  const handleStartCourse = (course: Course) => { // Specify type
     setSelectedCourse(course);
-    incrementCourseCompleted();
+    // Initialize course progress in Firebase if it doesn't exist
+     if (!firebaseUserEducationData.courseProgress[course.id]) {
+         const userEducationRef = doc(db, 'users', user.uid, 'education', 'data');
+          updateDoc(userEducationRef, {
+             courseProgress: {
+                 ...firebaseUserEducationData.courseProgress,
+                 [course.id]: [] // Initialize with empty array of completed lessons
+             }
+         }).catch(error => console.error("Error initializing course progress:", error));
+     }
+     // Logic to display the first lesson or course overview
   };
 
-  const handleReadArticle = (article) => {
-    setSelectedArticle(article);
+  const handleReadArticle = async (article: Article) => { // Make async, specify type
+     if (!user) return;
+
+     const userEducationRef = doc(db, 'users', user.uid, 'education', 'data');
+
+      if (!firebaseUserEducationData.readArticles.includes(article.id)) {
+          await updateDoc(userEducationRef, {
+              readArticles: arrayUnion(article.id) // Add article ID to readArticles array
+          });
+          // You might want to increment a counter for articles read in userStats here if needed
+      }
+
+    setSelectedArticle(article); // Display the article content
   };
 
-  const handleShareArticle = (article) => {
+  const handleRegisterWebinar = async (webinarId: number) => { // New function, make async, specify type
+      if (!user) return;
+
+      const userEducationRef = doc(db, 'users', user.uid, 'education', 'data');
+
+       if (!firebaseUserEducationData.registeredWebinars.includes(webinarId)) {
+           await updateDoc(userEducationRef, {
+               registeredWebinars: arrayUnion(webinarId) // Add webinar ID to registeredWebinars array
+           });
+           // State will be updated by the onSnapshot listener
+           alert('Registered for webinar!'); // Or use a toast
+       } else {
+           alert('Already registered for this webinar.'); // Or use a toast
+       }
+  };
+
+   const handleAttendWebinar = async (webinarId: number) => { // New function, make async, specify type
+        if (!user) return;
+
+        const userEducationRef = doc(db, 'users', user.uid, 'education', 'data');
+
+        if (!firebaseUserEducationData.attendedWebinars.includes(webinarId)) {
+            await updateDoc(userEducationRef, {
+                attendedWebinars: arrayUnion(webinarId) // Add webinar ID to attendedWebinars array
+            });
+             // Remove from registered webinars if it was there
+             if (firebaseUserEducationData.registeredWebinars.includes(webinarId)) {
+                  await updateDoc(userEducationRef, {
+                      registeredWebinars: arrayRemove(webinarId)
+                  });
+             }
+            // State will be updated by the onSnapshot listener
+            alert('Marked as attended!'); // Or use a toast
+             // You might want to add points or update userStats here
+        } else {
+            alert('Already marked as attended.'); // Or use a toast
+        }
+   };
+
+
+  const handleShareArticle = (article: Article) => { // Specify type
     if (navigator.share) {
       navigator.share({
         title: article.title,
         text: article.excerpt,
-        url: window.location.href
+        url: window.location.href, // Consider using a specific article URL
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
@@ -204,7 +402,7 @@ const EducationCenter = () => {
     }
   };
 
-  const getLevelColor = (level) => {
+  const getLevelColor = (level: string) => { // Specify type
     switch (level) {
       case 'Beginner': return 'bg-green-100 text-green-700';
       case 'Intermediate': return 'bg-yellow-100 text-yellow-700';
@@ -225,6 +423,30 @@ const EducationCenter = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const getCourseProgress = (courseId: number) => { // Helper to calculate progress
+       const completedLessons = firebaseUserEducationData.courseProgress[courseId]?.length || 0;
+       const course = courses.find(c => c.id === courseId);
+       if (!course || course.lessons === 0) return 0;
+       return (completedLessons / course.lessons) * 100;
+  };
+
+   const isCourseCompleted = (courseId: number) => { // Helper to check if course is completed
+       return firebaseUserEducationData.completedCourses.includes(courseId);
+   };
+
+    const isArticleRead = (articleId: number) => { // Helper to check if article is read
+        return firebaseUserEducationData.readArticles.includes(articleId);
+    };
+
+     const isWebinarRegistered = (webinarId: number) => { // Helper to check if webinar is registered
+        return firebaseUserEducationData.registeredWebinars.includes(webinarId);
+    };
+
+    const isWebinarAttended = (webinarId: number) => { // Helper to check if webinar is attended
+        return firebaseUserEducationData.attendedWebinars.includes(webinarId);
+    };
+
+
   return (
     <div className="space-y-6">
       {/* Course Detail Modal */}
@@ -236,9 +458,7 @@ const EducationCenter = () => {
                 <h2 className="text-xl font-bold text-gray-800">{selectedCourse.title}</h2>
                 <p className="text-gray-600 mt-2">{selectedCourse.description}</p>
                 <div className="flex items-center space-x-2 mt-2">
-                  <Badge className={getLevelColor(selectedCourse.level)}>
-                    {selectedCourse.level}
-                  </Badge>
+                  <Badge className={getLevelColor(selectedCourse.level)}>{selectedCourse.level}</Badge>
                   <Badge variant="outline">{selectedCourse.duration}</Badge>
                 </div>
               </div>
@@ -252,13 +472,13 @@ const EducationCenter = () => {
                 <h3 className="font-semibold mb-3">Course Progress</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Completed: {selectedCourse.completed}/{selectedCourse.lessons} lessons</span>
-                    <span>{Math.round(selectedCourse.progress)}%</span>
+                    <span>Completed: {(firebaseUserEducationData.courseProgress[selectedCourse.id]?.length || 0)}/{selectedCourse.lessons} lessons</span> {/* Use Firebase data */}
+                    <span>{Math.round(getCourseProgress(selectedCourse.id))}%</span> {/* Use helper */}
                   </div>
-                  <Progress value={selectedCourse.progress} className="h-3" />
+                  <Progress value={getCourseProgress(selectedCourse.id)} className="h-3" /> {/* Use helper */}
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="font-semibold mb-3">Course Details</h3>
                 <div className="space-y-2 text-sm text-gray-600">
@@ -280,10 +500,14 @@ const EducationCenter = () => {
                 <div className="space-y-2">
                   {selectedCourse.content.map((lesson, index) => (
                     <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded">
-                      <CheckCircle className={`w-4 h-4 ${index < selectedCourse.completed ? 'text-green-500' : 'text-gray-300'}`} />
-                      <span className={index < selectedCourse.completed ? 'text-gray-800' : 'text-gray-500'}>
+                      <CheckCircle className={`w-4 h-4 ${firebaseUserEducationData.courseProgress[selectedCourse.id]?.includes(index) ? 'text-green-500' : 'text-gray-300'}`} /> {/* Use Firebase data */}
+                      <span className={firebaseUserEducationData.courseProgress[selectedCourse.id]?.includes(index) ? 'text-gray-800' : 'text-gray-500'}> {/* Use Firebase data */}
                         {lesson}
                       </span>
+                       {/* Add a button here to mark lesson as complete */}
+                         {!firebaseUserEducationData.courseProgress[selectedCourse.id]?.includes(index) && (
+                            <Button size="sm" variant="outline" onClick={() => handleCompleteLesson(selectedCourse.id, index)}>Mark Complete</Button>
+                         )}
                     </div>
                   ))}
                 </div>
@@ -320,6 +544,9 @@ const EducationCenter = () => {
                   {tag}
                 </Badge>
               ))}
+               {isArticleRead(selectedArticle.id) && ( // Display "Read" badge
+                   <Badge className="bg-green-500 text-white">Read</Badge>
+               )}
             </div>
           </CardContent>
         </Card>
@@ -345,8 +572,8 @@ const EducationCenter = () => {
               />
             </div>
             <div className="flex gap-2">
-              <select 
-                value={selectedCategory} 
+              <select
+                value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="px-3 py-2 border rounded-md"
               >
@@ -377,15 +604,13 @@ const EducationCenter = () => {
             {filteredCourses.map((course) => (
               <Card key={course.id} className="group hover:shadow-xl transition-all duration-300">
                 <div className="relative overflow-hidden">
-                  <img 
-                    src={course.thumbnail} 
+                  <img
+                    src={course.thumbnail}
                     alt={course.title}
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute top-2 right-2">
-                    <Badge className={getLevelColor(course.level)}>
-                      {course.level}
-                    </Badge>
+                    <Badge className={getLevelColor(course.level)}>{course.level}</Badge>
                   </div>
                   <div className="absolute bottom-2 left-2">
                     <PlayCircle className="w-8 h-8 text-white opacity-80 hover:opacity-100 cursor-pointer" />
@@ -400,7 +625,7 @@ const EducationCenter = () => {
                       <p className="text-sm text-gray-600">{course.description}</p>
                     </div>
 
-                    <div className="flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-4 h-4" />
                         <span>{course.duration}</span>
@@ -415,22 +640,24 @@ const EducationCenter = () => {
                       </div>
                     </div>
 
-                    {course.progress > 0 && (
+                    {/* Use getCourseProgress helper and isCourseCompleted helper */}
+                    {(getCourseProgress(course.id) > 0 || isCourseCompleted(course.id)) && (
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Progress</span>
-                          <span>{course.completed}/{course.lessons} lessons</span>
+                          <span>{(firebaseUserEducationData.courseProgress[course.id]?.length || 0)}/{course.lessons} lessons</span>
                         </div>
-                        <Progress value={course.progress} className="h-2" />
+                        <Progress value={getCourseProgress(course.id)} className="h-2" />
                       </div>
                     )}
 
-                    <Button 
-                      className="w-full" 
-                      variant={course.progress > 0 ? "secondary" : "default"}
-                      onClick={() => course.progress > 0 ? handleContinueLearning(course) : handleStartCourse(course)}
+                    <Button
+                      className="w-full"
+                      variant={isCourseCompleted(course.id) ? 'default' : (getCourseProgress(course.id) > 0 ? 'secondary' : 'default')}
+                      onClick={() => isCourseCompleted(course.id) ? setSelectedCourse(course) : (getCourseProgress(course.id) > 0 ? handleContinueLearning(course) : handleStartCourse(course))}
+                      disabled={isCourseCompleted(course.id)} // Disable button if completed
                     >
-                      {course.progress > 0 ? 'Continue Learning' : 'Start Course'}
+                      {isCourseCompleted(course.id) ? 'Completed' : (getCourseProgress(course.id) > 0 ? 'Continue Learning' : 'Start Course')}
                     </Button>
                   </div>
                 </CardContent>
@@ -444,8 +671,8 @@ const EducationCenter = () => {
             {filteredArticles.map((article) => (
               <Card key={article.id} className="group hover:shadow-lg transition-shadow">
                 <div className="relative overflow-hidden">
-                  <img 
-                    src={article.image} 
+                  <img
+                    src={article.image}
                     alt={article.title}
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
@@ -474,7 +701,7 @@ const EducationCenter = () => {
 
                     <div className="flex gap-2">
                       <Button className="flex-1" onClick={() => handleReadArticle(article)}>
-                        Read Article
+                         {isArticleRead(article.id) ? 'Read Again' : 'Read Article'} {/* Change button text */}
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => handleShareArticle(article)}>
                         <Share2 className="w-4 h-4" />
@@ -493,8 +720,8 @@ const EducationCenter = () => {
               <Card key={webinar.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex items-center space-x-4">
-                    <img 
-                      src={webinar.thumbnail} 
+                    <img
+                      src={webinar.thumbnail}
                       alt={webinar.title}
                       className="w-24 h-16 object-cover rounded"
                     />
@@ -511,9 +738,15 @@ const EducationCenter = () => {
                       <Badge variant={webinar.status === 'upcoming' ? 'default' : 'secondary'}>
                         {webinar.status === 'upcoming' ? 'Upcoming' : 'Recorded'}
                       </Badge>
-                      <Button size="sm">
-                        {webinar.status === 'upcoming' ? 'Register' : 'Watch Recording'}
-                      </Button>
+                      {webinar.status === 'upcoming' ? (
+                           <Button size="sm" onClick={() => handleRegisterWebinar(webinar.id)}>
+                              {isWebinarRegistered(webinar.id) ? 'Registered' : 'Register'} {/* Change button text */}
+                           </Button>
+                      ) : (
+                           <Button size="sm" onClick={() => handleAttendWebinar(webinar.id)}>
+                               {isWebinarAttended(webinar.id) ? 'Attended' : 'Mark as Attended'} {/* Change button text */}
+                           </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -551,21 +784,24 @@ const EducationCenter = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span>Courses Completed</span>
-                  <span className="font-semibold">{userStats.coursesCompleted}/10</span>
+                  <span className="font-semibold">{firebaseUserEducationData.completedCourses.length}/10</span> {/* Use Firebase data */}
                 </div>
-                <Progress value={(userStats.coursesCompleted / 10) * 100} className="h-2" />
-                
+                {/* Progress value will be based on a total goal, not necessarily the count of completed courses */}
+                {/* <Progress value={(firebaseUserEducationData.completedCourses.length / 10) * 100} className="h-2" /> */}
+
                 <div className="flex items-center justify-between">
                   <span>Articles Read</span>
-                  <span className="font-semibold">{userStats.recipesViewed}/50</span>
+                  <span className="font-semibold">{firebaseUserEducationData.readArticles.length}/50</span> {/* Use Firebase data */}
                 </div>
-                <Progress value={(userStats.recipesViewed / 50) * 100} className="h-2" />
-                
+                 {/* Progress value will be based on a total goal, not necessarily the count of read articles */}
+                {/* <Progress value={(firebaseUserEducationData.readArticles.length / 50) * 100} className="h-2" /> */}
+
                 <div className="flex items-center justify-between">
                   <span>Webinars Attended</span>
-                  <span className="font-semibold">2/5</span>
+                  <span className="font-semibold">{firebaseUserEducationData.attendedWebinars.length}/5</span> {/* Use Firebase data */}
                 </div>
-                <Progress value={40} className="h-2" />
+                 {/* Progress value will be based on a total goal, not necessarily the count of attended webinars */}
+                {/* <Progress value={(firebaseUserEducationData.attendedWebinars.length / 5) * 100} className="h-2" /> */}
               </div>
             </CardContent>
           </Card>
