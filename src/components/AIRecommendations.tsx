@@ -22,6 +22,9 @@ import {
   Filter,
   BarChart3
 } from 'lucide-react';
+import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
 import { productsData, searchProducts } from '@/data/productsData';
 
 interface Recommendation {
@@ -49,10 +52,46 @@ interface ActionProgress {
 }
 
 const AIRecommendations = () => {
+  const { currentUser } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [completedActions, setCompletedActions] = useState<number[]>([]);
   const [actionProgress, setActionProgress] = useState<Record<string, ActionProgress>>({});
+
+  // Effect to fetch user data from Firebase
+  React.useEffect(() => {
+    if (!currentUser) return;
+
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const aiRecommendationsDocRef = doc(userDocRef, 'aiRecommendations', 'data');
+
+    const unsubscribe = onSnapshot(aiRecommendationsDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setSelectedCategory(data.selectedCategory || 'all');
+        setSelectedPriority(data.selectedPriority || 'all');
+        setCompletedActions(data.completedActions || []);
+        setActionProgress(data.actionProgress || {});
+      }
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  // Effect to save user data to Firebase whenever relevant state changes
+  React.useEffect(() => {
+    if (!currentUser) return;
+
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const aiRecommendationsDocRef = doc(userDocRef, 'aiRecommendations', 'data');
+
+    setDoc(aiRecommendationsDocRef, {
+      selectedCategory,
+      selectedPriority,
+      completedActions,
+      actionProgress,
+    }, { merge: true });
+  }, [currentUser, selectedCategory, selectedPriority, completedActions, actionProgress]);
 
   const recommendations = [
     {

@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,25 +22,41 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { 
+import {
   Leaf, 
   Droplets, 
-  Trash2, 
+  Trash2,
   Zap, 
-  Heart, 
-  TrendingUp, 
+  Heart,
+  TrendingUp,
   Award, 
   AlertTriangle, 
   CheckCircle, 
   Info,
   Globe,
   Factory,
-  Truck
+  Truck,
 } from 'lucide-react';
+import { db } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const SustainabilityScore = ({ product }) => {
   const [activeMetric, setActiveMetric] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
+  const { currentUser } = useAuth();
+
+  useEffect(() => {
+    if (product && currentUser) {
+      addDoc(collection(db, `users/${currentUser.uid}/sustainabilityScores`), {
+        productId: product.id,
+        score: product.sustainability.overall,
+        timestamp: serverTimestamp(),
+      })
+      .catch((error) => {
+        console.error("Error adding sustainability score interaction: ", error);
+      });
+    }
+  }, [product, currentUser]); // Effect runs when product or currentUser changes
 
   if (!product) return null;
 

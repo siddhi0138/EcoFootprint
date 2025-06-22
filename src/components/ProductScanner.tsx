@@ -21,7 +21,15 @@ import {
   Search,
   Image as ImageIcon,
   FileImage
-} from 'lucide-react';
+} from "lucide-react";
+import {
+  collection,
+  doc,
+  setDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { useAuth } from "../contexts/AuthContext";
+import { db } from "../firebase";
 import { getRandomProducts } from '@/data/productsData';
 import { useUserData } from '@/contexts/UserDataContext';
 
@@ -33,6 +41,7 @@ const ProductScanner = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [uploadedImage, setUploadedImage] = useState(null);
   const videoRef = useRef(null);
+  const { user } = useAuth(); // Get user from useAuth
   const fileInputRef = useRef(null);
 
   const mockScan = () => {
@@ -72,14 +81,33 @@ const ProductScanner = () => {
       };
       
       setDetectedProduct(productData);
-      
-      // Add to user's scanned products
-      addScannedProduct({
-        name: randomProduct.name,
-        brand: randomProduct.brand,
-        sustainabilityScore: randomProduct.sustainabilityScore,
-        category: randomProduct.category
-      });
+
+      // Add to user's scanned products in Firebase
+      if (user) {
+        const scannedProductRef = doc(
+          collection(db, `users/${user.uid}/scannedProducts`)
+        );
+        setDoc(scannedProductRef, {
+          ...productData,
+          timestamp: serverTimestamp(),
+        }).catch((error) =>
+          console.error("Error adding scanned product to Firebase:", error)
+        );
+      }
+
+      // Add to local context/state (if still needed for immediate display)
+      // You might remove this if you exclusively use Firebase for data
+      if (addScannedProduct) {
+        const today = new Date();
+ addScannedProduct({
+ id: randomProduct.id.toString(), // Use the product's ID
+            name: randomProduct.name,
+            brand: randomProduct.brand,
+            sustainabilityScore: randomProduct.sustainabilityScore,
+            category: randomProduct.category,
+ date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`, // Add current date
+          });
+      }
       
       setIsScanning(false);
     }, 2000);
@@ -132,7 +160,7 @@ const ProductScanner = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {scannedProducts.slice(0, 6).map((product) => (
+              {scannedProducts.slice(0, 6).map((product: any) => (
                 <div key={product.id} className="p-4 border border-slate-200 rounded-lg hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-2">
                     <div>

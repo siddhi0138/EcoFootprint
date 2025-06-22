@@ -1,17 +1,16 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Plus, 
-  X, 
-  Search, 
-  ArrowUpDown, 
-  CheckCircle, 
+import {
+  Plus,
+  X,
+  Search,
+  ArrowUpDown,
+  CheckCircle,
   AlertCircle,
   Zap,
   Droplets,
@@ -20,109 +19,173 @@ import {
   Heart,
   Sparkles,
   Lightbulb,
-  Star
+  Star,
 } from 'lucide-react';
-import { getRandomProducts, searchProducts } from '@/data/productsData';
+import { getRandomProducts, searchProducts } from '@/data/productsData'; // Assuming this data is static for now
+import type { Product } from '@/data/productsData'; // Import Product type from data
+import { collection, doc, onSnapshot,
+  setDoc,
+  updateDoc,
+  arrayUnion,
+  getDoc,
+  arrayRemove,
+} from 'firebase/firestore';
+import { deleteDoc, getDocs } from 'firebase/firestore';
+
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+
+
+interface ComparisonProduct extends Product {
+    metrics?: { // Metrics are optional based on data structure
+      carbon: number;
+      water: number;
+      waste: number;
+      energy: number;
+      ethics: number;
+    };
+    reviews: number;
+    inStock: boolean;
+    packaging: { // Match the required structure from Product
+        type: string;
+        recyclable: boolean;
+        biodegradable: boolean;
+        plasticFree: boolean;
+    };
+
+    pros?: string[]; // Optional pros for comparison
+    cons?: string[]; // Optional cons for comparison
+}
 
 const ProductComparison = () => {
-  const [comparisonProducts, setComparisonProducts] = useState(() => {
-    const randomProducts = getRandomProducts(2);
-    return randomProducts.map(product => ({
-      id: product.id,
-      name: product.name,
-      brand: product.brand,
-      price: product.price,
-      sustainabilityScore: product.sustainabilityScore,
-      metrics: {
-        carbon: Math.floor(product.sustainabilityScore * 0.9),
-        water: Math.floor(product.sustainabilityScore * 0.95),
-        waste: Math.floor(product.sustainabilityScore * 0.85),
-        energy: Math.floor(product.sustainabilityScore * 0.92),
-        ethics: Math.floor(product.sustainabilityScore * 1.05)
-      },
-      image: product.image,
-      certifications: product.certifications.slice(0, 3),
-      pros: [
-        product.vegan ? 'Vegan friendly' : 'Quality materials',
-        product.packaging.recyclable ? 'Recyclable packaging' : 'Durable design',
-        'Good value'
-      ],
-      cons: [
-        product.price > 50 ? 'Higher price point' : 'Limited availability',
-        'Could improve packaging'
-      ],
-      rating: product.rating,
-      reviews: product.reviews,
-      inStock: product.inStock,
-      features: product.features
-    }));
-  });
-
-  const [searchQuery, setSearchQuery] = useState('');
+  const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [availableProducts, setAvailableProducts] = useState<Product[]>([]); // Initialize with Product[] type
+  const [firebaseComparisonProductIds, setFirebaseComparisonProductIds] = useState<number[]>([]); // Store product IDs from Firebase
+  const [comparisonProducts, setComparisonProducts] = useState<ComparisonProduct[]>([]); // State to hold full product objects for display
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [availableProducts, setAvailableProducts] = useState(() => getRandomProducts(6));
 
-  const removeProduct = (productId) => {
-    setComparisonProducts(comparisonProducts.filter(p => p.id !== productId));
+
+  // Fetch user's product comparison list
+  useEffect(() => {
+    if (!user) {
+      setFirebaseComparisonProductIds([]);
+      return;
+    }
+
+    const userComparisonRef = doc(db, 'users', user.uid, 'productComparison', 'list');
+    const unsubscribeComparisonList = onSnapshot(userComparisonRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setFirebaseComparisonProductIds(data.productIds || []);
+        // Fetch full product data for each ID
+        const productPromises = (data.productIds || []).map(async (productId: number) => {
+            const productDocRef = doc(db, 'users', user.uid, 'productComparison', 'list', 'products', productId.toString());
+            const productDocSnap = await getDoc(productDocRef);
+            if (productDocSnap.exists()) { // Cast to ComparisonProduct to include potential metrics
+                return productDocSnap.data() as ComparisonProduct; // Cast to ComparisonProduct
+            }
+            return undefined; // Product not found in subcollection
+        });
+
+        Promise.all(productPromises).then(products => {
+            setComparisonProducts(products.filter(product => product !== undefined) as Product[]);
+        });
+      } else { // Initialize if no data exists
+        // Initialize if no data exists
+         setFirebaseComparisonProductIds([]);
+         setComparisonProducts([]);
+        // Create the document with initial empty values
+         setDoc(userComparisonRef, {
+           productIds: []
+         }).catch(error => console.error("Error initializing user product comparison data:", error));
+      }
+    });
+
+    return () => unsubscribeComparisonList();
+  }, [user]);
+
+  // Fetch full product details when firebaseComparisonProductIds changes
+  useEffect(() => {
+    setAvailableProducts(getRandomProducts(6)); // Initialize available products on mount
+  }, [firebaseComparisonProductIds]); // Re-run when the list of IDs from Firebase changes
+
+
+  const removeProduct = async (productId: number) => { // Make async, specify type
+    if (!user) return;
+
+    const userComparisonRef = doc(db, 'users', user.uid, 'productComparison', 'list');
+    await updateDoc(userComparisonRef, {
+      productIds: arrayRemove(productId), // Remove product ID from Firebase array
+    });
+     // Also remove the product data from the subcollection
+     const productDocRef = doc(db, 'users', user.uid, 'productComparison', 'list', 'products', productId.toString());
+     // No need to await this, can run in the background
+     deleteDoc(productDocRef).catch(error => console.error("Error deleting product data from subcollection:", error));
+     // State will be updated by the onSnapshot listener
   };
 
-  const addProduct = (product) => {
-    if (comparisonProducts.length < 4) {
-      const fullProduct = {
-        id: product.id,
-        name: product.name,
-        brand: product.brand,
-        price: product.price,
-        sustainabilityScore: product.sustainabilityScore,
-        metrics: {
-          carbon: Math.floor(product.sustainabilityScore * 0.9),
-          water: Math.floor(product.sustainabilityScore * 0.95),
-          waste: Math.floor(product.sustainabilityScore * 0.85),
-          energy: Math.floor(product.sustainabilityScore * 0.92),
-          ethics: Math.floor(product.sustainabilityScore * 1.05)
-        },
-        image: product.image,
-        certifications: product.certifications.slice(0, 3),
-        pros: [
-          product.vegan ? 'Vegan friendly' : 'Quality materials',
-          product.packaging.recyclable ? 'Recyclable packaging' : 'Durable design',
-          'Good sustainability score'
-        ],
-        cons: [
-          product.price > 50 ? 'Higher price point' : 'Limited color options',
-          'Consider shipping impact'
-        ],
-        rating: product.rating,
-        reviews: product.reviews,
-        inStock: product.inStock,
-        features: product.features
-      };
-      setComparisonProducts([...comparisonProducts, fullProduct]);
+  const addProduct = async (product: Product) => {
+    if (!user || firebaseComparisonProductIds.length >= 4) { // Check limit based on Firebase data
+        if (firebaseComparisonProductIds.length >= 4) {
+             alert('You can compare up to 4 products.'); // Or use a toast
+        }
+        return;
     }
+
+    const userComparisonRef = doc(db, 'users', user.uid, 'productComparison', 'list');
+     if (!firebaseComparisonProductIds.includes(product.id)) {
+         await updateDoc(userComparisonRef, {
+            productIds: arrayUnion(product.id),
+        });
+
+        // Add the full product data to the subcollection
+        const productDocRef = doc(db, 'users', user.uid, 'productComparison', 'list', 'products', product.id.toString());
+
+        await setDoc(productDocRef, product);     }
   };
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      const results = searchProducts(searchQuery);
+      const results = searchProducts(searchQuery); // Assuming searchProducts returns Product[]
       setAvailableProducts(results.slice(0, 10));
     } else {
-      setAvailableProducts(getRandomProducts(6));
+      setAvailableProducts(getRandomProducts(6)); // Assuming getRandomProducts returns Product[]
     }
   };
 
-  const getScoreColor = (score) => {
+   const handleClearComparison = async () => {
+       // This function now needs to also delete all documents in the 'products' subcollection
+       if (!user) return;
+       const userComparisonRef = doc(db, 'users', user.uid, 'productComparison', 'list');
+
+       // First, delete all documents in the 'products' subcollection
+       const productsCollectionRef = collection(userComparisonRef, 'products');
+       const snapshot = await getDocs(productsCollectionRef);
+       const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+       await Promise.all(deletePromises).catch(error => console.error("Error clearing products subcollection:", error));
+
+       // Then, clear the productIds array in the main document
+       await updateDoc(userComparisonRef, {
+           productIds: [] // Clear the productIds array
+       });
+        // State will be updated by the onSnapshot listener
+   };
+
+
+  const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-yellow-600';
     return 'text-red-600';
   };
 
-  const getScoreBg = (score) => {
+  const getScoreBg = (score: number) => {
     if (score >= 80) return 'bg-green-100';
     if (score >= 60) return 'bg-yellow-100';
     return 'bg-red-100';
   };
 
-  const metricIcons = {
+  const metricIcons: { [key: string]: React.ElementType } = {
     carbon: Leaf,
     water: Droplets,
     waste: Trash2,
@@ -130,7 +193,7 @@ const ProductComparison = () => {
     ethics: Heart
   };
 
-  const metricLabels = {
+  const metricLabels: { [key: string]: string } = {
     carbon: 'Carbon',
     water: 'Water',
     waste: 'Waste',
@@ -203,8 +266,8 @@ const ProductComparison = () => {
                         </Button>
 
                         <div className="aspect-video relative overflow-hidden">
-                          <img 
-                            src={product.image} 
+                          <img
+                            src={product.image}
                             alt={product.name}
                             className="w-full h-full object-cover"
                           />
@@ -238,7 +301,7 @@ const ProductComparison = () => {
                             </Badge>
                           </div>
 
-                          {/* Enhanced Metrics */}
+                         {/* Enhanced Metrics - Render only if metrics exist */}
                           <div className="space-y-3">
                             {Object.entries(product.metrics || {}).map(([key, value]) => {
                               const Icon = metricIcons[key];
@@ -248,11 +311,11 @@ const ProductComparison = () => {
                                     <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                                       <Icon className="w-4 h-4 text-gray-600" />
                                     </div>
-                                    <span className="text-sm font-medium">{metricLabels[key]}</span>
+                                    <span className="text-sm font-medium">{metricLabels[key as keyof typeof metricLabels]}</span> {/* Use keyof typeof */}
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <div className="w-20 bg-gray-200 rounded-full h-2">
-                                      <div 
+                                      <div
                                         className={`h-2 rounded-full ${value >= 80 ? 'bg-green-500' : value >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
                                         style={{ width: `${value}%` }}
                                       ></div>
@@ -265,7 +328,7 @@ const ProductComparison = () => {
                           </div>
 
                           {/* Certifications */}
-                          {product.certifications && product.certifications.length > 0 && (
+                          {product.certifications && (
                             <div>
                               <p className="text-sm font-medium mb-2">Certifications</p>
                               <div className="flex flex-wrap gap-1">
@@ -293,11 +356,11 @@ const ProductComparison = () => {
                               ))}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-red-700 mb-2 flex items-center">
+                              <p className="text-sm font-medium text-red-700 mb-2 flex items-center">\
                                 <AlertCircle className="w-4 h-4 mr-1" />
                                 Cons
                               </p>
-                              {product.cons?.slice(0, 2).map((con, index) => (
+                              {product.cons && product.cons.slice(0, 2).map((con, index) => (
                                 <div key={index} className="flex items-start space-x-2 mb-1">
                                   <div className="w-1.5 h-1.5 bg-red-500 rounded-full mt-2"></div>
                                   <span className="text-xs text-gray-600">{con}</span>
@@ -314,13 +377,13 @@ const ProductComparison = () => {
                     ))}
                   </div>
                 </div>
-              ) : (
+              ) : ( // Else block
                 <Card className="border-dashed border-2 border-gray-300 rounded-2xl">
                   <CardContent className="text-center py-12">
                     <ArrowUpDown className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-xl font-bold text-gray-600 mb-2">No Products to Compare</h3>
                     <p className="text-gray-500 mb-6">Add products to start comparing their sustainability scores</p>
-                    <Button className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl">
+                    <Button onClick={() => setSelectedCategory('search')} className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl" >
                       Add Products
                     </Button>
                   </CardContent>
@@ -329,34 +392,34 @@ const ProductComparison = () => {
             </TabsContent>
 
             <TabsContent value="search" className="mt-6">
-              {comparisonProducts.length < 4 && (
+              {firebaseComparisonProductIds.length < 4 && ( // Check limit before displaying search
                 <div className="space-y-6">
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="relative flex-1">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        placeholder="Search for products to compare..."
+                        placeholder="Search for products to compare..." // Added placeholder
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        className="pl-10 border-gray-300 focus:border-purple-400 h-12 rounded-2xl"
-                      />
+                        className="pl-10 border-gray-300 focus:border-purple-400 h-12 rounded-2xl h-12"
+ />
                     </div>
                     <Button onClick={handleSearch} className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl px-6">
                       Search
                     </Button>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {availableProducts
-                      .filter(product => !comparisonProducts.find(cp => cp.id === product.id))
+                      .filter(product => !firebaseComparisonProductIds.includes(product.id)) // Filter based on Firebase data
                       .slice(0, 8)
                       .map((product) => (
                         <Card key={product.id} className="hover:shadow-lg transition-all duration-200 border border-gray-200 rounded-2xl overflow-hidden">
                           <CardContent className="p-4">
                             <div className="flex items-center space-x-4">
-                              <img 
-                                src={product.image} 
+                              <img
+                                src={product.image}
                                 alt={product.name}
                                 className="w-16 h-16 object-cover rounded-xl"
                               />
@@ -370,8 +433,8 @@ const ProductComparison = () => {
                                   <span className="text-xs text-gray-500">Sustainability Score</span>
                                 </div>
                               </div>
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 onClick={() => addProduct(product)}
                                 className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl"
                               >
@@ -396,7 +459,7 @@ const ProductComparison = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {comparisonProducts.length > 1 ? (
+                    {comparisonProducts.length > 1 ? ( // Check comparisonProducts length
                       <>
                         <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
                           <div className="flex items-start space-x-3">
@@ -409,7 +472,7 @@ const ProductComparison = () => {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
                           <div className="flex items-start space-x-3">
                             <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />

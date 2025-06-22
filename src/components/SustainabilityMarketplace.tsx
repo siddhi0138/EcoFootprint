@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,19 +9,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Search, ShoppingCart, Star, Leaf, Award, Filter, Heart, Share2, Eye, TrendingUp, Download, BarChart3 } from 'lucide-react';
 import { productsData, searchProducts, getProductsByCategory } from '@/data/productsData';
 import { useUserData } from '@/contexts/UserDataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { db } from '../firebase';
+import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 const SustainabilityMarketplace = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('score');
-  const [favorites, setFavorites] = useState([]);
-  const [cart, setCart] = useState([]);
+  const [userFavorites, setUserFavorites] = useState([]);
+  const [userCart, setUserCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const { addPoints } = useUserData();
   const { toast } = useToast();
+  const { user, loading } = useAuth();
 
-  // Get products based on search and filters
+  // Fetch user data (favorites and cart) from Firebase
   const getFilteredProducts = () => {
     let products = productsData.slice(0, 100); // Show first 100 for performance
     
@@ -43,6 +48,27 @@ const SustainabilityMarketplace = () => {
     });
   };
 
+  useEffect(() => {
+    if (user) {
+      const userDocRef = doc(db, 'users', user.uid, 'profile', 'data');
+      const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setUserFavorites(data.favorites || []);
+          setUserCart(data.cart || []);
+        } else {
+          setUserFavorites([]);
+          setUserCart([]);
+        }
+      });
+      return () => unsubscribe();
+    } else {
+      // Clear local state for unauthenticated users
+      setUserFavorites([]);
+      setUserCart([]);
+    }
+  }, [user]); // Add user as a dependency
+
   const filteredProducts = getFilteredProducts();
 
   const categories = [
@@ -54,44 +80,61 @@ const SustainabilityMarketplace = () => {
     { id: 'home-garden', label: 'Home & Garden', icon: Heart, count: getProductsByCategory('home-garden').length }
   ];
 
-  const toggleFavorite = (productId) => {
-    setFavorites(prev => {
-      const newFavorites = prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId];
-      
-      if (!prev.includes(productId)) {
-        addPoints(5);
-        toast({
-          title: "Product Favorited!",
-          description: "You earned 5 points for favoriting a product!",
-        });
-      }
-      
-      return newFavorites;
-    });
+  const toggleFavorite = async (productId) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to manage your favorites.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const userDocRef = doc(db, 'users', user.uid, 'profile', 'data');
+
+    if (userFavorites.includes(productId)) {
+      await updateDoc(userDocRef, {
+        favorites: arrayRemove(productId)
+      });
+    } else {
+      await updateDoc(userDocRef, {
+        favorites: arrayUnion(productId)
+      });
+      addPoints(5);
+      toast({
+        title: "Product Favorited!",
+        description: "You earned 5 points for favoriting a product!",
+      });
+    }
   };
 
-  const addToCart = (product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      let newCart;
-      if (existing) {
-        newCart = prev.map(item => 
-          item.id === product.id 
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      } else {
-        newCart = [...prev, { ...product, quantity: 1 }];
-        addPoints(10);
-        toast({
-          title: "Added to Cart!",
-          description: `${product.name} added to cart. You earned 10 points!`,
-        });
-      }
-      return newCart;
-    });
+  const addToCart = async (product) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to add items to your cart.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const userDocRef = doc(db, 'users', user.uid, 'profile', 'data');
+    const existingItemIndex = userCart.findIndex(item => item.productId === product.id);
+
+    if (existingItemIndex > -1) {
+      const updatedCart = [...userCart];
+      updatedCart[existingItemIndex].quantity += 1;
+      await updateDoc(userDocRef, { cart: updatedCart });
+    } else {
+      await updateDoc(userDocRef, {
+        cart: arrayUnion({ productId: product.id, quantity: 1 })
+      });
+      addPoints(10);
+      toast({
+        title: "Added to Cart!",
+        description: `${product.name} added to cart. You earned 10 points!`,
+      });
+    }
   };
 
   const shareProduct = (product) => {
@@ -186,8 +229,8 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
               <Badge className="bg-green-600 text-white">
                 {filteredProducts.length} Products
               </Badge>
-              <Badge variant="outline" className="border-blue-300 text-blue-700">
-                {cart.length} in Cart
+              <Badge variant="outline" className="border-blue-300 text-blue-700"> {/* Replace with userCart length */}
+                {userCart.length} in Cart
               </Badge>
             </div>
           </CardTitle>
@@ -272,10 +315,10 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                       className="w-8 h-8 p-0 bg-white/90 hover:bg-white"
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleFavorite(product.id);
+                        toggleFavorite(product.id); // Use the Firebase integrated function
                       }}
                     >
-                      <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
+                      <Heart className={`w-4 h-4 ${userFavorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
                     </Button>
                     <Button
                       size="sm"
@@ -363,10 +406,10 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                             Add to Cart
                           </>
                         ) : (
-                          'Out of Stock'
+                          'Out of Stock'  /* Fix the ternary operator syntax here */
                         )}
                       </Button>
-                      <Dialog>
+                      <Dialog> {/* Use the Firebase integrated function */}
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm" className="px-3" onClick={() => setSelectedProduct(product)}>
                             <Eye className="w-4 h-4" />
@@ -437,7 +480,7 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                                 onClick={() => addToCart(product)}
                                 disabled={!product.inStock}
                               >
-                                <ShoppingCart className="w-4 h-4 mr-2" />
+                                {/* Use the Firebase integrated function */}
                                 Add to Cart
                               </Button>
                               <Button variant="outline" onClick={() => downloadReport(product)}>

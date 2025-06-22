@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { Button } from '@/components/ui/button'; // Import Button
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -28,17 +29,19 @@ import {
   Car,
   BookOpen,
   ChefHat,
+  Clock,
   BarChart3,
   TrendingDown
 } from 'lucide-react';
+import { db } from '../firebase'; // Import db
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const UserProfile = () => {
   const { user, logout } = useAuth();
   const { userStats, carbonEntries, scannedProducts } = useUserData();
-  const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
-    name: user?.name || 'Alex Green',
+ const [isEditing, setIsEditing] = useState(false);
+ const [profile, setProfile] = useState({
+    name: user?.name || '',
     email: user?.email || 'alex.green@example.com',
     location: 'San Francisco, CA',
     bio: 'Passionate about sustainability and making eco-friendly choices every day.',
@@ -48,6 +51,54 @@ const UserProfile = () => {
       yearlyTarget: 'Achieve zero waste lifestyle'
     }
   });
+
+
+  // Fetch user profile and stats on component mount
+  React.useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        // Fetch profile data
+        const userDocRef = doc(db, 'users', user.id);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          setProfile({
+            name: userData.name || user.name || '',
+            email: userData.email || user.email || '',
+            location: userData.location || '',
+            bio: userData.bio || '',
+            goals: userData.goals || {
+              weeklyScans: 10,
+              monthlyGoal: 'Reduce carbon footprint by 20%',
+              yearlyTarget: 'Achieve zero waste lifestyle'
+            }
+          });
+        } else {
+          // If user document doesn't exist, create it with basic info
+          await setDoc(userDocRef, {
+            uid: user.id,
+            name: user.name || '',
+            email: user.email || '',
+          }, { merge: true });
+        }
+
+        // Fetch user stats
+        const userStatsDocRef = doc(db, 'userStats', user.id);
+        const userStatsDocSnap = await getDoc(userStatsDocRef);
+
+        if (userStatsDocSnap.exists()) {
+ // userStats is already being updated by the UserDataProvider's snapshot listener
+        } else {
+          // If user stats document doesn't exist, create it with default values
+          await setDoc(userStatsDocRef, {
+            totalScans: 0, co2Saved: 0, totalPoints: 150, rank: 999, currentWeekScans: 0, coursesCompleted: 0, recipesViewed: 0, investmentsMade: 0, transportTrips: 0, esgReports: 0, badges: 0, avgScore: 0, level: 1, weeklyGoal: 75, streakDays: 0
+          });
+        }
+      }
+   };
+    fetchUserProfile();
+ }, [user]); // Removed setUserStats from the dependency array as it's not directly used here
 
   const achievements = [
     { 
@@ -142,8 +193,26 @@ const UserProfile = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsEditing(false);
+    if (user) {
+      try {
+        const userDocRef = doc(db, 'users', user.id);
+        await setDoc(userDocRef, {
+          name: profile.name,
+          email: profile.email,
+          location: profile.location,
+          bio: profile.bio,
+          goals: profile.goals, // Save goals as well
+        }, { merge: true });
+        console.log('Profile updated successfully!');
+      } catch (error) {
+        console.error('Error updating profile:', error);
+      }
+    } else {
+      console.warn('No user logged in to save profile.');
+    }
+
   };
 
   const handleLogout = () => {

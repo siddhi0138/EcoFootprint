@@ -20,8 +20,11 @@ import {
 import { getRandomProducts } from '@/data/productsData';
 import { useUserData } from '@/contexts/UserDataContext';
 
+import { db } from '../firebase'; // Import db
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth
+import { collection, addDoc } from 'firebase/firestore'; // Import Firestore functions
+
 const ARProductScanner = () => {
-  const { addScannedProduct } = useUserData();
   const [isScanning, setIsScanning] = useState(false);
   const [detectedProduct, setDetectedProduct] = useState(null);
   const [arMode, setArMode] = useState(false);
@@ -29,6 +32,8 @@ const ARProductScanner = () => {
 
   const mockScan = () => {
     setIsScanning(true);
+    const { currentUser } = useAuth(); // Get the current user
+
     setTimeout(() => {
       const randomProduct = getRandomProducts(1)[0];
       
@@ -53,14 +58,21 @@ const ARProductScanner = () => {
       };
       
       setDetectedProduct(productData);
-      
-      // Add to user's scanned products
-      addScannedProduct({
-        name: randomProduct.name,
-        brand: randomProduct.brand,
-        sustainabilityScore: randomProduct.sustainabilityScore,
-        category: randomProduct.category
-      });
+
+      // Save to Firestore if user is authenticated
+      if (currentUser) {
+        const scannedProductsRef = collection(db, `users/${currentUser.uid}/scannedARProducts`);
+        addDoc(scannedProductsRef, {
+          ...productData,
+          timestamp: new Date() // Add a timestamp
+        })
+        .then(() => {
+          console.log("AR scanned product saved successfully!");
+        })
+        .catch((error) => {
+          console.error("Error saving AR scanned product:", error);
+        });
+      }
       
       setIsScanning(false);
     }, 2000);

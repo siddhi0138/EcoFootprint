@@ -1,6 +1,6 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -17,17 +17,33 @@ import {
   TrendingUp
 } from 'lucide-react';
 
+import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
+import { doc, onSnapshot, collection, query } from 'firebase/firestore';
+
+interface UserImpactStats {
+  treesPlanted: number;
+  waterSaved: number;
+  carbonOffset: number;
+  communitiesHelped: number;
+  // Add any other user-specific impact stats here
+}
+
+interface GlobalImpactStats {
+  totalUsers: number;
+  treesPlanted: number;
+  waterSaved: number;
+  carbonOffset: number;
+  communitiesHelped: number;
+}
+
 const SocialImpactHub = () => {
+  const { user } = useAuth();
   const [selectedCause, setSelectedCause] = useState('forest');
+  const [userImpactStats, setUserImpactStats] = useState<UserImpactStats | null>(null);
+  const [globalImpactStats, setGlobalImpactStats] = useState<GlobalImpactStats>({ totalUsers: 0, treesPlanted: 0, waterSaved: 0, carbonOffset: 0, communitiesHelped: 0 });
 
-  const impactStats = {
-    totalUsers: 125000,
-    treesPlanted: 45678,
-    waterSaved: 892456,
-    carbonOffset: 12847,
-    communitiesHelped: 234
-  };
-
+  // Mock achievements based on user stats (will be calculated from Firebase data)
   const causes = [
     {
       id: 'forest',
@@ -64,6 +80,43 @@ const SocialImpactHub = () => {
     }
   ];
 
+  // Fetch user-specific impact stats
+  useEffect(() => {
+    if (!user) {
+      setUserImpactStats(null);
+      return;
+    }
+
+    const userImpactRef = doc(db, 'users', user.uid, 'impactStats', 'summary');
+    const unsubscribeUserImpact = onSnapshot(userImpactRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setUserImpactStats(docSnap.data() as UserImpactStats);
+      } else {
+        setUserImpactStats({ treesPlanted: 0, waterSaved: 0, carbonOffset: 0, communitiesHelped: 0 });
+      }
+    }, (error) => {
+      console.error("Error fetching user impact stats:", error);
+      setUserImpactStats({ treesPlanted: 0, waterSaved: 0, carbonOffset: 0, communitiesHelped: 0 }); // Fallback
+    });
+
+    // Fetch global impact stats (assuming a 'globalImpact' document/collection)
+    const globalImpactRef = doc(db, 'global', 'impact'); // Example path
+    const unsubscribeGlobalImpact = onSnapshot(globalImpactRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setGlobalImpactStats(docSnap.data() as GlobalImpactStats);
+      } else {
+        setGlobalImpactStats({ totalUsers: 0, treesPlanted: 0, waterSaved: 0, carbonOffset: 0, communitiesHelped: 0 });
+      }
+    }, (error) => {
+      console.error("Error fetching global impact stats:", error);
+    });
+
+    return () => {
+      unsubscribeUserImpact();
+      unsubscribeGlobalImpact();
+    };
+  }, [user]);
+
   const achievements = [
     {
       title: 'Tree Planter',
@@ -73,18 +126,18 @@ const SocialImpactHub = () => {
       rarity: 'common'
     },
     {
-      title: 'Water Guardian',
-      description: 'Saved 1000L+ water',
-      icon: Droplets,
-      unlocked: true,
-      rarity: 'rare'
-    },
-    {
       title: 'Carbon Hero',
       description: 'Offset 50kg+ CO₂',
       icon: Wind,
-      unlocked: false,
+      unlocked: userImpactStats ? userImpactStats.carbonOffset >= 50 : false,
       rarity: 'epic'
+    },
+     {
+      title: 'Water Guardian',
+      description: 'Saved 1000L+ water',
+      icon: Droplets,
+      unlocked: userImpactStats ? userImpactStats.waterSaved >= 1000 : false,
+      rarity: 'rare'
     }
   ];
 
@@ -104,23 +157,37 @@ const SocialImpactHub = () => {
           {/* Global Impact Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white/70 rounded-xl p-4 text-center">
-              <Users className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-              <div className="text-2xl font-bold text-gray-800">{impactStats.totalUsers.toLocaleString()}</div>
+              {globalImpactStats ? (
+                <Users className="w-6 h-6 mx-auto mb-2 text-blue-600" />
+              ) : <Skeleton className="w-6 h-6 mx-auto mb-2 bg-gray-300" />}
+              <div className="text-2xl font-bold text-gray-800">
+                {globalImpactStats ? globalImpactStats.totalUsers.toLocaleString() : <Skeleton className="w-16 h-6 mx-auto bg-gray-300" />}
+              </div>
               <div className="text-sm text-gray-600">Active Users</div>
             </div>
             <div className="bg-white/70 rounded-xl p-4 text-center">
-              <TreePine className="w-6 h-6 mx-auto mb-2 text-green-600" />
-              <div className="text-2xl font-bold text-gray-800">{impactStats.treesPlanted.toLocaleString()}</div>
+              {globalImpactStats ? (
+                <TreePine className="w-6 h-6 mx-auto mb-2 text-green-600" />
+              ) : <Skeleton className="w-6 h-6 mx-auto mb-2 bg-gray-300" />}
+              <div className="text-2xl font-bold text-gray-800">
+                {globalImpactStats ? globalImpactStats.treesPlanted.toLocaleString() : <Skeleton className="w-16 h-6 mx-auto bg-gray-300" />}
+              </div>
               <div className="text-sm text-gray-600">Trees Planted</div>
             </div>
             <div className="bg-white/70 rounded-xl p-4 text-center">
-              <Droplets className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-              <div className="text-2xl font-bold text-gray-800">{Math.round(impactStats.waterSaved / 1000)}K</div>
+              {globalImpactStats ? (
+                <Droplets className="w-6 h-6 mx-auto mb-2 text-blue-600" />
+              ) : <Skeleton className="w-6 h-6 mx-auto mb-2 bg-gray-300" />}
+              <div className="text-2xl font-bold text-gray-800">
+                {globalImpactStats ? `${Math.round(globalImpactStats.waterSaved / 1000)}K` : <Skeleton className="w-16 h-6 mx-auto bg-gray-300" />}
+                </div>
               <div className="text-sm text-gray-600">Liters Saved</div>
             </div>
             <div className="bg-white/70 rounded-xl p-4 text-center">
-              <Wind className="w-6 h-6 mx-auto mb-2 text-purple-600" />
-              <div className="text-2xl font-bold text-gray-800">{impactStats.carbonOffset.toLocaleString()}</div>
+              {globalImpactStats ? (
+                <Wind className="w-6 h-6 mx-auto mb-2 text-purple-600" />
+              ) : <Skeleton className="w-6 h-6 mx-auto mb-2 bg-gray-300" />}
+              <div className="text-2xl font-bold text-gray-800">{globalImpactStats ? globalImpactStats.carbonOffset.toLocaleString() : <Skeleton className="w-16 h-6 mx-auto bg-gray-300" />}</div>
               <div className="text-sm text-gray-600">kg CO₂ Offset</div>
             </div>
           </div>
@@ -171,7 +238,19 @@ const SocialImpactHub = () => {
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Your Impact Achievements</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {achievements.map((achievement, index) => (
-                <div key={index} className={`bg-white/80 rounded-xl p-4 border ${achievement.unlocked ? 'border-green-200' : 'border-gray-200'} ${!achievement.unlocked && 'opacity-60'}`}>
+                 <div
+                    key={index}
+                    className={`bg-white/80 rounded-xl p-4 border ${achievement.unlocked ? 'border-green-200' : 'border-gray-200'} ${
+                      !achievement.unlocked && (!user ? 'opacity-30' : 'opacity-60') // Further reduce opacity if not logged in
+                    }`}
+                  >
+                   {!user && (
+                      <div className="absolute inset-0 bg-black/10 rounded-xl flex items-center justify-center">
+                         <span className="text-white font-bold text-sm">Log in to see</span>
+                      </div>
+                   )}
+
+
                   <div className="flex items-center space-x-3 mb-2">
                     <achievement.icon className={`w-6 h-6 ${achievement.unlocked ? 'text-green-600' : 'text-gray-400'}`} />
                     <div>
@@ -180,7 +259,7 @@ const SocialImpactHub = () => {
                     </div>
                   </div>
                   <Badge variant={achievement.unlocked ? "default" : "secondary"} className="text-xs">
-                    {achievement.unlocked ? 'Unlocked' : 'Locked'}
+                    {user ? (achievement.unlocked ? 'Unlocked' : 'Locked') : 'Locked'}
                   </Badge>
                 </div>
               ))}
