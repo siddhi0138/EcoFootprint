@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Leaf, 
-  Menu, 
-  X, 
-  Scan, 
-  BarChart3, 
-  Users, 
+import {
+  Leaf,
+  Menu,
+  X,
+  Scan,
+  BarChart3,
+  Users,
   Award,
   ChevronDown,
   ShoppingCart,
@@ -35,32 +35,45 @@ import {
   Settings,
   Sun,
   Moon,
-  LogOut
+  LogOut,
+  Plus,
+  Minus,
+  Trash2
 } from 'lucide-react';
 
-const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: { 
-  onNavigate: any; 
-  activeTab: any; 
+const Navbar = ({
+  onNavigate,
+  activeTab,
+  toggleLoginForm,
+  cartItems = [],
+  updateCartItem,
+  removeFromCart,
+  clearCart
+}: {
+  onNavigate: any;
+  activeTab: any;
   toggleLoginForm?: () => void;
-  cartItemCount: number;
+  cartItems?: any[];
+  updateCartItem?: (id: string, quantity: number) => void;
+  removeFromCart?: (id: string) => void;
+  clearCart?: () => void;
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
 
+  // Calculate cart total items and price
+  const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+
   const quickAccess = [
- { id: 'scanner', label: 'AI Scanner', icon: Scan },
+    { id: 'scanner', label: 'AI Scanner', icon: Scan },
     { id: 'chatbot', label: 'EcoBot Assistant', icon: Bot },
     { id: 'carbon-tracker', label: 'Carbon Tracker', icon: Target },
     { id: 'ai-recommendations', label: 'AI Recommendations', icon: Brain }
-  ];
-
-  const toolsItems = [
-    { id: 'ai-recommendations', label: 'AI Tools', icon: Brain },
-    { id: 'analysis', label: 'Analytics', icon: BarChart3 },
-    { id: 'carbon-tracker', label: 'Tracking', icon: Target }
   ];
 
   const mainNavItems = [
@@ -93,13 +106,59 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
     setUserMenuOpen(false);
   };
 
+  // Handle navigation functions for buttons
+  const handleViewDetailedAnalysis = () => {
+    onNavigate('lifecycle');
+    setCartOpen(false);
+    setActiveDropdown(null);
+  };
+
+  const handleCompareProducts = () => {
+    onNavigate('comparison');
+    setCartOpen(false);
+    setActiveDropdown(null);
+  };
+
+  const handleCartClick = () => {
+    setCartOpen(!cartOpen);
+    setActiveDropdown(null);
+    setUserMenuOpen(false);
+  };
+
+  const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeFromCart?.(itemId);
+    } else {
+      updateCartItem?.(itemId, newQuantity);
+    }
+  };
+
+  const handleCheckout = () => {
+    onNavigate('checkout');
+    setCartOpen(false);
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!(event.target as HTMLElement).closest('.dropdown-container')) {
+        setActiveDropdown(null);
+        setUserMenuOpen(false);
+        setCartOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm dark:bg-gray-900/95 dark:border-gray-800">
- <div className="container mx-auto px-4 h-20">
+      <div className="container mx-auto px-4 h-20">
         <div className="flex items-center justify-between h-16">
           {/* Enhanced Logo */}
-          <div 
-            className="flex items-center space-x-3 cursor-pointer group min-w-[160px]" 
+          <div
+            className="flex items-center space-x-3 cursor-pointer group min-w-[160px]"
             onClick={() => onNavigate('home')}
           >
             <div className="relative">
@@ -125,8 +184,8 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
                 variant={activeTab === item.id ? "default" : "ghost"}
                 size="sm"
                 className={`px-3 py-2 text-sm h-9 transition-all duration-200 ${
-                  activeTab === item.id 
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md' 
+                  activeTab === item.id
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md'
                     : 'text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 dark:text-gray-300 dark:hover:text-emerald-400 dark:hover:bg-emerald-900/20'
                 }`}
                 onClick={() => onNavigate(item.id)}
@@ -136,34 +195,34 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
               </Button>
             ))}
 
-            {/* AI Tools Dropdown */}
-            <div className="relative">
+            {/* Smart Tools Dropdown */}
+            <div className="relative dropdown-container">
               <Button
                 variant="ghost"
                 size="sm"
                 className="px-3 py-2 text-sm text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 h-9 transition-all duration-200 dark:text-gray-300 dark:hover:text-emerald-400 dark:hover:bg-emerald-900/20"
-                onMouseEnter={() => setActiveDropdown('tools')}
+                onMouseEnter={() => setActiveDropdown('smart-tools')}
                 onMouseLeave={() => setActiveDropdown(null)}
               >
-                AI Tools
+                Smart Tools
                 <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
-              
-              {activeDropdown === 'tools' && (
-                <div 
+
+              {activeDropdown === 'smart-tools' && (
+                <div
                   className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 animate-fade-in dark:bg-gray-800 dark:border-gray-700"
-                  onMouseEnter={() => setActiveDropdown('tools')}
+                  onMouseEnter={() => setActiveDropdown('smart-tools')}
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
                   <div className="p-3 space-y-1">
-                    {toolsItems.map((item) => (
+                    {smartToolsItems.map((item) => (
                       <Button
                         key={item.id}
                         variant="ghost"
                         size="sm"
                         className={`w-full justify-start px-3 py-2 text-sm h-9 transition-all duration-200 rounded-lg ${
-                          activeTab === item.id 
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' 
+                          activeTab === item.id
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-emerald-400'
                         }`}
                         onClick={() => {
@@ -175,13 +234,15 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
                         {item.label}
                       </Button>
                     ))}
+                     {/* Removed the duplicate "View Detailed Analysis" button here */}
+                     {/* Removed the duplicate "Compare Products" button here */}
                   </div>
                 </div>
               )}
             </div>
 
             {/* More Dropdown */}
-            <div className="relative">
+            <div className="relative dropdown-container">
               <Button
                 variant="ghost"
                 size="sm"
@@ -192,9 +253,9 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
                 More
                 <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
-              
+
               {activeDropdown === 'more' && (
-                <div 
+                <div
                   className="absolute top-full left-0 mt-1 w-72 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-96 overflow-y-auto animate-fade-in dark:bg-gray-800 dark:border-gray-700"
                   onMouseEnter={() => setActiveDropdown('more')}
                   onMouseLeave={() => setActiveDropdown(null)}
@@ -209,39 +270,11 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
                         {mainNavItems.map((item) => (
                           <Button
                             key={item.id}
-                            variant="ghost"
+                            variant={activeTab === item.id ? "default" : "ghost"}
                             size="sm"
                             className={`w-full justify-start px-3 py-2 text-sm h-9 transition-all duration-200 rounded-lg ${
-                              activeTab === item.id 
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' 
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-emerald-400'
-                            }`}
-                            onClick={() => {
-                              onNavigate(item.id);
-                              setActiveDropdown(null);
-                            }}
-                          >
-                            <item.icon className="w-4 h-4 mr-3" />
-                            {item.label}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Smart Tools */}
-                    <div className="mb-4">
-                      <div className="px-3 py-2 text-xs font-semibold text-emerald-700 uppercase tracking-wide border-b border-emerald-100 dark:text-emerald-400 dark:border-emerald-800">
-                        Smart Tools
-                      </div>
-                      <div className="mt-2 space-y-1">
-                        {smartToolsItems.map((item) => (
-                          <Button
-                            key={item.id}
-                            variant="ghost"
-                            size="sm"
-                            className={`w-full justify-start px-3 py-2 text-sm h-9 transition-all duration-200 rounded-lg ${
-                              activeTab === item.id 
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' 
+                              activeTab === item.id
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200'
                                 : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-emerald-400'
                             }`}
                             onClick={() => {
@@ -265,11 +298,11 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
                         {lifestyleItems.map((item) => (
                           <Button
                             key={item.id}
-                            variant="ghost"
+                            variant={activeTab === item.id ? "default" : "ghost"}
                             size="sm"
-                            className={`w-full justify-start px-3 py-2 text-sm h-9 transition-all duration-200 rounded-lg ${
-                              activeTab === item.id 
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' 
+                            className={`w-full justify-start pl-6 transition-all duration-200 rounded-lg ${
+                              activeTab === item.id
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200'
                                 : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-emerald-400'
                             }`}
                             onClick={() => {
@@ -293,11 +326,11 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
                         {businessItems.map((item) => (
                           <Button
                             key={item.id}
-                            variant="ghost"
+                            variant={activeTab === item.id ? "default" : "ghost"}
                             size="sm"
-                            className={`w-full justify-start px-3 py-2 text-sm h-9 transition-all duration-200 rounded-lg ${
-                              activeTab === item.id 
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200' 
+                            className={`w-full justify-start pl-6 transition-all duration-200 rounded-lg ${
+                              activeTab === item.id
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200'
                                 : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-emerald-400'
                             }`}
                             onClick={() => {
@@ -319,16 +352,144 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
 
           {/* Right Section */}
           <div className="hidden lg:flex items-center space-x-4 min-w-[200px] justify-end">
+            {/* Shopping Cart */}
+            <div className="relative dropdown-container">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20 relative"
+                onClick={handleCartClick}
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                    {cartItemCount > 99 ? '99+' : cartItemCount}
+                  </span>
+                )}
+              </Button>
+
+              {/* Cart Dropdown */}
+              {cartOpen && (
+                <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
+                  <div className="p-4 border-b border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">Shopping Cart</h3>
+                      {cartItems.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                          onClick={() => clearCart?.()}
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="max-h-64 overflow-y-auto">
+                    {cartItems.length === 0 ? (
+                      <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                        <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>Your cart is empty</p>
+                        <Button
+                          size="sm"
+                          className="mt-3 bg-emerald-600 hover:bg-emerald-700"
+                          onClick={() => {
+                            onNavigate('marketplace');
+                            setCartOpen(false);
+                          }}
+                        >
+                          Browse Products
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="p-2">
+                        {cartItems.map((item) => (
+                          <div key={item.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <img
+                              src={item.image || '/api/placeholder/40/40'}
+                              alt={item.name}
+                              className="w-10 h-10 rounded-lg object-cover"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                {item.name}
+                              </p>
+                              <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                                ${item.price.toFixed(2)}
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-6 h-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <span className="text-sm font-medium w-8 text-center">
+                                {item.quantity}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-6 h-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {cartItems.length > 0 && (
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-semibold text-gray-900 dark:text-gray-100">Total:</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                          ${cartTotal.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        <Button
+                          className="w-full bg-emerald-600 hover:bg-emerald-700"
+                          onClick={handleCheckout}
+                        >
+                          Checkout
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            onNavigate('marketplace');
+                            setCartOpen(false);
+                          }}
+                        >
+                          Continue Shopping
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Notification Icon */}
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20"
               onClick={() => onNavigate('notifications')}
             >
               <Bell className="w-5 h-5" />
             </Button>
-            
+
             {/* Theme Toggle */}
             <Button
               variant="ghost"
@@ -341,10 +502,10 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
 
             {/* User Profile/Login */}
             {user ? (
-              <div className="relative">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+              <div className="relative dropdown-container">
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="flex items-center space-x-2 p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                 >
@@ -373,7 +534,7 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full justify-start text-left p-3 hover:bg-red-50 text-red-600 dark:hover:bg-red-900/20 dark:text-red-400"
+                        className="w-full justify-start text-left p-3 hover:bg-red-50 text-red-600 dark:hover:bg-red-400 dark:hover:bg-red-900/20"
                         onClick={handleLogout}
                       >
                         <LogOut className="w-4 h-4 mr-3" />
@@ -385,8 +546,8 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
               </div>
             ) : (
               toggleLoginForm && (
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   className="bg-emerald-600 hover:bg-emerald-700 text-sm px-4 h-9 shadow-lg hover:shadow-xl transition-all duration-200"
                   onClick={toggleLoginForm}
                 >
@@ -430,6 +591,28 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
                     {item.label}
                   </Button>
                 ))}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mb-4 px-4 space-y-2">
+                {/* Removed the duplicate "View Detailed Analysis" button here */}
+                {/* Removed the duplicate "Compare Products" button here */}
+                <Button
+                  variant="outline"
+                  className="w-full justify-start relative"
+                  onClick={() => {
+                    setCartOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  <ShoppingCart className="w-4 h-4 mr-3" />
+                  Shopping Cart
+                  {cartItemCount > 0 && (
+                    <span className="absolute right-3 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                      {cartItemCount > 99 ? '99+' : cartItemCount}
+                    </span>
+                  )}
+                </Button>
               </div>
 
               {/* Main Navigation */}
@@ -552,4 +735,5 @@ const Navbar = ({ onNavigate, activeTab, toggleLoginForm }: {
     </nav>
   );
 };
+
 export default Navbar;
