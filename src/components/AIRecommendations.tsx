@@ -80,13 +80,21 @@ const AIRecommendations = () => {
     const userDocRef = doc(db, 'users', currentUser.uid);
     const aiRecommendationsDocRef = doc(userDocRef, 'aiRecommendations', 'data');
 
-    const unsubscribe = onSnapshot(aiRecommendationsDocRef, (docSnap) => {
+    const unsubscribe = onSnapshot(aiRecommendationsDocRef, async (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setSelectedCategory(data.selectedCategory || 'all');
         setSelectedPriority(data.selectedPriority || 'all');
         setCompletedActions(data.completedActions || []);
         setActionProgress(data.actionProgress || {});
+      } else {
+        // Initialize Firestore document if missing
+        await setDoc(aiRecommendationsDocRef, {
+          selectedCategory: 'all',
+          selectedPriority: 'all',
+          completedActions: [],
+          actionProgress: {}
+        });
       }
     });
 
@@ -100,13 +108,21 @@ const AIRecommendations = () => {
     const userDocRef = doc(db, 'users', currentUser.uid);
     const aiRecommendationsDocRef = doc(userDocRef, 'aiRecommendations', 'data');
 
-    setDoc(aiRecommendationsDocRef, {
+    const saveData = {
       selectedCategory,
       selectedPriority,
       completedActions,
       actionProgress,
-    }, { merge: true });
+    };
+
+    // Debounce save to Firestore
+    const timeoutId = setTimeout(() => {
+      setDoc(aiRecommendationsDocRef, saveData, { merge: true });
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
   }, [currentUser, selectedCategory, selectedPriority, completedActions, actionProgress]);
+  // Removed duplicate save effect to Firestore to prevent redundant writes
 
   const recommendations = [
     {
@@ -342,7 +358,20 @@ const AIRecommendations = () => {
     }
   };
 
-  const filteredRecommendations = recommendations.filter(rec => {
+  // Combine recommendations with actionProgress and completedActions to mark status
+  const enrichedRecommendations = recommendations.map(rec => {
+    const actionId = `action_${rec.id}`;
+    const action = actionProgress[actionId];
+    const isCompleted = completedActions.includes(rec.id);
+    return {
+      ...rec,
+      status: isCompleted ? 'completed' : action ? action.status : 'not_started',
+      inProgress: !!action && action.status !== 'completed',
+    };
+  });
+
+  // Filter recommendations based on selected filters but include all completed and in-progress
+  const filteredRecommendations = enrichedRecommendations.filter(rec => {
     if (selectedCategory !== 'all' && rec.category !== selectedCategory) return false;
     if (selectedPriority !== 'all' && rec.priority !== selectedPriority) return false;
     return true;
@@ -385,19 +414,22 @@ const AIRecommendations = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {insights.map((insight, index) => (
                   <div key={index} className="bg-slate-50/80 dark:bg-slate-800/80 rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg transition-all duration-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-8 h-8 bg-slate-700 dark:bg-slate-600 rounded-lg flex items-center justify-center">
-                        <insight.icon className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-2xl font-bold text-slate-800 dark:text-slate-200">{insight.value}</span>
-                    </div>
-                    <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">{insight.title}</h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{insight.trend}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{insight.description}</p>
-                  </div>
-                ))}
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-8 h-8 bg-slate-700 dark:bg-slate-600 rounded-lg flex items-center justify-center">
+                <insight.icon className="w-4 h-4 text-white" />
               </div>
-            </TabsContent>
+              <span className="text-2xl font-bold text-slate-800 dark:text-slate-200">{insight.value}</span>
+            </div>
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">{insight.title}</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{insight.trend}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{insight.description}</p>
+            <div className="mt-3 flex space-x-2">
+              {/* Removed Optimize and Set Reminder buttons as per user request */}
+            </div>
+          </div>
+        ))}
+      </div>
+    </TabsContent>
 
             <TabsContent value="recommendations" className="space-y-6">
               {/* Filters */}
@@ -477,10 +509,10 @@ const AIRecommendations = () => {
                         size="sm" 
                         className="bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600"
                         onClick={() => handleTakeAction(rec)}
-                        disabled={completedActions.includes(rec.id)}
+                        disabled={rec.status === 'completed' || rec.inProgress}
                       >
-                        {completedActions.includes(rec.id) ? 'Completed' : 'Take Action'}
-                        {!completedActions.includes(rec.id) && <ArrowRight className="w-4 h-4 ml-1" />}
+                        {rec.status === 'completed' ? 'Completed' : rec.inProgress ? 'In Progress' : 'Take Action'}
+                        {rec.status !== 'completed' && !rec.inProgress && <ArrowRight className="w-4 h-4 ml-1" />}
                       </Button>
                     </div>
                   </div>
@@ -490,63 +522,66 @@ const AIRecommendations = () => {
 
             <TabsContent value="actions" className="space-y-6">
               <div className="space-y-4">
-                {Object.entries(actionProgress).map(([actionId, action]) => (
-                  <Card key={actionId} className="p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold">{action.recommendation.title}</h3>
-                      <Badge variant={action.status === 'completed' ? 'default' : 'secondary'}>
-                        {action.status}
-                      </Badge>
-                    </div>
-                    
-                    {action.type === 'product_search' && action.data && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600">Recommended products:</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {action.data.slice(0, 3).map((product: any) => (
-                            <div key={product.id} className="p-3 border rounded-lg bg-gray-50">
-                              <h4 className="font-medium text-sm">{product.name}</h4>
-                              <p className="text-xs text-gray-500">{product.brand} - Score: {product.sustainabilityScore}</p>
-                              <p className="text-sm font-semibold text-green-600">${product.price}</p>
-                            </div>
-                          ))}
+                {Object.entries(actionProgress).map(([actionId, action]) => {
+                  const isCompleted = completedActions.includes(action.recommendation.id);
+                  return (
+                    <Card key={actionId} className="p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold">{action.recommendation.title}</h3>
+                        <Badge variant={isCompleted ? 'default' : 'secondary'}>
+                          {isCompleted ? 'completed' : action.status}
+                        </Badge>
+                      </div>
+                      
+                      {action.type === 'product_search' && action.data && (
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600">Recommended products:</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {action.data.slice(0, 3).map((product: any) => (
+                              <div key={product.id} className="p-3 border rounded-lg bg-gray-50">
+                                <h4 className="font-medium text-sm">{product.name}</h4>
+                                <p className="text-xs text-gray-500">{product.brand} - Score: {product.sustainabilityScore}</p>
+                                <p className="text-sm font-semibold text-green-600">${product.price}</p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    
-                    {action.type === 'habit_tracker' && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600">Tracking: {action.data.habit}</p>
-                        <Progress value={action.data.progress} className="h-2" />
-                        <p className="text-xs text-gray-500">Target: {action.data.target}</p>
-                      </div>
-                    )}
-                    
-                    {action.type === 'action_plan' && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600">Action steps:</p>
-                        <div className="space-y-1">
-                          {action.data.steps.map((step: string, index: number) => (
-                            <div key={index} className="flex items-center space-x-2 text-sm">
-                              <CheckCircle className="w-4 h-4 text-gray-400" />
-                              <span>{step}</span>
-                            </div>
-                          ))}
+                      )}
+                      
+                      {action.type === 'habit_tracker' && (
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600">Tracking: {action.data.habit}</p>
+                          <Progress value={action.data.progress} className="h-2" />
+                          <p className="text-xs text-gray-500">Target: {action.data.target}</p>
                         </div>
-                      </div>
-                    )}
-                    
-                    {action.status !== 'completed' && (
-                      <Button 
-                        size="sm" 
-                        onClick={() => markActionComplete(action.recommendation.id)}
-                        className="mt-3"
-                      >
-                        Mark Complete
-                      </Button>
-                    )}
-                  </Card>
-                ))}
+                      )}
+                      
+                      {action.type === 'action_plan' && (
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600">Action steps:</p>
+                          <div className="space-y-1">
+                            {action.data.steps.map((step: string, index: number) => (
+                              <div key={index} className="flex items-center space-x-2 text-sm">
+                                <CheckCircle className="w-4 h-4 text-gray-400" />
+                                <span>{step}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {!isCompleted && (
+                        <Button 
+                          size="sm" 
+                          onClick={() => markActionComplete(action.recommendation.id)}
+                          className="mt-3"
+                        >
+                          Mark Complete
+                        </Button>
+                      )}
+                    </Card>
+                  );
+                })}
                 
                 {Object.keys(actionProgress).length === 0 && (
                   <div className="text-center py-8">
