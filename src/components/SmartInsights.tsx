@@ -25,8 +25,13 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, query, orderBy, onSnapshot, doc, setDoc } from 'firebase/firestore';
 
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '../hooks/use-toast';
+
 const SmartInsights = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState('week');
   const [scannedProducts, setScannedProducts] = useState<any[]>([]);
   const [carbonEntries, setCarbonEntries] = useState<any[]>([]);
@@ -191,13 +196,48 @@ const SmartInsights = () => {
   };
 
   const handleOptimize = (insight: any) => {
-    // Handle optimize action - could navigate to goals or recommendations
-    console.log('Optimizing for:', insight.title);
+    // Close modal if open
+    setShowDetailModal(false);
+    // Navigate to a goals or recommendations page
+    toast({
+      title: 'Optimization started',
+      description: `Optimizing based on: ${insight.title}`,
+      variant: 'default',
+    });
+    navigate('/goals');
   };
 
-  const handleSetReminder = (insight: any) => {
-    // Handle set reminder action
-    console.log('Setting reminder for:', insight.title);
+  const handleSetReminder = async (insight: any) => {
+    if (!user) {
+      toast({
+        title: 'Not logged in',
+        description: 'Please log in to set reminders.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      const reminderRef = doc(collection(db, 'users', user.uid, 'reminders')).withConverter(null);
+      await setDoc(reminderRef, {
+        title: insight.title,
+        description: insight.details.content,
+        createdAt: new Date(),
+        reminderDate: new Date(new Date().getTime() + 24 * 60 * 60 * 1000), // default reminder 24h later
+        completed: false,
+      });
+      toast({
+        title: 'Reminder set',
+        description: `Reminder for "${insight.title}" has been set.`,
+        variant: 'default',
+      });
+    } catch (error) {
+      console.error('Error setting reminder:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to set reminder. Please try again later.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleInsightAction = (insight: any) => {
@@ -884,17 +924,17 @@ const SmartInsights = () => {
                 <Button variant="outline" onClick={() => setShowDetailModal(false)}>
                   Close
                 </Button>
-                <Button onClick={() => {
-                  setShowDetailModal(false);
-                  // Add specific action based on insight type
-                  if (selectedInsight.action === 'Optimize') {
-                    // Navigate to goals or optimization page
-                  } else if (selectedInsight.action === 'Set Reminder') {
-                    // Set up reminder functionality
-                  }
-                }}>
-                  Take Action
-                </Button>
+      <Button onClick={() => {
+        setShowDetailModal(false);
+        // Add specific action based on insight type
+        if (selectedInsight.action === 'Optimize') {
+          handleOptimize(selectedInsight);
+        } else if (selectedInsight.action === 'Set Reminder') {
+          handleSetReminder(selectedInsight);
+        }
+      }}>
+        Take Action
+      </Button>
               </div>
             </div>
           </div>
