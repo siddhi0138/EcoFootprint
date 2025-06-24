@@ -10,6 +10,7 @@ import { Progress } from '../components/ui/progress';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { useToast } from '../components/ui/use-toast'; // Assuming you have a useToast hook
+import Navbar from '@/components/Navbar'; // Import Navbar component
 import {
   ArrowLeft,
   Plus,
@@ -132,6 +133,10 @@ const Goals = () => {
 
     return () => unsubscribe();
   }, []);
+
+  const handleNavigation = (tab: string) => {
+    console.log(`Navigating to: ${tab}`);
+  };
 
   const fetchGoals = async (userId: string) => {
     setLoading(true);
@@ -434,20 +439,12 @@ const Goals = () => {
   const totalMilestones = goals.reduce((sum, goal) => sum + goal.completedMilestones.length, 0);
   const overdueGoals = goals.filter(goal => new Date(goal.deadline) < new Date() && !goal.completed).length;
 
-  // AI-powered suggestions (dummy data)
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
-        <span className="ml-3 text-indigo-700">Loading Goals...</span>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <>
+      <Navbar onNavigate={handleNavigation} activeTab="goals" /> {/* Add the Navbar component with props */}
+      {/* Increased padding-top to accommodate the fixed Navbar */}
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-black dark:to-purple-950 pt-32 p-6 z-10">
         {/* Enhanced Header */}
         <Card className="mb-6 shadow-xl border-indigo-200 bg-white/90 backdrop-blur-md">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -461,10 +458,10 @@ const Goals = () => {
                 <span>Back</span>
               </Button>
               <div>
-                <CardTitle className="text-indigo-700 text-3xl font-bold flex items-center gap-3">
-                  <Target className="w-8 h-8" />
+                <CardTitle className="text-indigo-700 dark:text-indigo-300 text-3xl font-bold flex items-center gap-3">
+ <Target className="w-8 h-8 text-indigo-500 dark:text-indigo-400" />
                   Optimization Goals
-                </CardTitle>
+ </CardTitle>
                 <p className="text-indigo-600 mt-1">Track, optimize, and achieve your sustainability targets</p>
               </div>
             </div>
@@ -495,12 +492,12 @@ const Goals = () => {
 
             {/* Advanced Filters and Search */}
         {!user ? (
-          <Card className="shadow-xl border-gray-200 bg-white">
+ <Card className="shadow-xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <CardContent className="text-center py-16">
               <div className="space-y-4">
-                <div className="mx-auto w-24 h-24 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
+ <div className="mx-auto w-24 h-24 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded-full flex items-center justify-center">
                   <Users className="w-12 h-12 text-indigo-500" />
-                </div>
+ </div>
                 <h3 className="text-2xl font-bold text-gray-700">Login Required</h3>
                 <p className="text-gray-600 max-w-md mx-auto">
                   Please log in to view and manage your optimization goals.
@@ -514,11 +511,11 @@ const Goals = () => {
           <>
 
             {/* Advanced Filters and Search */}
-            <Card className="mb-6 shadow-lg border-gray-200 bg-white/80 backdrop-blur-sm">
+ <Card className="mb-6 shadow-lg border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
               <CardContent className="p-6">
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="flex items-center space-x-2">
-                    <Search className="w-5 h-5 text-gray-500" />
+ <Search className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                     <Input
                       type="text"
                       placeholder="Search goals, tags, or descriptions..."
@@ -531,7 +528,7 @@ const Goals = () => {
                   <select
                     value={filterCategory}
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+ className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
                   >
                     <option value="All">All Categories</option>
                     {categories.map(cat => <option key={cat.name} value={cat.name}>{cat.name}</option>)}
@@ -540,7 +537,7 @@ const Goals = () => {
                   <select
                     value={filterPriority}
                     onChange={(e) => setFilterPriority(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+ className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
                   >
                     <option value="All">All Priorities</option>
                     {priorities.map(priority => <option key={priority} value={priority}>{priority} Priority</option>)}
@@ -549,7 +546,7 @@ const Goals = () => {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+ className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
                   >
                     <option value="deadline">Sort by Deadline</option>
                     <option value="progress">Sort by Progress</option>
@@ -562,16 +559,16 @@ const Goals = () => {
 
             {/* Add Goal Form */}
             {showAddForm && (
-              <Card className="mb-6 shadow-lg border-indigo-200 bg-white">
+ <Card className="mb-6 shadow-lg border-indigo-200 dark:border-indigo-800 bg-white dark:bg-gray-800">
                 <CardHeader>
-                  <CardTitle className="text-indigo-700 flex items-center gap-2">
+ <CardTitle className="text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
                     <Plus className="w-6 h-6" />
                     Add New Optimization Goal
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="title" className="text-gray-700">Title</Label>
+ <Label htmlFor="title">Title</Label>
                     <Input
                       id="title"
                       placeholder="e.g., Reduce electricity consumption"
@@ -581,14 +578,14 @@ const Goals = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="category" className="text-gray-700">Category</Label>
+ <Label htmlFor="category">Category</Label>
                     <select
                       id="category"
                       value={newGoal.category}
                       onChange={(e) => setNewGoal({ ...newGoal, category: e.target.value })}
-                      className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
+ className="mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
                     >
-                      {categories.map(cat => <option key={cat.name} value={cat.name}>{cat.name}</option>)}
+ {categories.map(cat => <option key={cat.name} value={cat.name} className="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200">{cat.name}</option>)}
                     </select>
                   </div>
                   <div className="md:col-span-2">
@@ -602,7 +599,7 @@ const Goals = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="target" className="text-gray-700">Target Value</Label>
+ <Label htmlFor="target">Target Value</Label>
                     <Input
                       id="target"
                       type="number"
@@ -613,7 +610,7 @@ const Goals = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="unit" className="text-gray-700">Unit</Label>
+ <Label htmlFor="unit">Unit</Label>
                     <Input
                       id="unit"
                       placeholder="e.g., kWh, %, gallons"
@@ -623,14 +620,14 @@ const Goals = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="priority" className="text-gray-700">Priority</Label>
+ <Label htmlFor="priority">Priority</Label>
                     <select
                       id="priority"
                       value={newGoal.priority}
                       onChange={(e) => setNewGoal({ ...newGoal, priority: e.target.value })}
-                      className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
+ className="mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
                     >
-                      {priorities.map(priority => <option key={priority} value={priority}>{priority}</option>)}
+ {priorities.map(priority => <option key={priority} value={priority} className="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200">{priority}</option>)}
                     </select>
                   </div>
                   <div>
@@ -644,7 +641,7 @@ const Goals = () => {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <Label htmlFor="estimatedSavings" className="text-gray-700">Estimated Savings (Optional)</Label>
+ <Label htmlFor="estimatedSavings">Estimated Savings (Optional)</Label>
                     <Input
                       id="estimatedSavings"
                       placeholder="e.g., $20/month or 100 lbs CO2/year"
@@ -654,7 +651,7 @@ const Goals = () => {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <Label htmlFor="tags" className="text-gray-700">Tags (Optional, comma-separated)</Label>
+ <Label htmlFor="tags">Tags (Optional, comma-separated)</Label>
                     <Input
                       id="tags"
                       placeholder="e.g., home, appliance, travel"
@@ -690,7 +687,7 @@ const Goals = () => {
                 filteredAndSortedGoals.map(goal => (
                   <Card
                     key={goal.id}
-                    className={`shadow-lg hover:shadow-xl transition-shadow border-l-4 ${goal.borderColor} ${goal.bgColor}`}
+ className={`shadow-lg hover:shadow-xl transition-shadow border-l-4 ${goal.borderColor} ${goal.bgColor} dark:bg-gray-800 dark:border-gray-700`}
                   >
                     <CardContent className="p-6">
                       {editingGoalId === goal.id && editingGoal ? (
@@ -698,7 +695,7 @@ const Goals = () => {
                           <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
                             <Edit3 className="w-5 h-5" /> Edit Goal
                           </h3>
-                          <div>
+ <div className="dark:text-gray-200">
                             <Label htmlFor={`edit-title-${goal.id}`}>Title</Label>
                             <Input
                               id={`edit-title-${goal.id}`}
@@ -708,7 +705,7 @@ const Goals = () => {
                             />
                           </div>
                           <div>
-                            <Label htmlFor={`edit-description-${goal.id}`}>Description (Optional)</Label>
+ <Label htmlFor={`edit-description-${goal.id}`}>Description (Optional)</Label>
                             <Textarea
                               id={`edit-description-${goal.id}`}
                               value={editingGoal.description || ''}
@@ -718,7 +715,7 @@ const Goals = () => {
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <Label htmlFor={`edit-target-${goal.id}`}>Target</Label>
+ <Label htmlFor={`edit-target-${goal.id}`}>Target</Label>
                               <Input
                                 id={`edit-target-${goal.id}`}
                                 type="number"
@@ -728,7 +725,7 @@ const Goals = () => {
                               />
                             </div>
                             <div>
-                              <Label htmlFor={`edit-current-${goal.id}`}>Current</Label>
+ <Label htmlFor={`edit-current-${goal.id}`}>Current</Label>
                               <Input
                                 id={`edit-current-${goal.id}`}
                                 type="number"
@@ -739,7 +736,7 @@ const Goals = () => {
                             </div>
                           </div>
                           <div>
-                            <Label htmlFor={`edit-unit-${goal.id}`}>Unit</Label>
+ <Label htmlFor={`edit-unit-${goal.id}`}>Unit</Label>
                             <Input
                               id={`edit-unit-${goal.id}`}
                               value={editingGoal.unit || ''}
@@ -748,14 +745,14 @@ const Goals = () => {
                             />
                           </div>
                           <div>
-                            <Label htmlFor={`edit-category-${goal.id}`}>Category</Label>
+ <Label htmlFor={`edit-category-${goal.id}`}>Category</Label>
                             <select
                               id={`edit-category-${goal.id}`}
                               value={editingGoal.category || 'Energy'}
                               onChange={(e) => setEditingGoal({ ...editingGoal, category: e.target.value })}
-                              className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
+ className="mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
                             >
-                              {categories.map(cat => <option key={cat.name} value={cat.name}>{cat.name}</option>)}
+ {categories.map(cat => <option key={cat.name} value={cat.name} className="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200">{cat.name}</option>)}
                             </select>
                           </div>
                           <div>
@@ -763,14 +760,14 @@ const Goals = () => {
                             <select
                               id={`edit-priority-${goal.id}`}
                               value={editingGoal.priority || 'Medium'}
-                              onChange={(e) => setEditingGoal({ ...editingGoal, priority: e.target.value })}
-                              className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
+ onChange={(e) => setEditingGoal({ ...editingGoal, priority: e.target.value })}
+ className="mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
                             >
-                              {priorities.map(priority => <option key={priority} value={priority}>{priority}</option>)}
+ {priorities.map(priority => <option key={priority} value={priority} className="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200">{priority}</option>)}
                             </select>
                           </div>
                           <div>
-                            <Label htmlFor={`edit-deadline-${goal.id}`}>Deadline</Label>
+ <Label htmlFor={`edit-deadline-${goal.id}`}>Deadline</Label>
                             <Input
                               id={`edit-deadline-${goal.id}`}
                               type="date"
@@ -780,7 +777,7 @@ const Goals = () => {
                             />
                           </div>
                            <div>
-                            <Label htmlFor={`edit-estimatedSavings-${goal.id}`}>Estimated Savings (Optional)</Label>
+ <Label htmlFor={`edit-estimatedSavings-${goal.id}`}>Estimated Savings (Optional)</Label>
                             <Input
                               id={`edit-estimatedSavings-${goal.id}`}
                               placeholder="e.g., $20/month"
@@ -790,7 +787,7 @@ const Goals = () => {
                             />
                           </div>
                            <div>
-                            <Label htmlFor={`edit-tags-${goal.id}`}>Tags (Optional, comma-separated)</Label>
+ <Label htmlFor={`edit-tags-${goal.id}`}>Tags (Optional, comma-separated)</Label>
                               <Input
                                 id={`edit-tags-${goal.id}`}
                                 placeholder="e.g., home, appliance"
@@ -801,7 +798,7 @@ const Goals = () => {
                           </div>
                            <div className="md:col-span-2">
                             <Label htmlFor={`edit-notes-${goal.id}`}>Notes (Optional)</Label>
-                            <Textarea
+ <Textarea
                               id={`edit-notes-${goal.id}`}
                               placeholder="Any notes for this goal..."
                               value={editingGoal.notes || ''}
@@ -821,7 +818,7 @@ const Goals = () => {
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              {React.createElement(goal.icon, { className: `w-8 h-8 ${goal.color}` })}
+ {React.createElement(goal.icon, { className: `w-8 h-8 ${goal.color} dark:text-gray-300` })}
                               <h3 className="text-xl font-bold text-gray-800">{goal.title}</h3>
                             </div>
                             <div className="flex items-center gap-2">
@@ -830,14 +827,14 @@ const Goals = () => {
                             </div>
                           </div>
 
-                          <p className="text-sm text-gray-600">{goal.description}</p>
+ <p className="text-sm text-gray-600 dark:text-gray-400">{goal.description}</p>
 
                           <div className="space-y-1">
-                            <div className="flex justify-between text-sm font-medium text-gray-700">
+ <div className="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
                               <span>Progress</span>
                               <span>{goal.current} / {goal.target} {goal.unit} ({(goal.current / goal.target * 100).toFixed(1)}%)</span>
                             </div>
-                            <Progress value={(goal.current / goal.target) * 100} className={`h-2 ${getProgressColor((goal.current / goal.target) * 100)}`} />
+ <Progress value={(goal.current / goal.target) * 100} className={`h-2 ${getProgressColor((goal.current / goal.target) * 100)} dark:bg-gray-700`} />
                           </div>
 
                           <div className="text-sm text-gray-600 flex items-center gap-2">
@@ -850,7 +847,7 @@ const Goals = () => {
 
                            {goal.estimatedSavings && (
                              <div className="text-sm text-gray-600 flex items-center gap-2">
-                               <BarChart3 className="w-4 h-4 text-gray-500" />
+ <BarChart3 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                                Est. Savings: {goal.estimatedSavings}
                              </div>
                            )}
@@ -858,17 +855,17 @@ const Goals = () => {
                           {goal.tags && goal.tags.length > 0 && (
                             <div className="flex items-center gap-2 text-sm text-gray-600">
                                <Filter className="w-4 h-4 text-gray-500" />
-                                Tags:
+ Tags: {/* This text color is handled by the parent div */}
                                 {goal.tags.map((tag, index) => (
-                                    <Badge key={index} variant="secondary" className="text-gray-600">{tag}</Badge>
+ <Badge key={index} variant="secondary" className="text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600">{tag}</Badge>
                                 ))}
                             </div>
                           )}
 
                            {goal.notes && (
-                              <div className="text-sm text-gray-600 flex items-start gap-2">
-                                 <Settings className="w-4 h-4 text-gray-500 mt-1" />
-                                 Notes: <p className="text-gray-700">{goal.notes}</p>
+ <div className="text-sm text-gray-600 dark:text-gray-400 flex items-start gap-2">
+ <Settings className="w-4 h-4 text-gray-500 dark:text-gray-400 mt-1" />
+                                 Notes: <p className="text-gray-700 dark:text-gray-300">{goal.notes}</p>
                               </div>
                            )}
 
@@ -876,7 +873,7 @@ const Goals = () => {
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <Clock className="w-4 h-4 text-gray-500" />
                             Created: {goal.createdAt}
-                          </div>
+ </div>
 
                           {/* Progress Update and Action Buttons */}
                           <div className="flex flex-wrap justify-between items-center gap-3 mt-4 pt-4 border-t border-gray-200">
@@ -903,7 +900,7 @@ const Goals = () => {
                                        }
                                     }}
                                     className="w-24"
-                                />
+ />
                                 <span className="text-sm text-gray-600">{goal.unit}</span>
                                 <Button
                                     variant="outline"
@@ -923,7 +920,7 @@ const Goals = () => {
                                 size="sm"
                                 onClick={() => startEditing(goal)}
                                 disabled={saving}
-                                className="flex items-center gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+ className="flex items-center gap-1 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900"
                               >
                                 <Edit3 className="w-3 h-3" /> Edit
                               </Button>
@@ -945,13 +942,13 @@ const Goals = () => {
                 ))
               ) : (
                 <div className="md:col-span-3 text-center py-16">
-                  <div className="space-y-4 text-gray-600">
+ <div className="space-y-4 text-gray-600 dark:text-gray-400">
                     <Target className="mx-auto w-12 h-12 text-indigo-500" />
                     <h3 className="text-2xl font-semibold text-gray-700">No Goals Yet!</h3>
                     <p className="max-w-md mx-auto">
                       Start tracking your sustainability journey by adding your first optimization goal.
                     </p>
-                    <Button
+ <Button
                       onClick={() => setShowAddForm(true)}
                       className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white flex items-center gap-2 shadow-lg"
                     >
@@ -965,7 +962,7 @@ const Goals = () => {
           </>
         )}
       </div>
-    </div>
+    </>
   );
 };
 

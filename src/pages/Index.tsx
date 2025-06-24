@@ -107,7 +107,6 @@ const Index = () => {
           <Navbar onNavigate={handleNavigation} activeTab={activeTab} toggleLoginForm={toggleLoginForm} cartItemCount={0} />
           <Hero onGetStarted={handleGetStarted} />
           <Features />
-          <Footer />
           <AuthModal
             isOpen={isLoginModalOpen}
             onClose={() => setIsLoginModalOpen(false)}
