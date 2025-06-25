@@ -67,7 +67,10 @@ const Navbar = ({
 
   // Calculate cart total items and price
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const cartTotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const cartTotal = cartItems.reduce((total, item) => {
+    const itemPrice = typeof item.price === 'number' ? item.price : 0; // Default to 0 if price is missing or not a number
+    return total + (itemPrice * item.quantity);
+  }, 0);
 
   const quickAccess = [
     { id: 'scanner', label: 'AI Scanner', icon: Scan },
@@ -418,7 +421,7 @@ const Navbar = ({
                                 {item.name}
                               </p>
                               <p className="text-sm text-emerald-600 dark:text-emerald-400">
-                                ${item.price.toFixed(2)}
+ ${typeof item.price === 'number' ? item.price.toFixed(2) : 'N/A'}
                               </p>
                             </div>
                             <div className="flex items-center space-x-2">
