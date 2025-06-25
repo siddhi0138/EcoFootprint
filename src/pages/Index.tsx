@@ -1,52 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Badge } from '../components/ui/badge';
 import { Search, Sparkles } from 'lucide-react';
 
 // Import components
-import Navbar from '@/components/Navbar';
-import Hero from '@/components/Hero';
-import Features from '@/components/Features';
-import Footer from '@/components/Footer';
-import ProductScanner from '@/components/ProductScanner';
-import SustainabilityScore from '@/components/SustainabilityScore';
-import CompanyProfile from '@/components/CompanyProfile';
-import ProductAnalysis from '@/components/ProductAnalysis';
-import SustainabilityMarketplace from '@/components/SustainabilityMarketplace';
-import CommunityHub from '@/components/CommunityHub';
-import CarbonTracker from '@/components/CarbonTracker';
-import ProductComparison from '@/components/ProductComparison';
-import EducationCenter from '@/components/EducationCenter';
-import NotificationCenter from '@/components/NotificationCenter';
-import UserProfile from '@/components/UserProfile';
-import AIRecommendations from '@/components/AIRecommendations';
-import EnvironmentalAlerts from '@/components/EnvironmentalAlerts';
-import RewardsSystem from '@/components/RewardsSystem';
-import ProductLifecycle from '@/components/ProductLifecycle';
-import SustainabilityChallenges from '@/components/SustainabilityChallenges';
-import SocialImpactHub from '@/components/SocialImpactHub';
-import SmartInsights from '@/components/SmartInsights';
-import LiveEvents from '@/components/LiveEvents';
-import ARProductScanner from '@/components/ARProductScanner';
-import InvestmentTracker from '@/components/InvestmentTracker';
-import ESGAnalyzer from '@/components/ESGAnalyzer';
-import TransportationPlanner from '@/components/TransportationPlanner';
-import { EcoRecipeFinder } from '@/components/EcoRecipeFinder';
-import EcoChatbot from '@/components/EcoChatbot';
-import AuthModal from '@/components/AuthModal';
-import { useAuth } from "@/contexts/AuthContext";
-import { UserDataProvider } from '@/contexts/UserDataContext';
-import { collection, doc, getDocs, query, orderBy } from "firebase/firestore";
-import { db } from "@/firebase";
+import Navbar from '../components/Navbar';
+import Hero from '../components/Hero';
+import Features from '../components/Features';
+import Footer from '../components/Footer';
+import ProductScanner from '../components/ProductScanner';
+import SustainabilityScore from '../components/SustainabilityScore';
+import CompanyProfile from '../components/CompanyProfile';
+import ProductAnalysis from '../components/ProductAnalysis';
+import SustainabilityMarketplace from '../components/SustainabilityMarketplace';
+import CommunityHub from '../components/CommunityHub';
+import CarbonTracker from '../components/CarbonTracker'; // Added import statement
+import ProductComparison from '../components/ProductComparison'; // Added import statement
+import EducationCenter from '../components/EducationCenter'; // Added import statement
+import NotificationCenter from '../components/NotificationCenter'; // Added import statement
+import UserProfile from '../components/UserProfile'; // Added import statement
+import AIRecommendations from '../components/AIRecommendations'; // Added import statement
+import EnvironmentalAlerts from '../components/EnvironmentalAlerts'; // Added import statement
+import RewardsSystem from '../components/RewardsSystem'; // Added import statement
+import ProductLifecycle from '../components/ProductLifecycle'; // Added import statement
+import SustainabilityChallenges from '../components/SustainabilityChallenges'; // Added import statement
+import SocialImpactHub from '../components/SocialImpactHub'; // Added import statement
+import SmartInsights from '../components/SmartInsights'; // Added import statement
+import LiveEvents from '../components/LiveEvents'; // Added import statement
+import ARProductScanner from '../components/ARProductScanner';
+import InvestmentTracker from '../components/InvestmentTracker';
+import ESGAnalyzer from '../components/ESGAnalyzer';
+import TransportationPlanner from '../components/TransportationPlanner';
+import { EcoRecipeFinder } from '../components/EcoRecipeFinder';
+import EcoChatbot from '../components/EcoChatbot';
+import AuthModal from '../components/AuthModal';
+import { useAuth } from '../contexts/AuthContext';
+import { UserDataProvider } from '../contexts/UserDataContext';
+import { CartProvider, useCart } from '../contexts/CartContext'; // Import useCart
+import Checkout from './Checkout'; // Import Checkout page
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { db } from "../firebase";
 
 const Index = () => {
   console.log('Index component starting to render...');
 
   const { user } = useAuth();
 
+  const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart(); // Get cart functions from CartContext
   const [activeTab, setActiveTab] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [scannedProduct, setScannedProduct] = useState(null);
@@ -98,34 +101,39 @@ const Index = () => {
     console.log('RENDERING HOME PAGE - this should be visible');
     console.log('About to render Navbar, Hero, Features, Footer components');
 
-    try {
-      return (
+ return (
         <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
           <div style={{ border: '2px solid red', padding: '10px', margin: '10px' }}>
             <h1 style={{ color: 'red', fontSize: '24px' }}>DEBUG: Home page is rendering!</h1>
           </div>
-          <Navbar onNavigate={handleNavigation} activeTab={activeTab} toggleLoginForm={toggleLoginForm} cartItemCount={0} />
+          <Navbar
+            onNavigate={handleNavigation}
+            activeTab={activeTab}
+            toggleLoginForm={toggleLoginForm}
+            cartItems={cartItems}
+            updateCartItem={updateQuantity}
+            removeFromCart={removeFromCart}
+            clearCart={clearCart}
+          />
           <Hero onGetStarted={handleGetStarted} />
           <Features />
-          <AuthModal
-            isOpen={isLoginModalOpen}
-            onClose={() => setIsLoginModalOpen(false)}
-            onSuccess={handleLoginSuccess}
-          />
         </div>
       );
-    } catch (error) {
-      console.error('Error rendering home page:', error);
-      return <div style={{ color: 'red', fontSize: '20px', padding: '20px' }}>Error rendering home page: {error.message}</div>;
-    }
   }
 
-  console.log('RENDERING APP INTERFACE for tab:', activeTab);
+ console.log('RENDERING APP INTERFACE for tab:', activeTab);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <Navbar onNavigate={handleNavigation} activeTab={activeTab} toggleLoginForm={toggleLoginForm} cartItemCount={0} />
-
+ return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden"> {/* Added overflow-hidden */}
+ <Navbar
+   onNavigate={handleNavigation}
+   activeTab={activeTab}
+   toggleLoginForm={toggleLoginForm}
+   cartItems={cartItems}
+   updateCartItem={updateQuantity}
+   removeFromCart={removeFromCart}
+   clearCart={clearCart}
+ />
       {/* Main Content Area */}
       <div className="pt-20">
         <div className="container mx-auto px-6 py-8">
@@ -135,7 +143,8 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="ar-scanner" className="mt-6">
-              <ARProductScanner />
+              {/* Assuming ARProductScanner is indeed ProductScanner as per previous suggestion */}
+              <ProductScanner />
             </TabsContent>
 
             <TabsContent value="chatbot" className="mt-6">
@@ -289,22 +298,22 @@ const Index = () => {
             <TabsContent value="recipe-finder" className="mt-4">
               <EcoRecipeFinder />
             </TabsContent>
+
+            <TabsContent value="checkout" className="mt-6">
+              <Checkout onNavigate={setActiveTab} />
+            </TabsContent>
           </Tabs>
         </div>
       </div>
-
-      <AuthModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onSuccess={handleLoginSuccess}
-      />
     </div>
   );
 };
 
 const IndexWithUserDataProvider = () => (
   <UserDataProvider>
-    <Index />
+    <CartProvider>
+      <Index />
+    </CartProvider>
   </UserDataProvider>
 );
 

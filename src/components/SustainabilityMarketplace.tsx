@@ -10,8 +10,9 @@ import { Search, ShoppingCart, Star, Leaf, Award, Filter, Heart, Share2, Eye, Tr
 import { productsData, searchProducts, getProductsByCategory } from '@/data/productsData';
 import { useUserData } from '@/contexts/UserDataContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext'; // Assuming a CartContext exists
 import { useToast } from '@/hooks/use-toast';
-import { db } from '../firebase';
+import { db } from '@/firebase';
 import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 const SustainabilityMarketplace = () => {
@@ -19,11 +20,10 @@ const SustainabilityMarketplace = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('score');
   const [userFavorites, setUserFavorites] = useState([]);
-  const [userCart, setUserCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const { addPoints } = useUserData();
+  const { cartItems, addToCart } = useCart(); // Use cart state and actions from CartContext
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
 
   // Fetch user data (favorites and cart) from Firebase
   const getFilteredProducts = () => {
@@ -49,23 +49,19 @@ const SustainabilityMarketplace = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      const userDocRef = doc(db, 'users', user.uid, 'profile', 'data');
+    if (user && user.uid) {
+      const userDocRef = doc(db, 'users', user.uid);
       const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
         if (docSnap.exists()) {
-          const data = docSnap.data();
-          setUserFavorites(data.favorites || []);
-          setUserCart(data.cart || []);
+          setUserFavorites(docSnap.data().favorites || []);
         } else {
           setUserFavorites([]);
-          setUserCart([]);
         }
       });
       return () => unsubscribe();
     } else {
       // Clear local state for unauthenticated users
       setUserFavorites([]);
-      setUserCart([]);
     }
   }, [user]); // Add user as a dependency
 
@@ -90,7 +86,7 @@ const SustainabilityMarketplace = () => {
       return;
     }
     
-    const userDocRef = doc(db, 'users', user.uid, 'profile', 'data');
+    const userDocRef = doc(db, 'users', user.uid);
 
     if (userFavorites.includes(productId)) {
       await updateDoc(userDocRef, {
@@ -100,39 +96,9 @@ const SustainabilityMarketplace = () => {
       await updateDoc(userDocRef, {
         favorites: arrayUnion(productId)
       });
-      addPoints(5);
       toast({
         title: "Product Favorited!",
         description: "You earned 5 points for favoriting a product!",
-      });
-    }
-  };
-
-  const addToCart = async (product) => {
-    if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please log in to add items to your cart.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const userDocRef = doc(db, 'users', user.uid, 'profile', 'data');
-    const existingItemIndex = userCart.findIndex(item => item.productId === product.id);
-
-    if (existingItemIndex > -1) {
-      const updatedCart = [...userCart];
-      updatedCart[existingItemIndex].quantity += 1;
-      await updateDoc(userDocRef, { cart: updatedCart });
-    } else {
-      await updateDoc(userDocRef, {
-        cart: arrayUnion({ productId: product.id, quantity: 1 })
-      });
-      addPoints(10);
-      toast({
-        title: "Added to Cart!",
-        description: `${product.name} added to cart. You earned 10 points!`,
       });
     }
   };
@@ -146,7 +112,6 @@ const SustainabilityMarketplace = () => {
         text: shareText,
         url: window.location.href
       }).then(() => {
-        addPoints(5);
         toast({
           title: "Product Shared!",
           description: "You earned 5 points for sharing!",
@@ -162,7 +127,6 @@ const SustainabilityMarketplace = () => {
   const fallbackShare = (text) => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
-        addPoints(5);
         toast({
           title: "Product Shared!",
           description: "Product link copied to clipboard! You earned 5 points!",
@@ -202,7 +166,6 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
     a.click();
     URL.revokeObjectURL(url);
     
-    addPoints(15);
     toast({
       title: "Report Downloaded!",
       description: "You earned 15 points for downloading a sustainability report!",
@@ -228,9 +191,6 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
             <div className="flex items-center space-x-2">
               <Badge className="bg-green-600 text-white">
                 {filteredProducts.length} Products
-              </Badge>
-              <Badge variant="outline" className="border-blue-300 text-blue-700"> {/* Replace with userCart length */}
-                {userCart.length} in Cart
               </Badge>
             </div>
           </CardTitle>
@@ -313,10 +273,10 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                       size="sm"
                       variant="outline"
                       className="w-8 h-8 p-0 bg-white/90 hover:bg-white"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(product.id); // Use the Firebase integrated function
-                      }}
+ onClick={(e) => {
+ e.stopPropagation();
+ toggleFavorite(product.id.toString()); // Convert number to string
+ }}
                     >
                       <Heart className={`w-4 h-4 ${userFavorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
                     </Button>
@@ -397,9 +357,9 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                     <div className="flex gap-2 pt-2">
                       <Button 
                         className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                        onClick={() => addToCart(product)}
-                        disabled={!product.inStock}
-                      >
+                        onClick={() => addToCart({ ...product, id: product.id.toString() })}
+                        disabled={!product.inStock} // Pass product object directly
+ >
                         {product.inStock ? (
                           <>
                             <ShoppingCart className="w-4 h-4 mr-2" />
@@ -407,7 +367,7 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                           </>
                         ) : (
                           'Out of Stock'  /* Fix the ternary operator syntax here */
-                        )}
+ )}
                       </Button>
                       <Dialog> {/* Use the Firebase integrated function */}
                         <DialogTrigger asChild>
@@ -477,8 +437,8 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                             <div className="flex gap-2">
                               <Button 
                                 className="flex-1"
-                                onClick={() => addToCart(product)}
-                                disabled={!product.inStock}
+                                onClick={() => addToCart({ ...product, id: product.id.toString() })}
+ disabled={!product.inStock} // Pass product object directly
                               >
                                 {/* Use the Firebase integrated function */}
                                 Add to Cart
