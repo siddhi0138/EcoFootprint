@@ -16,7 +16,7 @@ interface CartItem {
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: { id: string; name: string }) => Promise<void>;
+  addToCart: (product: { id: string; name: string; price?: number; image?: string; brand?: string | null }) => Promise<void>;
   removeFromCart: (productId: string) => Promise<void>;
   updateQuantity: (productId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -94,7 +94,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
 
   const addToCart = async (product: {
-    price: number; id: string; name: string; image?: string
+    price: number; id: string; name: string; image?: string; brand?: string | null; // Added brand here
 }) => {
     if (!user || !user.uid) {
       toast({

@@ -17,19 +17,19 @@ import CompanyProfile from '../components/CompanyProfile';
 import ProductAnalysis from '../components/ProductAnalysis';
 import SustainabilityMarketplace from '../components/SustainabilityMarketplace';
 import CommunityHub from '../components/CommunityHub';
-import CarbonTracker from '../components/CarbonTracker'; // Added import statement
-import ProductComparison from '../components/ProductComparison'; // Added import statement
-import EducationCenter from '../components/EducationCenter'; // Added import statement
-import NotificationCenter from '../components/NotificationCenter'; // Added import statement
-import UserProfile from '../components/UserProfile'; // Added import statement
-import AIRecommendations from '../components/AIRecommendations'; // Added import statement
-import EnvironmentalAlerts from '../components/EnvironmentalAlerts'; // Added import statement
-import RewardsSystem from '../components/RewardsSystem'; // Added import statement
-import ProductLifecycle from '../components/ProductLifecycle'; // Added import statement
-import SustainabilityChallenges from '../components/SustainabilityChallenges'; // Added import statement
-import SocialImpactHub from '../components/SocialImpactHub'; // Added import statement
-import SmartInsights from '../components/SmartInsights'; // Added import statement
-import LiveEvents from '../components/LiveEvents'; // Added import statement
+import CarbonTracker from '../components/CarbonTracker';
+import ProductComparison from '../components/ProductComparison';
+import EducationCenter from '../components/EducationCenter';
+import NotificationCenter from '../components/NotificationCenter';
+import UserProfile from '../components/UserProfile';
+import AIRecommendations from '../components/AIRecommendations';
+import EnvironmentalAlerts from '../components/EnvironmentalAlerts';
+import RewardsSystem from '../components/RewardsSystem';
+import ProductLifecycle from '../components/ProductLifecycle';
+import SustainabilityChallenges from '../components/SustainabilityChallenges';
+import SocialImpactHub from '../components/SocialImpactHub';
+import SmartInsights from '../components/SmartInsights';
+import LiveEvents from '../components/LiveEvents';
 import ARProductScanner from '../components/ARProductScanner';
 import InvestmentTracker from '../components/InvestmentTracker';
 import ESGAnalyzer from '../components/ESGAnalyzer';
@@ -39,46 +39,37 @@ import EcoChatbot from '../components/EcoChatbot';
 import AuthModal from '../components/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
 import { UserDataProvider } from '../contexts/UserDataContext';
-import { CartProvider, useCart } from '../contexts/CartContext'; // Import useCart
-import Checkout from './Checkout'; // Import Checkout page
+import { CartProvider, useCart } from '../contexts/CartContext';
+import Checkout from './Checkout';
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 
 const Index = () => {
-  console.log('Index component starting to render...');
-
   const { user } = useAuth();
 
-  const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart(); // Get cart functions from CartContext
+  const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
   const [activeTab, setActiveTab] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [scannedProduct, setScannedProduct] = useState(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [recentScans, setRecentScans] = useState([]);
 
-  console.log('State initialized');
-
-  console.log('About to define handler functions...');
-
   const handleGetStarted = () => {
-    console.log('Get started clicked');
     setIsLoginModalOpen(true);
   };
 
   const toggleLoginForm = () => {
-    console.log('Toggle login form');
     setIsLoginModalOpen(!isLoginModalOpen);
   };
 
   const handleLoginSuccess = () => {
-    console.log('Login successful');
     setIsLoginModalOpen(false);
     setActiveTab('scanner');
   };
 
   useEffect(() => {
     const fetchRecentScans = async () => {
-      if (!user) return; // Only fetch if user is logged in
+      if (!user) return;
       const scansCollectionRef = collection(db, "users", user.uid, "recentScans");
       const scansQuery = query(scansCollectionRef, orderBy("timestamp", "desc"));
       const querySnapshot = await getDocs(scansQuery);
@@ -89,62 +80,48 @@ const Index = () => {
     fetchRecentScans();
   }, [user]);
 
-  const handleNavigation = (tab: string) => {
-    console.log('Navigating to tab:', tab);
+  const handleNavigation = (tab) => {
     setActiveTab(tab);
   };
 
-  console.log('Handler functions defined, checking activeTab for render logic:', activeTab);
-
-  // Render landing page
   if (activeTab === 'home') {
-    console.log('RENDERING HOME PAGE - this should be visible');
-    console.log('About to render Navbar, Hero, Features, Footer components');
-
- return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-          <div style={{ border: '2px solid red', padding: '10px', margin: '10px' }}>
-            <h1 style={{ color: 'red', fontSize: '24px' }}>DEBUG: Home page is rendering!</h1>
-          </div>
-          <Navbar
-            onNavigate={handleNavigation}
-            activeTab={activeTab}
-            toggleLoginForm={toggleLoginForm}
-            cartItems={cartItems}
-            updateCartItem={updateQuantity}
-            removeFromCart={removeFromCart}
-            clearCart={clearCart}
-          />
-          <Hero onGetStarted={handleGetStarted} />
-          <Features />
-        </div>
-      );
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <Navbar
+          onNavigate={handleNavigation}
+          activeTab={activeTab}
+          toggleLoginForm={toggleLoginForm}
+          cartItems={cartItems}
+          updateCartItem={updateQuantity}
+          removeFromCart={removeFromCart}
+          clearCart={clearCart}
+        />
+        <Hero onGetStarted={handleGetStarted} />
+        <Features />
+      </div>
+    );
   }
 
- console.log('RENDERING APP INTERFACE for tab:', activeTab);
-
- return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden"> {/* Added overflow-hidden */}
- <Navbar
-   onNavigate={handleNavigation}
-   activeTab={activeTab}
-   toggleLoginForm={toggleLoginForm}
-   cartItems={cartItems}
-   updateCartItem={updateQuantity}
-   removeFromCart={removeFromCart}
-   clearCart={clearCart}
- />
-      {/* Main Content Area */}
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden">
+      <Navbar
+        onNavigate={handleNavigation}
+        activeTab={activeTab}
+        toggleLoginForm={toggleLoginForm}
+        cartItems={cartItems}
+        updateCartItem={updateQuantity}
+        removeFromCart={removeFromCart}
+        clearCart={clearCart}
+      />
       <div className="pt-20">
         <div className="container mx-auto px-6 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsContent value="scanner" className="mt-6">
-              <ProductScanner />
+              <ProductScanner onTabChange={setActiveTab} />
             </TabsContent>
 
             <TabsContent value="ar-scanner" className="mt-6">
-              {/* Assuming ARProductScanner is indeed ProductScanner as per previous suggestion */}
-              <ProductScanner />
+              <ProductScanner onTabChange={setActiveTab} />
             </TabsContent>
 
             <TabsContent value="chatbot" className="mt-6">
@@ -200,7 +177,6 @@ const Index = () => {
                           </div>
                           <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-500 bg-gray-100 px-3 py-1 rounded-xl dark:text-gray-400 dark:bg-gray-600">{product.category}</span>
-                            {/* Assuming 'timestamp' is stored in Firebase and you want to display a formatted date */}
                             {product.timestamp && (
                               <span className="text-gray-500 dark:text-gray-400">
                                 {new Date(product.timestamp.seconds * 1000).toLocaleDateString()}

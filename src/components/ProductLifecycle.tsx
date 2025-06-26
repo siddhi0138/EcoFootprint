@@ -98,7 +98,8 @@ const ProductLifecycle = () => {
   React.useEffect(() => {
     const fetchViewedProducts = async () => {
       if (user) {
-        const viewedProductsRef = collection(db, `users/${user.uid}/productLifecycle/viewedProducts`);
+        // Fix collection path to have odd number of segments
+        const viewedProductsRef = collection(db, `users/${user.uid}/productLifecycleViewedProducts`);
         const snapshot = await getDocs(viewedProductsRef);
         const data = {};
         snapshot.forEach(doc => {
@@ -141,7 +142,8 @@ const ProductLifecycle = () => {
   // Function to add viewed product to Firebase
   const addViewedProduct = async (productId) => {
     if (user) {
-      const productRef = doc(db, `users/${user.uid}/productLifecycle/viewedProducts`, productId);
+      // Fix document path to have even number of segments
+      const productRef = doc(db, `users/${user.uid}/productLifecycleViewedProducts`, productId);
       await setDoc(productRef, {
         viewedAt: new Date(),
         productId: productId // Store the product ID as well

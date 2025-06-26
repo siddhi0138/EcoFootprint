@@ -1,14 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { 
-  Camera, 
-  Scan, 
-  Zap, 
-  CheckCircle, 
-  AlertCircle, 
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
+import {
+  Camera,
+  Scan,
+  Zap,
+  CheckCircle,
+  AlertCircle,
   Info,
   ArrowRight,
   Play,
@@ -30,10 +30,12 @@ import {
 } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import { db } from "../firebase";
-import { getRandomProducts } from '@/data/productsData';
-import { useUserData } from '@/contexts/UserDataContext';
+import { getRandomProducts } from '../data/productsData';
+import { useUserData } from '../contexts/UserDataContext';
 
-const ProductScanner = () => {
+import { useCart } from "../contexts/CartContext";
+
+const ProductScanner = ({ onTabChange }) => {
   const { scannedProducts, addScannedProduct } = useUserData();
   const [isScanning, setIsScanning] = useState(false);
   const [detectedProduct, setDetectedProduct] = useState(null);
@@ -43,6 +45,8 @@ const ProductScanner = () => {
   const videoRef = useRef(null);
   const { user } = useAuth(); // Get user from useAuth
   const fileInputRef = useRef(null);
+
+  const { addToCart } = useCart();
 
   const mockScan = () => {
     setIsScanning(true);
@@ -82,7 +86,6 @@ const ProductScanner = () => {
       
       setDetectedProduct(productData);
 
-      // Add to user's scanned products in Firebase
       if (user) {
         const scannedProductRef = doc(
           collection(db, `users/${user.uid}/scannedProducts`)
@@ -95,18 +98,16 @@ const ProductScanner = () => {
         );
       }
 
-      // Add to local context/state (if still needed for immediate display)
-      // You might remove this if you exclusively use Firebase for data
       if (addScannedProduct) {
         const today = new Date();
- addScannedProduct({
- id: randomProduct.id.toString(), // Use the product's ID
-            name: randomProduct.name,
-            brand: randomProduct.brand,
-            sustainabilityScore: randomProduct.sustainabilityScore,
-            category: randomProduct.category,
- date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`, // Add current date
-          });
+        addScannedProduct({
+          id: randomProduct.id.toString(),
+          name: randomProduct.name,
+          brand: randomProduct.brand,
+          sustainabilityScore: randomProduct.sustainabilityScore,
+          category: randomProduct.category,
+          date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`,
+        });
       }
       
       setIsScanning(false);
@@ -152,7 +153,6 @@ const ProductScanner = () => {
 
   return (
     <div className="space-y-6">
-      {/* Recent Scans Section */}
       {scannedProducts.length > 0 && (
         <Card className="bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-lg rounded-2xl">
           <CardHeader>
@@ -160,7 +160,7 @@ const ProductScanner = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {scannedProducts.slice(0, 6).map((product: any) => (
+              {scannedProducts.slice(0, 6).map((product) => (
                 <div key={product.id} className="p-4 border border-slate-200 rounded-lg hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-2">
                     <div>
@@ -182,7 +182,6 @@ const ProductScanner = () => {
         </Card>
       )}
 
-      {/* Main Scanner Interface */}
       <Card className="bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-lg rounded-2xl">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center justify-between text-slate-800">
@@ -202,9 +201,7 @@ const ProductScanner = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Search and Upload Options */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Search Section */}
             <Card className="p-4 border border-slate-200">
               <h3 className="font-semibold text-slate-800 mb-3 flex items-center">
                 <Search className="w-4 h-4 mr-2" />
@@ -224,7 +221,6 @@ const ProductScanner = () => {
               </div>
             </Card>
 
-            {/* File Upload Section */}
             <Card className="p-4 border border-slate-200">
               <h3 className="font-semibold text-slate-800 mb-3 flex items-center">
                 <Upload className="w-4 h-4 mr-2" />
@@ -259,7 +255,6 @@ const ProductScanner = () => {
             </Card>
           </div>
 
-          {/* Scanner Interface */}
           <div className="bg-slate-900 rounded-xl overflow-hidden shadow-lg">
             <div className="bg-slate-800 h-64 flex items-center justify-center relative">
               {!scanMode ? (
@@ -279,7 +274,6 @@ const ProductScanner = () => {
                 </div>
               ) : (
                 <div className="w-full h-full relative">
-                  {/* Scanner Controls */}
                   <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
                     <Badge className="bg-red-600 text-white border-0">
                       <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
@@ -307,7 +301,6 @@ const ProductScanner = () => {
                     </div>
                   </div>
                   
-                  {/* Scanning Target */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-48 h-48 border-2 border-slate-400 border-dashed rounded-lg flex items-center justify-center">
                       {isScanning ? (
@@ -324,7 +317,6 @@ const ProductScanner = () => {
                     </div>
                   </div>
                   
-                  {/* Scan Button */}
                   <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
                     <Button 
                       onClick={mockScan} 
@@ -339,7 +331,6 @@ const ProductScanner = () => {
             </div>
           </div>
 
-          {/* Scanner Features */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-slate-50/80 rounded-xl border border-slate-200/50">
               <Zap className="w-8 h-8 mx-auto mb-2 text-slate-600" />
@@ -347,7 +338,7 @@ const ProductScanner = () => {
               <p className="text-sm text-slate-600">Real-time sustainability scoring</p>
             </div>
             <div className="text-center p-4 bg-slate-50/80 rounded-xl border border-slate-200/50">
-              <Leaf className="w-8 h-8 mx-auto mb-2 text-slate-600" />
+              <Leaf className="w-8 h-8 mx-auto mb-2 text-green-600" />
               <h3 className="font-semibold text-slate-800 mb-1">Impact Assessment</h3>
               <p className="text-sm text-slate-600">Environmental footprint analysis</p>
             </div>
@@ -358,7 +349,6 @@ const ProductScanner = () => {
             </div>
           </div>
 
-          {/* Detected Product Results */}
           {detectedProduct && (
             <div className="space-y-4">
               <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
@@ -386,7 +376,6 @@ const ProductScanner = () => {
                   </Badge>
                 </div>
 
-                {/* Sustainability Metrics */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   <div className="text-center p-3 bg-slate-50 rounded-lg">
                     <Leaf className="w-6 h-6 mx-auto mb-1 text-green-600" />
@@ -410,7 +399,6 @@ const ProductScanner = () => {
                   </div>
                 </div>
 
-                {/* Environmental Impact and Product Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
                     <h4 className="font-semibold text-slate-800 mb-2">Environmental Impact</h4>
@@ -450,7 +438,6 @@ const ProductScanner = () => {
                   </div>
                 </div>
 
-                {/* Features */}
                 <div className="mb-6">
                   <h4 className="font-semibold text-slate-800 mb-2">Key Features</h4>
                   <div className="flex flex-wrap gap-2">
@@ -462,7 +449,6 @@ const ProductScanner = () => {
                   </div>
                 </div>
 
-                {/* Certifications */}
                 <div className="mb-6">
                   <h4 className="font-semibold text-slate-800 mb-2">Certifications</h4>
                   <div className="flex flex-wrap gap-2">
@@ -475,7 +461,6 @@ const ProductScanner = () => {
                   </div>
                 </div>
 
-                {/* Better Alternatives */}
                 <div className="space-y-3">
                   <h4 className="font-semibold text-slate-800">Better Alternatives</h4>
                   {detectedProduct.alternatives.map((alt, index) => (
@@ -493,15 +478,35 @@ const ProductScanner = () => {
                   ))}
                 </div>
 
-                {/* Action Buttons */}
                 <div className="flex flex-wrap gap-3 mt-6">
-                  <Button className="bg-slate-800 hover:bg-slate-900">
+                  <Button 
+                    className="bg-slate-800 hover:bg-slate-900"
+                    onClick={() => onTabChange && onTabChange('lifecycle')}
+                  >
                     View Full Analysis
                   </Button>
-                  <Button variant="outline" className="border-slate-300">
+                  <Button 
+                    variant="outline" 
+                    className="border-slate-300"
+                    onClick={() => onTabChange && onTabChange('comparison')}
+                  >
                     Compare Products
                   </Button>
-                  <Button variant="outline" className="border-green-300 text-green-700 hover:bg-green-50">
+                  <Button 
+                    variant="outline" 
+                    className="border-green-300 text-green-700 hover:bg-green-50"
+                    onClick={() => {
+                      if (detectedProduct && detectedProduct.price !== undefined) {
+                        addToCart({
+                          id: detectedProduct.id,
+                          name: detectedProduct.name,
+                          price: detectedProduct.price,
+                          image: detectedProduct.image || undefined,
+                          brand: detectedProduct.brand || null,
+                        });
+                      }
+                    }}
+                  >
                     <ShoppingCart className="w-4 h-4 mr-2" />
                     Add to Cart
                   </Button>
@@ -516,3 +521,4 @@ const ProductScanner = () => {
 };
 
 export default ProductScanner;
+
