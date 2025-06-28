@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,23 +8,165 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Search, ShoppingCart, Star, Leaf, Award, Filter, Heart, Share2, Eye, TrendingUp, Download, BarChart3 } from 'lucide-react';
 import { productsData, searchProducts, getProductsByCategory } from '@/data/productsData';
 import { useUserData } from '@/contexts/UserDataContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { useCart } from '@/contexts/CartContext'; // Assuming a CartContext exists
 import { useToast } from '@/hooks/use-toast';
-import { db } from '@/firebase';
-import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 const SustainabilityMarketplace = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('score');
-  const [userFavorites, setUserFavorites] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [cart, setCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const { cartItems, addToCart } = useCart(); // Use cart state and actions from CartContext
+  const { addPoints } = useUserData();
   const { toast } = useToast();
-  const { user } = useAuth();
 
-  // Fetch user data (favorites and cart) from Firebase
+  // More specific image mapping based on product names and categories
+  const getProductImage = (product, size = '400x300') => {
+    const imageMap = {
+      // Personal Care
+      'toothbrush': 'photo-1607613009820-a29f7bb81c04', // bamboo toothbrush
+      'shampoo': 'photo-1571019613454-1cb2f99b2d8b', // shampoo bottles
+      'body wash': 'photo-1596462502278-27bfdc403348', // body care products
+      'deodorant': 'photo-1522335789203-aabd1fc54bc9', // bathroom products
+      'comb': 'photo-1559056199-641a0ac8b55e', // personal care items
+      
+      // Food & Beverage
+      'almonds': 'photo-1445282768818-cdb21eab8176', // nuts
+      'milk': 'photo-1563636619-e9143da7973b', // milk carton
+      'coffee': 'photo-1497935586351-b67a49e012bf', // coffee beans
+      'granola': 'photo-1571091718767-18b5b1457add', // granola bowl
+      'energy bar': 'photo-1542838132-92c53300491e', // energy bars
+      
+      // Electronics
+      'charger': 'photo-1593642632823-8f785ba67e45', // phone charger
+      'phone case': 'photo-1511707171634-5f897ff02aa9', // phone accessories
+      'speaker': 'photo-1558618666-fcd25c85cd64', // wireless speaker
+      'monitor': 'photo-1527443224154-c4a3942d3acf', // computer monitor
+      'laptop stand': 'photo-1587829138453-6d7ac2bec001', // laptop setup
+      
+      // Clothing
+      't-shirt': 'photo-1521572163474-6864f9cf17ab', // t-shirt
+      'jeans': 'photo-1542272604-787c3835535d', // jeans
+      'jacket': 'photo-1551028719-00167b16eac5', // jacket
+      'hoodie': 'photo-1556821840-3a9c6fcc9e5d', // hoodie
+      'sneakers': 'photo-1549298916-b41d501d3772', // sneakers
+      
+      // Home & Garden
+      'furniture': 'photo-1586023492125-27b2c045efd7', // furniture
+      'garden light': 'photo-1493663284031-b7e3aefcae8e', // garden lighting
+      'seeds': 'photo-1416879595882-3373a0480b5b', // seeds
+      'compost bin': 'photo-1560448204-e02f11c3d0e2', // composting
+      'plant pot': 'photo-1485955900006-10f4d324d411', // plant pots
+      
+      // Beauty & Cosmetics
+      'lipstick': 'photo-1596462502278-27bfdc403348', // lipstick
+      'foundation': 'photo-1522335789203-aabd1fc54bc9', // makeup
+      'mascara': 'photo-1571019613454-1cb2f99b2d8b', // mascara
+      'brush set': 'photo-1559056199-641a0ac8b55e', // makeup brushes
+      'cleanser': 'photo-1556228720-195a672e8a03', // skincare
+      
+      // Sports & Outdoor
+      'yoga mat': 'photo-1544367567-0f2fcb009e0b', // yoga mat
+      'water bottle': 'photo-1523362628745-0c100150b504', // water bottle
+      'activewear': 'photo-1506629905877-c8cd2259f81c', // workout clothes
+      'backpack': 'photo-1553062407-98eeb64c6a62', // backpack
+      'ball': 'photo-1571019613454-1cb2f99b2d8b', // sports ball
+      
+      // Baby & Kids
+      'baby food': 'photo-1560472354-b33ff0c44a43', // baby food
+      'toys': 'photo-1558618666-fcd25c85cd64', // toys
+      'diapers': 'photo-1522335789203-aabd1fc54bc9', // baby care
+      'baby wash': 'photo-1596462502278-27bfdc403348', // baby products
+      'blocks': 'photo-1572021335469-31706a17aaef', // wooden blocks
+      
+      // Automotive
+      'car wash': 'photo-1558618666-fcd25c85cd64', // car care
+      'car charger': 'photo-1593642632823-8f785ba67e45', // car electronics
+      'floor mats': 'photo-1511707171634-5f897ff02aa9', // car accessories
+      'air freshener': 'photo-1559056199-641a0ac8b55e', // car interior
+      'car cover': 'photo-1522335789203-aabd1fc54bc9', // car protection
+      
+      // Books & Media
+      'notebook': 'photo-1544716278-ca5e3f4abd8c', // notebook
+      'pen set': 'photo-1455390582262-044cdead277a', // pens
+      'calendar': 'photo-1506905925346-21bda4d32df4', // calendar
+      'bookmark': 'photo-1507003211169-0a1dd7228f2d', // bookmark
+      'journal': 'photo-1544716278-ca5e3f4abd8c', // journal
+      
+      // Health & Wellness
+      'vitamins': 'photo-1559757148-5c350d0d3c56', // vitamins
+      'protein powder': 'photo-1571019613454-1cb2f99b2d8b', // protein powder
+      'yoga block': 'photo-1544367567-0f2fcb009e0b', // yoga accessories
+      'pill case': 'photo-1559056199-641a0ac8b55e', // pill organizer
+      'tea': 'photo-1558618666-fcd25c85cd64', // herbal tea
+      
+      // Kitchen & Dining
+      'cutting board': 'photo-1556909114-f6e7ad7d3136', // cutting board
+      'food storage': 'photo-1558618666-fcd25c85cd64', // food containers
+      'dish soap': 'photo-1596462502278-27bfdc403348', // dish soap
+      'utensils': 'photo-1556909114-f6e7ad7d3136', // kitchen utensils
+      'containers': 'photo-1558618666-fcd25c85cd64', // glass containers
+      
+      // Office Supplies
+      'paper': 'photo-1544716278-ca5e3f4abd8c', // paper
+      'pen': 'photo-1455390582262-044cdead277a', // pens
+      'organizer': 'photo-1506905925346-21bda4d32df4', // desk organizer
+      'eraser': 'photo-1507003211169-0a1dd7228f2d', // eraser
+      'folders': 'photo-1544716278-ca5e3f4abd8c', // folders
+      
+      // Pet Supplies
+      'pet food': 'photo-1548199973-03cce0bbc87b', // pet food
+      'pet toys': 'photo-1601758228041-f3b2795255f1', // pet toys
+      'pet shampoo': 'photo-1596462502278-27bfdc403348', // pet care
+      'pet bed': 'photo-1548199973-03cce0bbc87b', // pet bed
+      'leash': 'photo-1601758228041-f3b2795255f1', // pet leash
+      
+      // Toys & Games
+      'puzzle': 'photo-1572021335469-31706a17aaef', // wooden puzzle
+      'building blocks': 'photo-1572021335469-31706a17aaef', // building blocks
+      'playdough': 'photo-1558618666-fcd25c85cd64', // playdough
+      'board game': 'photo-1606092195730-5d7b9af1efc5', // board game
+      'stuffed animal': 'photo-1558618666-fcd25c85cd64' // stuffed toy
+    };
+
+    // Find matching image based on product name
+    const productNameLower = product.name.toLowerCase();
+    let selectedImageId = null;
+
+    // Check for exact matches first
+    for (const [key, imageId] of Object.entries(imageMap)) {
+      if (productNameLower.includes(key)) {
+        selectedImageId = imageId;
+        break;
+      }
+    }
+
+    // Fallback to category-based images if no specific match found
+    if (!selectedImageId) {
+      const categoryImages = {
+        'personal-care': 'photo-1596462502278-27bfdc403348',
+        'food-beverage': 'photo-1571091718767-18b5b1457add',
+        'electronics': 'photo-1593642632823-8f785ba67e45',
+        'clothing': 'photo-1521572163474-6864f9cf17ab',
+        'home-garden': 'photo-1586023492125-27b2c045efd7',
+        'beauty-cosmetics': 'photo-1556228720-195a672e8a03',
+        'sports-outdoor': 'photo-1544367567-0f2fcb009e0b',
+        'baby-kids': 'photo-1560472354-b33ff0c44a43',
+        'automotive': 'photo-1558618666-fcd25c85cd64',
+        'books-media': 'photo-1544716278-ca5e3f4abd8c',
+        'health-wellness': 'photo-1559757148-5c350d0d3c56',
+        'kitchen-dining': 'photo-1556909114-f6e7ad7d3136',
+        'office-supplies': 'photo-1544716278-ca5e3f4abd8c',
+        'pet-supplies': 'photo-1548199973-03cce0bbc87b',
+        'toys-games': 'photo-1572021335469-31706a17aaef'
+      };
+      selectedImageId = categoryImages[product.category] || 'photo-1560472354-b33ff0c44a43';
+    }
+    
+    return `https://images.unsplash.com/${selectedImageId}?w=${size}&fit=crop`;
+  };
+
+  // Get products based on search and filters
   const getFilteredProducts = () => {
     let products = productsData.slice(0, 100); // Show first 100 for performance
     
@@ -48,23 +189,6 @@ const SustainabilityMarketplace = () => {
     });
   };
 
-  useEffect(() => {
-    if (user && user.uid) {
-      const userDocRef = doc(db, 'users', user.uid);
-      const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          setUserFavorites(docSnap.data().favorites || []);
-        } else {
-          setUserFavorites([]);
-        }
-      });
-      return () => unsubscribe();
-    } else {
-      // Clear local state for unauthenticated users
-      setUserFavorites([]);
-    }
-  }, [user]); // Add user as a dependency
-
   const filteredProducts = getFilteredProducts();
 
   const categories = [
@@ -76,31 +200,44 @@ const SustainabilityMarketplace = () => {
     { id: 'home-garden', label: 'Home & Garden', icon: Heart, count: getProductsByCategory('home-garden').length }
   ];
 
-  const toggleFavorite = async (productId) => {
-    if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please log in to manage your favorites.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const userDocRef = doc(db, 'users', user.uid);
+  const toggleFavorite = (productId) => {
+    setFavorites(prev => {
+      const newFavorites = prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId];
+      
+      if (!prev.includes(productId)) {
+        addPoints(5);
+        toast({
+          title: "Product Favorited!",
+          description: "You earned 5 points for favoriting a product!",
+        });
+      }
+      
+      return newFavorites;
+    });
+  };
 
-    if (userFavorites.includes(productId)) {
-      await updateDoc(userDocRef, {
-        favorites: arrayRemove(productId)
-      });
-    } else {
-      await updateDoc(userDocRef, {
-        favorites: arrayUnion(productId)
-      });
-      toast({
-        title: "Product Favorited!",
-        description: "You earned 5 points for favoriting a product!",
-      });
-    }
+  const addToCart = (product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      let newCart;
+      if (existing) {
+        newCart = prev.map(item => 
+          item.id === product.id 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        newCart = [...prev, { ...product, quantity: 1 }];
+        addPoints(10);
+        toast({
+          title: "Added to Cart!",
+          description: `${product.name} added to cart. You earned 10 points!`,
+        });
+      }
+      return newCart;
+    });
   };
 
   const shareProduct = (product) => {
@@ -112,6 +249,7 @@ const SustainabilityMarketplace = () => {
         text: shareText,
         url: window.location.href
       }).then(() => {
+        addPoints(5);
         toast({
           title: "Product Shared!",
           description: "You earned 5 points for sharing!",
@@ -127,6 +265,7 @@ const SustainabilityMarketplace = () => {
   const fallbackShare = (text) => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
+        addPoints(5);
         toast({
           title: "Product Shared!",
           description: "Product link copied to clipboard! You earned 5 points!",
@@ -166,6 +305,7 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
     a.click();
     URL.revokeObjectURL(url);
     
+    addPoints(15);
     toast({
       title: "Report Downloaded!",
       description: "You earned 15 points for downloading a sustainability report!",
@@ -191,6 +331,9 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
             <div className="flex items-center space-x-2">
               <Badge className="bg-green-600 text-white">
                 {filteredProducts.length} Products
+              </Badge>
+              <Badge variant="outline" className="border-blue-300 text-blue-700">
+                {cart.length} in Cart
               </Badge>
             </div>
           </CardTitle>
@@ -246,7 +389,7 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                 {/* Product Image */}
                 <div className="relative overflow-hidden h-48 bg-gray-100">
                   <img 
-                    src={`https://images.unsplash.com/${product.image}?w=400&h=300&fit=crop`}
+                    src={getProductImage(product)}
                     alt={product.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
@@ -273,12 +416,12 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                       size="sm"
                       variant="outline"
                       className="w-8 h-8 p-0 bg-white/90 hover:bg-white"
- onClick={(e) => {
- e.stopPropagation();
- toggleFavorite(product.id.toString()); // Convert number to string
- }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(product.id);
+                      }}
                     >
-                      <Heart className={`w-4 h-4 ${userFavorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
+                      <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
                     </Button>
                     <Button
                       size="sm"
@@ -357,19 +500,19 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                     <div className="flex gap-2 pt-2">
                       <Button 
                         className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                        onClick={() => addToCart({ ...product, id: product.id.toString() })}
-                        disabled={!product.inStock} // Pass product object directly
- >
+                        onClick={() => addToCart(product)}
+                        disabled={!product.inStock}
+                      >
                         {product.inStock ? (
                           <>
                             <ShoppingCart className="w-4 h-4 mr-2" />
                             Add to Cart
                           </>
                         ) : (
-                          'Out of Stock'  /* Fix the ternary operator syntax here */
- )}
+                          'Out of Stock'
+                        )}
                       </Button>
-                      <Dialog> {/* Use the Firebase integrated function */}
+                      <Dialog>
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm" className="px-3" onClick={() => setSelectedProduct(product)}>
                             <Eye className="w-4 h-4" />
@@ -385,7 +528,7 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                           <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <img 
-                                src={`https://images.unsplash.com/${product.image}?w=600&h=400&fit=crop`}
+                                src={getProductImage(product, '600x400')}
                                 alt={product.name} 
                                 className="w-full h-64 object-cover rounded-lg"
                                 onError={(e) => {
@@ -437,10 +580,10 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                             <div className="flex gap-2">
                               <Button 
                                 className="flex-1"
-                                onClick={() => addToCart({ ...product, id: product.id.toString() })}
- disabled={!product.inStock} // Pass product object directly
+                                onClick={() => addToCart(product)}
+                                disabled={!product.inStock}
                               >
-                                {/* Use the Firebase integrated function */}
+                                <ShoppingCart className="w-4 h-4 mr-2" />
                                 Add to Cart
                               </Button>
                               <Button variant="outline" onClick={() => downloadReport(product)}>
