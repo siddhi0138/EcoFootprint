@@ -38,7 +38,8 @@ import {
   LogOut,
   Plus,
   Minus,
-  Trash2
+  Trash2,
+  ArrowRight
 } from 'lucide-react';
 
 const Navbar = ({
@@ -87,7 +88,6 @@ const Navbar = ({
   ];
 
   const smartToolsItems = [
-    { id: 'ar-scanner', label: 'AR Scanner', icon: Eye },
     { id: 'smart-insights', label: 'Smart Insights', icon: TrendingUp },
     { id: 'comparison', label: 'Product Comparison', icon: Package }
   ];
@@ -559,6 +559,72 @@ const Navbar = ({
                 <Button
                   size="sm"
                   className="bg-emerald-600 hover:bg-emerald-700 text-sm px-4 h-9 shadow-lg hover:shadow-xl transition-all duration-200"
+                  onClick={() => {
+                    if (user) {
+                      onNavigate('scanner');
+                    } else {
+                      if (toggleLoginForm) toggleLoginForm();
+                    }
+                  }}
+                >
+                  Get Started
+                </Button>
+              )
+            )}
+          </div>
+
+          {/* Mobile Icons: Cart, Notifications, Theme, Profile */}
+          <div className="lg:hidden flex items-center space-x-4">
+            {/* Shopping Cart */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20 relative"
+              onClick={handleCartClick}
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                  {cartItemCount > 99 ? '99+' : cartItemCount}
+                </span>
+              )}
+            </Button>
+
+            {/* Notifications */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20"
+              onClick={() => onNavigate('notifications')}
+            >
+              <Bell className="w-5 h-5" />
+            </Button>
+
+            {/* Theme Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20"
+              onClick={toggleTheme}
+            >
+              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </Button>
+
+            {/* Profile Icon */}
+            {user ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20"
+                onClick={() => onNavigate('profile')}
+              >
+                <User className="w-5 h-5" />
+              </Button>
+            ) : (
+              toggleLoginForm && (
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-sm px-4 h-9 shadow-lg hover:shadow-xl transition-all duration-200"
                   onClick={toggleLoginForm}
                 >
                   Get Started
@@ -576,6 +642,7 @@ const Navbar = ({
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
+
         </div>
 
         {/* Mobile Menu */}
