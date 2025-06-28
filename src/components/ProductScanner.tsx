@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -35,18 +35,34 @@ import { useUserData } from '../contexts/UserDataContext';
 
 import { useCart } from "../contexts/CartContext";
 
-const ProductScanner = ({ onTabChange }) => {
+const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
   const { scannedProducts, addScannedProduct } = useUserData();
+  const { addToCart } = useCart();
   const [isScanning, setIsScanning] = useState(false);
   const [detectedProduct, setDetectedProduct] = useState(null);
   const [scanMode, setScanMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const [uploadedImage, setUploadedImage] = useState(null);
+  const [stream, setStream] = useState(null);
   const videoRef = useRef(null);
-  const { user } = useAuth(); // Get user from useAuth
   const fileInputRef = useRef(null);
 
-  const { addToCart } = useCart();
+  // Sync detectedProduct with scannedProduct prop
+  useEffect(() => {
+    if (scannedProduct) {
+      setDetectedProduct(scannedProduct);
+    }
+  }, [scannedProduct]);
+
+  // Cleanup camera stream when component unmounts or scan mode changes
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
 
   const mockScan = () => {
     setIsScanning(true);
@@ -59,7 +75,7 @@ const ProductScanner = ({ onTabChange }) => {
         brand: randomProduct.brand,
         sustainabilityScore: randomProduct.sustainabilityScore,
         price: randomProduct.price,
-        image: randomProduct.image,
+        image: `https://images.unsplash.com/${randomProduct.image}?w=400&h=400&fit=crop`,
         carbon: randomProduct.carbonFootprint.total,
         water: randomProduct.waterUsage,
         packaging: randomProduct.packaging.type,
@@ -85,40 +101,49 @@ const ProductScanner = ({ onTabChange }) => {
       };
       
       setDetectedProduct(productData);
-
-      if (user) {
-        const scannedProductRef = doc(
-          collection(db, `users/${user.uid}/scannedProducts`)
-        );
-        setDoc(scannedProductRef, {
-          ...productData,
-          timestamp: serverTimestamp(),
-        }).catch((error) =>
-          console.error("Error adding scanned product to Firebase:", error)
-        );
-      }
-
-      if (addScannedProduct) {
-        const today = new Date();
-        addScannedProduct({
-          id: randomProduct.id.toString(),
-          name: randomProduct.name,
-          brand: randomProduct.brand,
-          sustainabilityScore: randomProduct.sustainabilityScore,
-          category: randomProduct.category,
-          date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`,
-        });
-      }
+      
+      // Add to user's scanned products
+      const today = new Date();
+      addScannedProduct({
+        id: randomProduct.id.toString(),
+        name: randomProduct.name,
+        brand: randomProduct.brand,
+        sustainabilityScore: randomProduct.sustainabilityScore,
+        category: randomProduct.category,
+        date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`,
+      });
       
       setIsScanning(false);
     }, 2000);
   };
 
-  const startScanning = () => {
-    setScanMode(true);
+  const startScanning = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment' 
+        } 
+      });
+      
+      setStream(mediaStream);
+      setScanMode(true);
+      
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      alert('Unable to access camera. Please check permissions or try uploading an image instead.');
+    }
   };
 
   const stopScanning = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
     setScanMode(false);
     setDetectedProduct(null);
   };
@@ -137,8 +162,66 @@ const ProductScanner = ({ onTabChange }) => {
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      mockScan();
+      const allProducts = getRandomProducts(20);
+      const results = allProducts.filter(product => 
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.barcode.includes(searchQuery)
+      );
+      setSearchResults(results);
+    } else {
+      setSearchResults([]);
     }
+  };
+
+  const selectSearchResult = (product) => {
+    setIsScanning(true);
+    setSearchResults([]);
+    setSearchQuery('');
+    setTimeout(() => {
+      const productData = {
+        id: product.id,
+        name: product.name,
+        brand: product.brand,
+        sustainabilityScore: product.sustainabilityScore,
+        price: product.price,
+        image: `https://images.unsplash.com/${product.image}?w=400&h=400&fit=crop`,
+        carbon: product.carbonFootprint.total,
+        water: product.waterUsage,
+        packaging: product.packaging.type,
+        certifications: product.certifications,
+        materials: product.materials,
+        origin: product.origin,
+        barcode: product.barcode,
+        alternatives: product.alternatives,
+        features: product.features,
+        inStock: product.inStock,
+        rating: product.rating,
+        reviews: product.reviews,
+        description: product.description,
+        category: product.category,
+        sustainability: {
+          carbon: Math.floor(product.sustainabilityScore * 0.9),
+          water: Math.floor(product.sustainabilityScore * 0.95),
+          waste: Math.floor(product.sustainabilityScore * 0.85),
+          energy: Math.floor(product.sustainabilityScore * 0.92),
+          ethics: Math.floor(product.sustainabilityScore * 1.05),
+          overall: product.sustainabilityScore
+        }
+      };
+      
+      setDetectedProduct(productData);
+      addScannedProduct({
+        id: product.id.toString(),
+        name: product.name,
+        brand: product.brand,
+        sustainabilityScore: product.sustainabilityScore,
+        category: product.category,
+        date: new Date().toLocaleDateString(),
+      });
+      setIsScanning(false);
+    }, 2000);
   };
 
   const triggerFileUpload = () => {
@@ -207,24 +290,54 @@ const ProductScanner = ({ onTabChange }) => {
                 <Search className="w-4 h-4 mr-2" />
                 Search Products
               </h3>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Search by name or barcode..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1"
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                />
-                <Button onClick={handleSearch} size="sm">
-                  <Search className="w-4 h-4" />
-                </Button>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Search by name, brand, or barcode..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1"
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                  <Button onClick={handleSearch} size="sm">
+                    <Search className="w-4 h-4" />
+                  </Button>
+                </div>
+                
+                {/* Search Results */}
+                {searchResults.length > 0 && (
+                  <div className="max-h-60 overflow-y-auto space-y-2 mt-2">
+                    {searchResults.map((product) => (
+                      <div
+                        key={product.id}
+                        className="p-2 border border-slate-200 rounded cursor-pointer hover:bg-slate-50 transition-colors"
+                        onClick={() => selectSearchResult(product)}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <img 
+                            src={`https://images.unsplash.com/${product.image}?w=40&h=40&fit=crop`}
+                            alt={product.name}
+                            className="w-8 h-8 object-cover rounded"
+                          />
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium text-slate-800">{product.name}</h4>
+                            <p className="text-xs text-slate-600">{product.brand} • {product.category}</p>
+                          </div>
+                          <Badge className={`text-xs px-2 py-1 ${getScoreColor(product.sustainabilityScore)}`}>
+                            {product.sustainabilityScore}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </Card>
 
             <Card className="p-4 border border-slate-200">
               <h3 className="font-semibold text-slate-800 mb-3 flex items-center">
                 <Upload className="w-4 h-4 mr-2" />
-                Upload Photo
+                Upload Files
               </h3>
               <div className="space-y-2">
                 <Button 
@@ -233,7 +346,7 @@ const ProductScanner = ({ onTabChange }) => {
                   className="w-full"
                 >
                   <FileImage className="w-4 h-4 mr-2" />
-                  Choose Image
+                  Choose File
                 </Button>
                 <input
                   ref={fileInputRef}
@@ -274,6 +387,15 @@ const ProductScanner = ({ onTabChange }) => {
                 </div>
               ) : (
                 <div className="w-full h-full relative">
+                  {/* Live Camera Feed */}
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  
                   <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
                     <Badge className="bg-red-600 text-white border-0">
                       <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
@@ -301,17 +423,17 @@ const ProductScanner = ({ onTabChange }) => {
                     </div>
                   </div>
                   
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-48 h-48 border-2 border-slate-400 border-dashed rounded-lg flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-48 h-48 border-2 border-white border-dashed rounded-lg flex items-center justify-center">
                       {isScanning ? (
                         <div className="text-center">
-                          <Scan className="w-12 h-12 mx-auto mb-2 text-slate-400 animate-spin" />
-                          <p className="text-slate-300 text-sm">Analyzing product...</p>
+                          <Scan className="w-12 h-12 mx-auto mb-2 text-white animate-spin" />
+                          <p className="text-white text-sm">Analyzing product...</p>
                         </div>
                       ) : (
                         <div className="text-center">
-                          <Scan className="w-12 h-12 mx-auto mb-2 text-slate-400" />
-                          <p className="text-slate-300 text-sm">Aim at product</p>
+                          <Scan className="w-12 h-12 mx-auto mb-2 text-white" />
+                          <p className="text-white text-sm">Aim at product</p>
                         </div>
                       )}
                     </div>
@@ -321,9 +443,9 @@ const ProductScanner = ({ onTabChange }) => {
                     <Button 
                       onClick={mockScan} 
                       disabled={isScanning}
-                      className="bg-slate-700 hover:bg-slate-600 rounded-full w-16 h-16 border-2 border-slate-500"
+                      className="bg-white/20 hover:bg-white/30 rounded-full w-16 h-16 border-2 border-white backdrop-blur-sm"
                     >
-                      <Scan className="w-6 h-6" />
+                      <Scan className="w-6 h-6 text-white" />
                     </Button>
                   </div>
                 </div>
@@ -427,7 +549,7 @@ const ProductScanner = ({ onTabChange }) => {
                       <div className="flex justify-between">
                         <span>Stock:</span>
                         <span className={`font-medium ${detectedProduct.inStock ? 'text-green-600' : 'text-red-600'}`}>
-                          {detectedProduct.inStock ? 'In Stock' : 'Out of Stock'}
+ {detectedProduct.inStock ? 'In Stock' : 'Out of Stock'}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -497,11 +619,11 @@ const ProductScanner = ({ onTabChange }) => {
                     className="border-green-300 text-green-700 hover:bg-green-50"
                     onClick={() => {
                       if (detectedProduct && detectedProduct.price !== undefined) {
-                        addToCart({
-                          id: detectedProduct.id,
+ addToCart({
+                          id: detectedProduct.id.toString(),
                           name: detectedProduct.name,
                           price: detectedProduct.price,
-                          image: detectedProduct.image || undefined,
+                          image: detectedProduct.image || "", // Provide a default value
                           brand: detectedProduct.brand || null,
                         });
                       }
@@ -521,4 +643,3 @@ const ProductScanner = ({ onTabChange }) => {
 };
 
 export default ProductScanner;
-

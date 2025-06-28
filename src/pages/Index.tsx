@@ -121,7 +121,7 @@ const Index = () => {
         <div className="container mx-auto px-6 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsContent value="scanner" className="mt-6">
-              <ProductScanner onTabChange={setActiveTab} />
+              <ProductScanner onTabChange={setActiveTab} scannedProduct={scannedProduct} setScannedProduct={setScannedProduct} />
             </TabsContent>
 
             <TabsContent value="chatbot" className="mt-6">
@@ -196,7 +196,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="comparison" className="mt-4">
-              <ProductComparison />
+              <ProductComparison scannedProduct={scannedProduct} setScannedProduct={setScannedProduct} />
             </TabsContent>
 
             <TabsContent value="companies" className="mt-4">
