@@ -30,7 +30,6 @@ import SustainabilityChallenges from '../components/SustainabilityChallenges';
 import SocialImpactHub from '../components/SocialImpactHub';
 import SmartInsights from '../components/SmartInsights';
 import LiveEvents from '../components/LiveEvents';
-import ARProductScanner from '../components/ARProductScanner';
 import InvestmentTracker from '../components/InvestmentTracker';
 import ESGAnalyzer from '../components/ESGAnalyzer';
 import TransportationPlanner from '../components/TransportationPlanner';
@@ -98,6 +97,11 @@ const Index = () => {
         />
         <Hero onGetStarted={handleGetStarted} />
         <Features />
+        <AuthModal
+          isOpen={isLoginModalOpen}
+          onClose={() => setIsLoginModalOpen(false)}
+          onSuccess={handleLoginSuccess}
+        />
       </div>
     );
   }
@@ -117,10 +121,6 @@ const Index = () => {
         <div className="container mx-auto px-6 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsContent value="scanner" className="mt-6">
-              <ProductScanner onTabChange={setActiveTab} />
-            </TabsContent>
-
-            <TabsContent value="ar-scanner" className="mt-6">
               <ProductScanner onTabChange={setActiveTab} />
             </TabsContent>
 
