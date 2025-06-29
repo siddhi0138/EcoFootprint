@@ -4,6 +4,7 @@ import { collection, doc, onSnapshot, addDoc, updateDoc, getDoc, setDoc, getDocs
 import { useAuth } from './AuthContext';
 import { db } from '../firebase';
 import { Timestamp } from 'firebase/firestore';
+import { Brain, Star, Leaf } from 'lucide-react';
 interface CarbonEntry {
   id: string;
   category: string;
@@ -23,6 +24,13 @@ interface ScannedProduct {
   sustainabilityScore: number;
   date: string;
   category: string;
+  alternatives?: {
+    name: string;
+    reason: string;
+    priceComparison: string;
+    score: number;
+  }[];
+
 }
 
 export interface UserStats {
@@ -39,14 +47,37 @@ export interface UserStats {
   coursesCompleted: number;
   recipesViewed: number;
   transportTrips: number;
+  goals: {
+    title: string;
+    target: string;
+    progress: number;
+  }[];
   esgReports: number;
   investmentsMade: number;
+}
+
+// Extend UserStats interface with properties for AI Recommendations
+export interface UserStats {
+  totalCarbonFootprint: number;
+  monthlyReduction: number;
+  carbonGoal: number;
+  maxSustainabilityScore: number;
+  weeklyFootprint: number[];
+  categoryBreakdown: { transport: number; energy: number; food: number; waste: number };
+  topCategory: string;
+  achievements: { id: number; name: string; description: string; icon: any; color: string; }[];
+ monthlyTrend: number;
+ sustainabilityScore: number;
 }
 
 interface UserDataContextType {
   carbonEntries: CarbonEntry[];
   scannedProducts: ScannedProduct[];
   userStats: UserStats;
+  completedActions: number[];
+  actionProgress: Record<string, any>;
+  setCompletedActions: React.Dispatch<React.SetStateAction<number[]>>;
+  setActionProgress: React.Dispatch<React.SetStateAction<Record<string, any>>>;
   addCarbonEntry: (entry: Omit<CarbonEntry, 'id' | 'date'>) => void;
   addScannedProduct: (product: ScannedProduct) => void;
   addPoints: (points: number) => void;
@@ -57,6 +88,7 @@ interface UserDataContextType {
   incrementTransportTrip: () => void;
   incrementESGReport: () => void;
   incrementInvestment: () => void;
+  loading: boolean;
 }
 
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
@@ -66,78 +98,48 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
   const [carbonEntries, setCarbonEntries] = useState<CarbonEntry[]>([]);
   const [scannedProducts, setScannedProducts] = useState<ScannedProduct[]>([]);
   const [userStats, setUserStats] = useState<UserStats>({
-    totalPoints: 150,
-    level: 1,
+    totalPoints: 0,
+    level: 0,
     totalScans: 0,
     avgScore: 0,
     co2Saved: 0,
-    rank: 999,
+    rank: 0,
     badges: 0,
-    weeklyGoal: 75,
+    weeklyGoal: 0,
     currentWeekScans: 0,
     streakDays: 0,
     coursesCompleted: 0,
     recipesViewed: 0,
     transportTrips: 0,
     esgReports: 0,
-    investmentsMade: 0
+    goals: [],
+    investmentsMade: 0,
+    totalCarbonFootprint: 0,
+    monthlyReduction: 0,
+    carbonGoal: 0,
+    maxSustainabilityScore: 1000, // Assuming a max score
+    weeklyFootprint: [0, 0, 0, 0, 0, 0, 0], // Initialize with 7 zeros
+    categoryBreakdown: { transport: 0, energy: 0, food: 0, waste: 0 },
+    topCategory: 'none', // Or a default value
+    monthlyTrend: 0,
+    sustainabilityScore: 0, // Assuming a current score separate from max
+    achievements: [],
   });
 
+  const [completedActions, setCompletedActions] = useState<number[]>([]);
+  const [actionProgress, setActionProgress] = useState<Record<string, any>>({});
+
   // Fetch user data on authentication state change
-  useEffect(() => {
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
     let unsubscribeStats: () => void = () => {};
     let unsubscribeCarbon: () => void = () => {};
     let unsubscribeScans: () => void = () => {};
 
-    if (currentUser) {
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      const carbonCollectionRef = collection(userDocRef, 'carbonEntries');
-      const scannedCollectionRef = collection(userDocRef, 'scannedProducts');
-
-      // Listen for user stats
-      unsubscribeStats = onSnapshot(userDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          setUserStats(docSnap.data() as UserStats);
-        } else {
-          // Create initial user stats if not exists
-          setDoc(userDocRef, userStats);
-        }
-      }, (error) => {
-        console.error("Error fetching user stats:", error);
-      });
-
-      // Listen for carbon entries
-      unsubscribeCarbon = onSnapshot(carbonCollectionRef, (snapshot) => {
-        const entries = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data() as Omit<CarbonEntry, 'id'>
-        }));
-        setCarbonEntries(entries);
-      }, (error) => {
-        console.error("Error fetching carbon entries:", error);
-      });
-
-      // Listen for scanned products
-      unsubscribeScans = onSnapshot(scannedCollectionRef, (snapshot) => {
-        const productsMap: { [productId: string]: ScannedProduct } = {};
-        snapshot.docs.forEach(doc => {
-          const productData = {
-            ...(doc.data() as Omit<ScannedProduct, 'date'>),
-            date: doc.data().timestamp?.toDate().toISOString() || new Date().toISOString(), // Use Firestore timestamp, fallback to current date
-          };
-          // Use product's actual ID for grouping, keeping the most recent scan
-          if (!productsMap[productData.id] || new Date(productData.date) > new Date(productsMap[productData.id].date || 0)) {
- productsMap[productData.id] = productData;
-          }
-        });
-        setScannedProducts(Object.values(productsMap).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())); // Sort by date
-      }, (error) => {
-        console.error("Error fetching scanned products:", error);
-      });
-
-    } else {
-      // Clear data on logout
-      setUserStats({
+    if (!currentUser) {
+      setLoading(false);
+      setUserStats({ // Reset to default zeros when no user is logged in
         totalPoints: 0,
         level: 0,
         totalScans: 0,
@@ -152,11 +154,137 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         recipesViewed: 0,
         transportTrips: 0,
         esgReports: 0,
-        investmentsMade: 0
+        investmentsMade: 0,
+        totalCarbonFootprint: 0,
+        monthlyReduction: 0,
+        carbonGoal: 0,
+        maxSustainabilityScore: 1000,
+        weeklyFootprint: [0, 0, 0, 0, 0, 0, 0],
+        categoryBreakdown: { transport: 0, energy: 0, food: 0, waste: 0 },
+        topCategory: 'none',
+        monthlyTrend: 0,
+        achievements: [],
+        sustainabilityScore: 0,
+        goals: [],
       });
       setCarbonEntries([]);
       setScannedProducts([]);
+      return;
     }
+
+    setLoading(true);
+
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const carbonCollectionRef = collection(userDocRef, 'carbonEntries');
+    const scannedCollectionRef = collection(userDocRef, 'scannedProducts');
+
+    // Listen for user stats
+    unsubscribeStats = onSnapshot(userDocRef, (docSnap) => {
+      console.log('UserDataContext: user stats snapshot received', docSnap.data());
+      if (docSnap.exists()) {
+        const fetchedStats = docSnap.data() as UserStats;
+        const defaultAchievements = [
+          { id: 1, name: 'Green Streak Master', description: '12 consecutive days', icon: Star, color: 'yellow' },
+          { id: 2, name: 'Carbon Reducer', description: 'Saved 67.8kg CO₂', icon: Leaf, color: 'green' },
+          { id: 3, name: 'AI Collaborator', description: '92% recommendation accuracy', icon: Brain, color: 'blue' }
+        ];
+        setUserStats(prevStats => ({
+          ...prevStats, // Use previous state as base
+          // Ensure numerical fields are numbers, default to 0 if NaN, undefined, or null
+          totalPoints: Number(fetchedStats.totalPoints) || 0,
+          level: Number(fetchedStats.level) || 0,
+          totalScans: Number(fetchedStats.totalScans) || 0,
+          avgScore: Number(fetchedStats.avgScore) || 0,
+          co2Saved: Number(fetchedStats.co2Saved) || 0,
+          rank: Number(fetchedStats.rank) || 0,
+          badges: Number(fetchedStats.badges) || 0,
+          weeklyGoal: Number(fetchedStats.weeklyGoal) || 0,
+          currentWeekScans: Number(fetchedStats.currentWeekScans) || 0,
+          streakDays: Number(fetchedStats.streakDays) || 0,
+          coursesCompleted: Number(fetchedStats.coursesCompleted) || 0,
+          recipesViewed: Number(fetchedStats.recipesViewed) || 0,
+          transportTrips: Number(fetchedStats.transportTrips) || 0,
+          esgReports: Number(fetchedStats.esgReports) || 0,
+          investmentsMade: Number(fetchedStats.investmentsMade) || 0,
+          monthlyReduction: Number(fetchedStats.monthlyReduction) || 0,
+          carbonGoal: Number(fetchedStats.carbonGoal) || 0,
+          maxSustainabilityScore: Number(fetchedStats.maxSustainabilityScore) || 1000,
+          weeklyFootprint: Array.isArray(fetchedStats.weeklyFootprint) ? fetchedStats.weeklyFootprint.map(Number).filter(n => !isNaN(n)) : [0, 0, 0, 0, 0, 0, 0],
+          categoryBreakdown: fetchedStats.categoryBreakdown || { transport: 0, energy: 0, food: 0, waste: 0 },
+          topCategory: fetchedStats.topCategory || 'none',
+          monthlyTrend: Number(fetchedStats.monthlyTrend) || 0,
+          sustainabilityScore: Number(fetchedStats.sustainabilityScore) || 0, // Ensure sustainabilityScore is handled
+          achievements: (Array.isArray(fetchedStats.achievements) && fetchedStats.achievements.length > 0) ? fetchedStats.achievements : defaultAchievements,
+          goals: fetchedStats.goals ?? [],
+        }));
+      } else {
+        // Create initial user stats if not exists with a comprehensive default object
+        const initialStatsForNewUser: UserStats = {
+          totalPoints: 0,
+          level: 1, // Start at level 1
+          totalScans: 0,
+          avgScore: 0,
+          co2Saved: 0,
+          rank: 0, // New user, no rank yet
+          badges: 0,
+          weeklyGoal: 75,
+          currentWeekScans: 0,
+          streakDays: 0,
+          coursesCompleted: 0,
+          recipesViewed: 0,
+          transportTrips: 0,
+          esgReports: 0,
+          goals: [],
+          investmentsMade: 0,
+          monthlyReduction: 0,
+          carbonGoal: 0,
+          maxSustainabilityScore: 1000,
+          weeklyFootprint: [0, 0, 0, 0, 0, 0, 0],
+          categoryBreakdown: { transport: 0, energy: 0, food: 0, waste: 0 },
+          topCategory: 'none',
+          achievements: [],
+          monthlyTrend: 0,
+          sustainabilityScore: 0,
+          totalCarbonFootprint: 0
+        };
+        setDoc(userDocRef, initialStatsForNewUser)
+          .then(() => setUserStats(initialStatsForNewUser)) // Update local state after setting in Firestore
+          .catch(error => console.error("Error setting initial user stats:", error));
+      }
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching user stats:", error);
+      setLoading(false);
+    });
+
+    // Listen for carbon entries
+    unsubscribeCarbon = onSnapshot(carbonCollectionRef, (snapshot) => {
+      const entries = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data() as Omit<CarbonEntry, 'id'>
+      }));
+      setCarbonEntries(entries);
+    }, (error) => {
+      console.error("Error fetching carbon entries:", error);
+    });
+
+    // Listen for scanned products
+    unsubscribeScans = onSnapshot(scannedCollectionRef, (snapshot) => {
+      const productsMap: { [productId: string]: ScannedProduct } = {};
+      snapshot.docs.forEach(doc => {
+        const productData = {
+          ...(doc.data() as Omit<ScannedProduct, 'date'>),
+          date: doc.data().timestamp?.toDate().toISOString() || new Date().toISOString(), // Use Firestore timestamp, fallback to current date
+        };
+        // Use product's actual ID for grouping, keeping the most recent scan
+        if (!productsMap[productData.id] || new Date(productData.date) > new Date(productsMap[productData.id].date || 0)) {
+          productsMap[productData.id] = productData;
+        }
+      });
+      setScannedProducts(Object.values(productsMap).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())); // Sort by date
+    }, (error) => {
+      console.error("Error fetching scanned products:", error);
+    });
 
     return () => {
       unsubscribeStats();
@@ -164,7 +292,6 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       unsubscribeScans();
     };
   }, [currentUser]);
-
   const updateFirestoreUserStats = async (stats: UserStats) => {
     if (currentUser) {
       const userDocRef = doc(db, 'users', currentUser.uid);
@@ -191,9 +318,9 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         // Update user stats
         const updatedStats = {
           ...userStats,
-          co2Saved: userStats.co2Saved + entry.amount,
-          totalPoints: userStats.totalPoints + Math.floor(entry.amount * 10),
-          currentWeekScans: userStats.currentWeekScans + 1 // Assuming carbon entries also count towards weekly goal
+          co2Saved: (userStats.co2Saved || 0) + entry.amount,
+          totalPoints: (userStats.totalPoints || 0) + Math.floor(entry.amount * 10),
+          currentWeekScans: (userStats.currentWeekScans || 0) + 1 // Assuming carbon entries also count towards weekly goal
         };
         setUserStats(updatedStats);
         updateFirestoreUserStats(updatedStats);
@@ -214,7 +341,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
           query(scannedCollectionRef, where('id', '==', product.id))
         );
 
- if (!existingScanQuery.empty) {
+        if (!existingScanQuery.empty) {
           // If a scan for this product exists, update the existing document
           const existingDocRef = existingScanQuery.docs[0].ref;
           await updateDoc(existingDocRef, {
@@ -233,11 +360,11 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         // Update user stats
         const updatedStats = {
           ...userStats,
-          totalScans: userStats.totalScans + 1,
-          avgScore: userStats.totalScans === 0 ? product.sustainabilityScore :
-            Math.round(((userStats.avgScore * userStats.totalScans) + product.sustainabilityScore) / (userStats.totalScans + 1)),
-          totalPoints: userStats.totalPoints + Math.floor(product.sustainabilityScore / 10),
-          currentWeekScans: userStats.currentWeekScans + 1
+          totalScans: (userStats.totalScans || 0) + 1,
+          avgScore: (userStats.totalScans || 0) === 0 ? product.sustainabilityScore :
+            Math.round(((userStats.avgScore || 0) * (userStats.totalScans || 0) + product.sustainabilityScore) / ((userStats.totalScans || 0) + 1)),
+          totalPoints: (userStats.totalPoints || 0) + Math.floor(product.sustainabilityScore / 10),
+          currentWeekScans: (userStats.currentWeekScans || 0) + 1
         };
         setUserStats(updatedStats);
         updateFirestoreUserStats(updatedStats);
@@ -271,26 +398,20 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
   const addPoints = async (points: number) => {
     const updatedStats = {
       ...userStats,
-      totalPoints: userStats.totalPoints + points
+      totalPoints: (userStats.totalPoints || 0) + points
     };
-    setUserStats(prev => ({
-      ...prev,
-      totalPoints: prev.totalPoints + points
-    }));
+    setUserStats(prev => ({ ...prev, totalPoints: (prev.totalPoints || 0) + points }));
     updateFirestoreUserStats(updatedStats);
   };
 
   const redeemReward = async (cost: number): Promise<boolean> => {
-    if (userStats.totalPoints >= cost) {
-      setUserStats(prev => ({
-        ...prev,
-        totalPoints: prev.totalPoints - cost,
-      }));
-      // Use functional update for Firestore update as well to ensure correct state
-      await updateFirestoreUserStats({
-        ...userStats, // Use current userStats for other fields
- totalPoints: userStats.totalPoints - cost, // Calculate new totalPoints
-      });
+    if ((userStats.totalPoints || 0) >= cost) {
+      const updatedStats = {
+        ...userStats,
+        totalPoints: (userStats.totalPoints || 0) - cost,
+      };
+      setUserStats(updatedStats);
+      await updateFirestoreUserStats(updatedStats);
       return true;
     }
     return false;
@@ -299,8 +420,8 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
   const incrementUserStat = async (stat: keyof UserStats, points: number) => {
     const updatedStats = {
       ...userStats,
-      [stat]: userStats[stat] + 1,
-      totalPoints: userStats.totalPoints + points
+      [stat]: typeof userStats[stat] === 'number' ? (userStats[stat] as number) + 1 : 1,
+      totalPoints: typeof userStats.totalPoints === 'number' ? userStats.totalPoints + points : points
     };
     setUserStats(updatedStats);
     updateFirestoreUserStats(updatedStats);
@@ -326,11 +447,16 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     incrementUserStat('investmentsMade', 100);
   };
 
+
   return (
     <UserDataContext.Provider value={{
       carbonEntries,
       scannedProducts,
       userStats,
+      completedActions,
+      actionProgress,
+      setCompletedActions,
+      setActionProgress,
       addCarbonEntry,
       addScannedProduct,
       addPoints,
@@ -340,13 +466,13 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       incrementRecipeViewed,
       incrementTransportTrip,
       incrementESGReport,
-      incrementInvestment
+      incrementInvestment,
+      loading
     }}>
       {children}
     </UserDataContext.Provider>
   );
 };
-
 export const useUserData = () => {
   const context = useContext(UserDataContext);
   if (context === undefined) {
@@ -354,4 +480,3 @@ export const useUserData = () => {
   }
   return context;
 };
-

@@ -202,11 +202,10 @@ const CarbonTracker = () => {
       </Card>
 
       <Tabs defaultValue="tracker" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="tracker">Add Entry</TabsTrigger>
           <TabsTrigger value="overview">Recent Activity</TabsTrigger>
           <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
-          <TabsTrigger value="goals">Goals</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tracker" className="space-y-4">
@@ -386,37 +385,6 @@ const CarbonTracker = () => {
               </CardContent>
             </Card>
           )}
-        </TabsContent>
-
-        <TabsContent value="goals" className="space-y-4">
-          <div className="grid gap-4">
-            {[
-              { title: 'Track 10 carbon activities', progress: Math.min((carbonEntries.length / 10) * 100, 100), target: '10 entries', current: `${carbonEntries.length} entries` }, // Updated progress
-              { title: 'Reduce weekly emissions', progress: getCurrentMonthEmissions() > 0 ? 60 : 0, target: '5 kg CO₂', current: `${getCurrentMonthEmissions().toFixed(1)} kg CO₂` }, // Updated current value
-              { title: 'Earn 500 points from tracking', progress: Math.min((userStats.totalPoints / 500) * 100, 100), target: '500 points', current: `${userStats.totalPoints} points` }
-            ].map((goal, index) => (
-              <Card key={index}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium">{goal.title}</h3>
-                    <Badge variant="outline">{Math.round(goal.progress)}%</Badge>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm text-gray-600">
-                      <span>Current: {goal.current}</span>
-                      <span>Target: {goal.target}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-green-500 h-2 rounded-full transition-all duration-300" 
-                        style={{ width: `${goal.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </TabsContent>
       </Tabs>
     </div>
