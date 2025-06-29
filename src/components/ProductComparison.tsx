@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,12 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Plus,
-  X,
-  Search,
-  ArrowUpDown,
-  CheckCircle,
+import { 
+  Plus, 
+  X, 
+  Search, 
+  ArrowUpDown, 
+  CheckCircle, 
   AlertCircle,
   Zap,
   Droplets,
@@ -20,172 +21,222 @@ import {
   Sparkles,
   Lightbulb,
   Star,
+  ShoppingCart,
+  TrendingUp,
+  Award
 } from 'lucide-react';
-import { getRandomProducts, searchProducts } from '@/data/productsData'; // Assuming this data is static for now
-import type { Product } from '@/data/productsData'; // Import Product type from data
-import { collection, doc, onSnapshot,
-  setDoc,
-  updateDoc,
-  arrayUnion,
-  getDoc,
-  arrayRemove,
-} from 'firebase/firestore';
-import { deleteDoc, getDocs } from 'firebase/firestore';
+import { getRandomProducts, searchProducts } from '@/data/productsData';
+import { useUserData } from '@/contexts/UserDataContext';
+import { toast } from '@/hooks/use-toast';
 
-import { useAuth } from '../contexts/AuthContext';
-import { db } from '../firebase';
-
-
-interface ComparisonProduct extends Product {
-    metrics?: { // Metrics are optional based on data structure
-      carbon: number;
-      water: number;
-      waste: number;
-      energy: number;
-      ethics: number;
-    };
-    reviews: number;
-    inStock: boolean;
-    packaging: { // Match the required structure from Product
-        type: string;
-        recyclable: boolean;
-        biodegradable: boolean;
-        plasticFree: boolean;
-    };
-
-    pros?: string[]; // Optional pros for comparison
-    cons?: string[]; // Optional cons for comparison
+// Define the type for a scanned product
+interface ScannedProduct {
+  id: string; // Add id
+  date: string; // Add date
+  name: string;
+  brand: string;
+  sustainabilityScore: number;
+  category?: string;
+  price?: number;
 }
-
 const ProductComparison = () => {
-  const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [availableProducts, setAvailableProducts] = useState<Product[]>([]); // Initialize with Product[] type
-  const [firebaseComparisonProductIds, setFirebaseComparisonProductIds] = useState<number[]>([]); // Store product IDs from Firebase
-  const [comparisonProducts, setComparisonProducts] = useState<ComparisonProduct[]>([]); // State to hold full product objects for display
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const { addScannedProduct, addPoints } = useUserData();
+  
+  const [comparisonProducts, setComparisonProducts] = useState(() => {
+    // Load from localStorage or use random products
+    const saved = localStorage.getItem('comparisonProducts');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved comparison products:', e);
+      }
+    }
+    
+    const randomProducts = getRandomProducts(2);
+    return randomProducts.map(product => ({
+      id: product.id,
+      name: product.name,
+      brand: product.brand,
+      price: product.price,
+      sustainabilityScore: product.sustainabilityScore,
+      metrics: {
+        carbon: Math.floor(product.sustainabilityScore * 0.9),
+        water: Math.floor(product.sustainabilityScore * 0.95),
+        waste: Math.floor(product.sustainabilityScore * 0.85),
+        energy: Math.floor(product.sustainabilityScore * 0.92),
+        ethics: Math.floor(product.sustainabilityScore * 1.05)
+      },
+      image: product.image,
+      certifications: product.certifications.slice(0, 3),
+      pros: [
+        product.vegan ? 'Vegan friendly' : 'Quality materials',
+        product.packaging.recyclable ? 'Recyclable packaging' : 'Durable design',
+        'Good value'
+      ],
+      cons: [
+        product.price > 50 ? 'Higher price point' : 'Limited availability',
+        'Could improve packaging'
+      ],
+      rating: product.rating,
+      reviews: product.reviews,
+      inStock: product.inStock,
+      features: product.features,
+      category: product.category
+    }));
+  });
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [availableProducts, setAvailableProducts] = useState(() => getRandomProducts(8));
+  const [isLoading, setIsLoading] = useState(false);
+  const [sortBy, setSortBy] = useState('score'); // score, price, rating
 
-  // Fetch user's product comparison list
+  // Save to localStorage whenever comparisonProducts changes
   useEffect(() => {
-    if (!user) {
-      setFirebaseComparisonProductIds([]);
+    localStorage.setItem('comparisonProducts', JSON.stringify(comparisonProducts));
+  }, [comparisonProducts]);
+
+  const removeProduct = (productId) => {
+    setComparisonProducts(comparisonProducts.filter(p => p.id !== productId));
+    toast({
+      title: "Product Removed",
+      description: "Product has been removed from comparison.",
+    });
+  };
+
+  const addProduct = (product) => {
+    if (comparisonProducts.length >= 4) {
+      toast({
+        title: "Maximum Reached",
+        description: "You can compare up to 4 products at a time.",
+        variant: "destructive"
+      });
       return;
     }
 
-    const userComparisonRef = doc(db, 'users', user.uid, 'productComparison', 'list');
-    const unsubscribeComparisonList = onSnapshot(userComparisonRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setFirebaseComparisonProductIds(data.productIds || []);
-        // Fetch full product data for each ID
-        const productPromises = (data.productIds || []).map(async (productId: number) => {
-            const productDocRef = doc(db, 'users', user.uid, 'productComparison', 'list', 'products', productId.toString());
-            const productDocSnap = await getDoc(productDocRef);
-            if (productDocSnap.exists()) { // Cast to ComparisonProduct to include potential metrics
-                return productDocSnap.data() as ComparisonProduct; // Cast to ComparisonProduct
-            }
-            return undefined; // Product not found in subcollection
-        });
-
-        Promise.all(productPromises).then(products => {
-            setComparisonProducts(products.filter(product => product !== undefined) as Product[]);
-        });
-      } else { // Initialize if no data exists
-        // Initialize if no data exists
-         setFirebaseComparisonProductIds([]);
-         setComparisonProducts([]);
-        // Create the document with initial empty values
-         setDoc(userComparisonRef, {
-           productIds: []
-         }).catch(error => console.error("Error initializing user product comparison data:", error));
-      }
-    });
-
-    return () => unsubscribeComparisonList();
-  }, [user]);
-
-  // Fetch full product details when firebaseComparisonProductIds changes
-  useEffect(() => {
-    setAvailableProducts(getRandomProducts(6)); // Initialize available products on mount
-  }, [firebaseComparisonProductIds]); // Re-run when the list of IDs from Firebase changes
-
-
-  const removeProduct = async (productId: number) => { // Make async, specify type
-    if (!user) return;
-
-    const userComparisonRef = doc(db, 'users', user.uid, 'productComparison', 'list');
-    await updateDoc(userComparisonRef, {
-      productIds: arrayRemove(productId), // Remove product ID from Firebase array
-    });
-     // Also remove the product data from the subcollection
-     const productDocRef = doc(db, 'users', user.uid, 'productComparison', 'list', 'products', productId.toString());
-     // No need to await this, can run in the background
-     deleteDoc(productDocRef).catch(error => console.error("Error deleting product data from subcollection:", error));
-     // State will be updated by the onSnapshot listener
-  };
-
-  const addProduct = async (product: Product) => {
-    if (!user || firebaseComparisonProductIds.length >= 4) { // Check limit based on Firebase data
-        if (firebaseComparisonProductIds.length >= 4) {
-             alert('You can compare up to 4 products.'); // Or use a toast
-        }
-        return;
+    // Check if product already exists
+    if (comparisonProducts.find(p => p.id === product.id)) {
+      toast({
+        title: "Already Added",
+        description: "This product is already in your comparison.",
+        variant: "destructive"
+      });
+      return;
     }
 
-    const userComparisonRef = doc(db, 'users', user.uid, 'productComparison', 'list');
-     if (!firebaseComparisonProductIds.includes(product.id)) {
-         await updateDoc(userComparisonRef, {
-            productIds: arrayUnion(product.id),
-        });
-
-        // Add the full product data to the subcollection
-        const productDocRef = doc(db, 'users', user.uid, 'productComparison', 'list', 'products', product.id.toString());
-
-        await setDoc(productDocRef, product);     }
+    const fullProduct = {
+      id: product.id,
+      name: product.name,
+      brand: product.brand,
+      price: product.price,
+      sustainabilityScore: product.sustainabilityScore,
+      metrics: {
+        carbon: Math.floor(product.sustainabilityScore * 0.9 + Math.random() * 10 - 5),
+        water: Math.floor(product.sustainabilityScore * 0.95 + Math.random() * 10 - 5),
+        waste: Math.floor(product.sustainabilityScore * 0.85 + Math.random() * 10 - 5),
+        energy: Math.floor(product.sustainabilityScore * 0.92 + Math.random() * 10 - 5),
+        ethics: Math.floor(product.sustainabilityScore * 1.05 + Math.random() * 10 - 5)
+      },
+      image: product.image,
+      certifications: product.certifications.slice(0, 3),
+      pros: [
+        product.vegan ? 'Vegan friendly' : 'Quality materials',
+        product.packaging.recyclable ? 'Recyclable packaging' : 'Durable design',
+        'Good sustainability score'
+      ],
+      cons: [
+        product.price > 50 ? 'Higher price point' : 'Limited color options',
+        'Consider shipping impact'
+      ],
+      rating: product.rating,
+      reviews: product.reviews,
+      inStock: product.inStock,
+      features: product.features,
+      category: product.category
+    };
+    
+    setComparisonProducts([...comparisonProducts, fullProduct]);
+    
+    // Add to user data for tracking
+    // Ensure the object conforms to the ScannedProduct type
+    addScannedProduct({
+      id: product.id, // Provide a unique ID
+      date: new Date().toISOString(), // Provide the current date
+      name: product.name,
+      brand: product.brand,
+      sustainabilityScore: product.sustainabilityScore, // Ensure this is a number
+      category: product.category
+    });
+    
+    addPoints(5); // Award points for adding products to comparison
+    
+    toast({
+      title: "Product Added",
+      description: `${product.name} has been added to comparison (+5 points!)`,
+    });
   };
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      const results = searchProducts(searchQuery); // Assuming searchProducts returns Product[]
-      setAvailableProducts(results.slice(0, 10));
-    } else {
-      setAvailableProducts(getRandomProducts(6)); // Assuming getRandomProducts returns Product[]
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setAvailableProducts(getRandomProducts(8));
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const results = searchProducts(searchQuery);
+      setAvailableProducts(results.slice(0, 12));
+      
+      toast({
+        title: "Search Complete",
+        description: `Found ${results.length} products matching "${searchQuery}"`,
+      });
+    } catch (error) {
+      toast({
+        title: "Search Failed",
+        description: "Unable to search products. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-   const handleClearComparison = async () => {
-       // This function now needs to also delete all documents in the 'products' subcollection
-       if (!user) return;
-       const userComparisonRef = doc(db, 'users', user.uid, 'productComparison', 'list');
+  const clearComparison = () => {
+    setComparisonProducts([]);
+    toast({
+      title: "Comparison Cleared",
+      description: "All products have been removed from comparison.",
+    });
+  };
 
-       // First, delete all documents in the 'products' subcollection
-       const productsCollectionRef = collection(userComparisonRef, 'products');
-       const snapshot = await getDocs(productsCollectionRef);
-       const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
-       await Promise.all(deletePromises).catch(error => console.error("Error clearing products subcollection:", error));
+  const sortProducts = (products) => {
+    switch (sortBy) {
+      case 'price':
+        return [...products].sort((a, b) => a.price - b.price);
+      case 'rating':
+        return [...products].sort((a, b) => b.rating - a.rating);
+      case 'score':
+      default:
+        return [...products].sort((a, b) => b.sustainabilityScore - a.sustainabilityScore);
+    }
+  };
 
-       // Then, clear the productIds array in the main document
-       await updateDoc(userComparisonRef, {
-           productIds: [] // Clear the productIds array
-       });
-        // State will be updated by the onSnapshot listener
-   };
-
-
-  const getScoreColor = (score: number) => {
+  const getScoreColor = (score) => {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-yellow-600';
     return 'text-red-600';
   };
 
-  const getScoreBg = (score: number) => {
-    if (score >= 80) return 'bg-green-100';
-    if (score >= 60) return 'bg-yellow-100';
-    return 'bg-red-100';
+  const getScoreBg = (score) => {
+    if (score >= 80) return 'bg-green-100 border-green-200';
+    if (score >= 60) return 'bg-yellow-100 border-yellow-200';
+    return 'bg-red-100 border-red-200';
   };
 
-  const metricIcons: { [key: string]: React.ElementType } = {
+  const metricIcons = {
     carbon: Leaf,
     water: Droplets,
     waste: Trash2,
@@ -193,13 +244,28 @@ const ProductComparison = () => {
     ethics: Heart
   };
 
-  const metricLabels: { [key: string]: string } = {
+  const metricLabels = {
     carbon: 'Carbon',
     water: 'Water',
     waste: 'Waste',
     energy: 'Energy',
     ethics: 'Ethics'
   };
+
+  const bestProduct = comparisonProducts.reduce((best, current) => 
+    current.sustainabilityScore > (best?.sustainabilityScore || 0) ? current : best, null
+  );
+
+  const avgScore = comparisonProducts.length > 0 
+    ? Math.round(comparisonProducts.reduce((acc, p) => acc + p.sustainabilityScore, 0) / comparisonProducts.length)
+    : 0;
+
+  const priceRange = comparisonProducts.length > 0 
+    ? {
+        min: Math.min(...comparisonProducts.map(p => p.price)),
+        max: Math.max(...comparisonProducts.map(p => p.price))
+      }
+    : { min: 0, max: 0 };
 
   return (
     <div className="space-y-6">
@@ -213,10 +279,22 @@ const ProductComparison = () => {
               <span className="text-2xl font-bold">Smart Product Comparison</span>
               <p className="text-sm text-gray-600 mt-1 font-normal">Compare sustainability scores and make informed choices</p>
             </div>
-            <Badge variant="secondary" className="bg-purple-100 text-purple-700 px-3 py-1 rounded-xl">
-              <Sparkles className="w-4 h-4 mr-1" />
-              AI Enhanced
-            </Badge>
+            <div className="flex items-center space-x-4">
+              <Badge variant="secondary" className="bg-purple-100 text-purple-700 px-3 py-1 rounded-xl">
+                <Sparkles className="w-4 h-4 mr-1" />
+                AI Enhanced
+              </Badge>
+              {comparisonProducts.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearComparison}
+                  className="rounded-xl border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  Clear All
+                </Button>
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
@@ -231,31 +309,62 @@ const ProductComparison = () => {
               {comparisonProducts.length > 0 ? (
                 <div className="space-y-6">
                   {/* Comparison Overview */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                     <div className="text-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200/50">
                       <div className="text-2xl font-bold text-green-700">
-                        {Math.max(...comparisonProducts.map(p => p.sustainabilityScore))}
+                        {bestProduct?.sustainabilityScore || 0}
                       </div>
                       <div className="text-sm text-green-600">Highest Score</div>
+                      {bestProduct && (
+                        <div className="text-xs text-green-500 mt-1">{bestProduct.name}</div>
+                      )}
                     </div>
                     <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200/50">
                       <div className="text-2xl font-bold text-blue-700">
                         {comparisonProducts.length}
                       </div>
-                      <div className="text-sm text-blue-600">Products Compared</div>
+                      <div className="text-sm text-blue-600">Products</div>
+                      <div className="text-xs text-blue-500 mt-1">Compared</div>
                     </div>
                     <div className="text-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl border border-purple-200/50">
                       <div className="text-2xl font-bold text-purple-700">
-                        {Math.round(comparisonProducts.reduce((acc, p) => acc + p.sustainabilityScore, 0) / comparisonProducts.length)}
+                        {avgScore}
                       </div>
                       <div className="text-sm text-purple-600">Average Score</div>
+                      <div className="text-xs text-purple-500 mt-1">Sustainability</div>
+                    </div>
+                    <div className="text-center p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl border border-orange-200/50">
+                      <div className="text-2xl font-bold text-orange-700">
+                        ${priceRange.min}-${priceRange.max}
+                      </div>
+                      <div className="text-sm text-orange-600">Price Range</div>
+                      <div className="text-xs text-orange-500 mt-1">USD</div>
+                    </div>
+                  </div>
+
+                  {/* Sort Options */}
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">Product Comparison</h3>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">Sort by:</span>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="score">Sustainability Score</option>
+                        <option value="price">Price</option>
+                        <option value="rating">Rating</option>
+                      </select>
                     </div>
                   </div>
 
                   {/* Product Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {comparisonProducts.map((product) => (
-                      <Card key={product.id} className="relative border-2 border-gray-200 hover:border-purple-300 transition-all duration-200 rounded-2xl overflow-hidden shadow-lg">
+                    {sortProducts(comparisonProducts).map((product, index) => (
+                      <Card key={product.id} className={`relative border-2 hover:border-purple-300 transition-all duration-200 rounded-2xl overflow-hidden shadow-lg ${
+                        bestProduct?.id === product.id ? 'border-green-400 ring-2 ring-green-200' : 'border-gray-200'
+                      }`}>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -265,18 +374,32 @@ const ProductComparison = () => {
                           <X className="w-4 h-4 text-gray-600 hover:text-red-600" />
                         </Button>
 
+                        {bestProduct?.id === product.id && (
+                          <div className="absolute top-2 left-2 z-10">
+                            <Badge className="bg-green-600 text-white">
+                              <Award className="w-3 h-3 mr-1" />
+                              Best Choice
+                            </Badge>
+                          </div>
+                        )}
+
                         <div className="aspect-video relative overflow-hidden">
-                          <img
-                            src={product.image}
+                          <img 
+                            src={product.image} 
                             alt={product.name}
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                           {product.inStock && (
-                            <Badge className="absolute top-2 left-2 bg-green-600 text-white">
+                            <Badge className="absolute bottom-2 left-2 bg-green-600 text-white">
                               In Stock
                             </Badge>
                           )}
+                          <div className="absolute bottom-2 right-2">
+                            <Badge className={`${getScoreBg(product.sustainabilityScore)} text-gray-800 border-0 font-bold`}>
+                              {product.sustainabilityScore}
+                            </Badge>
+                          </div>
                         </div>
 
                         <CardContent className="p-6 space-y-4">
@@ -286,7 +409,12 @@ const ProductComparison = () => {
                             <p className="text-xl font-bold text-purple-600 mt-2">${product.price}</p>
                             <div className="flex items-center justify-center space-x-2 mt-1">
                               <div className="flex text-yellow-400">
-                                {'★'.repeat(Math.floor(product.rating))}
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`w-4 h-4 ${i < Math.floor(product.rating) ? 'fill-current' : 'fill-gray-200'}`}
+                                  />
+                                ))}
                               </div>
                               <span className="text-sm text-gray-500">({product.reviews})</span>
                             </div>
@@ -301,26 +429,27 @@ const ProductComparison = () => {
                             </Badge>
                           </div>
 
-                         {/* Enhanced Metrics - Render only if metrics exist */}
+                          {/* Enhanced Metrics */}
                           <div className="space-y-3">
                             {Object.entries(product.metrics || {}).map(([key, value]) => {
                               const Icon = metricIcons[key];
+                              const clampedValue = Math.max(0, Math.min(100, value));
                               return (
                                 <div key={key} className="flex items-center justify-between">
                                   <div className="flex items-center space-x-2">
                                     <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
                                       <Icon className="w-4 h-4 text-gray-600" />
                                     </div>
-                                    <span className="text-sm font-medium">{metricLabels[key as keyof typeof metricLabels]}</span> {/* Use keyof typeof */}
+                                    <span className="text-sm font-medium">{metricLabels[key]}</span>
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <div className="w-20 bg-gray-200 rounded-full h-2">
-                                      <div
-                                        className={`h-2 rounded-full ${value >= 80 ? 'bg-green-500' : value >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                                        style={{ width: `${value}%` }}
+                                      <div 
+                                        className={`h-2 rounded-full ${clampedValue >= 80 ? 'bg-green-500' : clampedValue >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                        style={{ width: `${clampedValue}%` }}
                                       ></div>
                                     </div>
-                                    <span className="text-sm font-bold w-8 text-right">{value}</span>
+                                    <span className="text-sm font-bold w-8 text-right">{clampedValue}</span>
                                   </div>
                                 </div>
                               );
@@ -328,7 +457,7 @@ const ProductComparison = () => {
                           </div>
 
                           {/* Certifications */}
-                          {product.certifications && (
+                          {product.certifications && product.certifications.length > 0 && (
                             <div>
                               <p className="text-sm font-medium mb-2">Certifications</p>
                               <div className="flex flex-wrap gap-1">
@@ -345,7 +474,7 @@ const ProductComparison = () => {
                           <div className="space-y-3">
                             <div>
                               <p className="text-sm font-medium text-green-700 mb-2 flex items-center">
-                                <CheckCircle className="w-4 h-4 mr-1" />
+                                <CheckCircle className="w-4 h-4 mr-1 min-w-[1rem]" />
                                 Pros
                               </p>
                               {product.pros?.slice(0, 2).map((pro, index) => (
@@ -356,11 +485,11 @@ const ProductComparison = () => {
                               ))}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-red-700 mb-2 flex items-center">\
-                                <AlertCircle className="w-4 h-4 mr-1" />
+                              <p className="text-sm font-medium text-red-700 mb-2 flex items-center">
+                                <AlertCircle className="w-4 h-4 mr-1 min-w-[1rem]" />
                                 Cons
                               </p>
-                              {product.cons && product.cons.slice(0, 2).map((con, index) => (
+                              {product.cons?.slice(0, 2).map((con, index) => (
                                 <div key={index} className="flex items-start space-x-2 mb-1">
                                   <div className="w-1.5 h-1.5 bg-red-500 rounded-full mt-2"></div>
                                   <span className="text-xs text-gray-600">{con}</span>
@@ -369,22 +498,31 @@ const ProductComparison = () => {
                             </div>
                           </div>
 
-                          <Button className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl">
-                            View Details
-                          </Button>
+                          <div className="flex space-x-2 pt-2">
+                            <Button className="flex-1 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl">
+                              <ShoppingCart className="w-4 h-4 mr-2" />
+                              View Details
+                            </Button>
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
                   </div>
                 </div>
-              ) : ( // Else block
+              ) : (
                 <Card className="border-dashed border-2 border-gray-300 rounded-2xl">
                   <CardContent className="text-center py-12">
                     <ArrowUpDown className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-xl font-bold text-gray-600 mb-2">No Products to Compare</h3>
                     <p className="text-gray-500 mb-6">Add products to start comparing their sustainability scores</p>
-                    <Button onClick={() => setSelectedCategory('search')} className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl" >
-                      Add Products
+                    <Button 
+                      onClick={() => {
+                        const randomProducts = getRandomProducts(2);
+                        randomProducts.forEach(product => addProduct(product));
+                      }}
+                      className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl"
+                    >
+                      Add Sample Products
                     </Button>
                   </CardContent>
                 </Card>
@@ -392,61 +530,88 @@ const ProductComparison = () => {
             </TabsContent>
 
             <TabsContent value="search" className="mt-6">
-              {firebaseComparisonProductIds.length < 4 && ( // Check limit before displaying search
-                <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input
-                        placeholder="Search for products to compare..." // Added placeholder
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        className="pl-10 border-gray-300 focus:border-purple-400 h-12 rounded-2xl h-12"
- />
-                    </div>
-                    <Button onClick={handleSearch} className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl px-6">
-                      Search
-                    </Button>
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      placeholder="Search for products to compare..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      className="pl-10 border-gray-300 focus:border-purple-400 h-12 rounded-2xl"
+                      disabled={isLoading}
+                    />
                   </div>
+                  <Button 
+                    onClick={handleSearch} 
+                    disabled={isLoading}
+                    className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl px-6"
+                  >
+                    {isLoading ? 'Searching...' : 'Search'}
+                  </Button>
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {availableProducts
-                      .filter(product => !firebaseComparisonProductIds.includes(product.id)) // Filter based on Firebase data
-                      .slice(0, 8)
-                      .map((product) => (
-                        <Card key={product.id} className="hover:shadow-lg transition-all duration-200 border border-gray-200 rounded-2xl overflow-hidden">
-                          <CardContent className="p-4">
-                            <div className="flex items-center space-x-4">
-                              <img
-                                src={product.image}
-                                alt={product.name}
-                                className="w-16 h-16 object-cover rounded-xl"
-                              />
-                              <div className="flex-1">
-                                <h3 className="font-bold text-gray-800">{product.name}</h3>
-                                <p className="text-sm text-gray-600">{product.brand} • ${product.price}</p>
-                                <div className="flex items-center space-x-2 mt-2">
-                                  <Badge className={`${getScoreBg(product.sustainabilityScore)} text-gray-800 border-0`}>
-                                    {product.sustainabilityScore}
-                                  </Badge>
-                                  <span className="text-xs text-gray-500">Sustainability Score</span>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">
+                    {availableProducts.length} products available • {comparisonProducts.length}/4 selected
+                  </p>
+                  {comparisonProducts.length >= 4 && (
+                    <Badge variant="outline" className="text-amber-600 border-amber-300">
+                      Maximum reached
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {availableProducts
+                    .filter(product => !comparisonProducts.find(cp => cp.id === product.id))
+                    .slice(0, 9)
+                    .map((product) => (
+                      <Card key={product.id} className="hover:shadow-lg transition-all duration-200 border border-gray-200 rounded-2xl overflow-hidden">
+                        <CardContent className="p-4">
+                          <div className="flex items-center space-x-4">
+                            <img 
+                              src={product.image} 
+                              alt={product.name}
+                              className="w-16 h-16 object-cover rounded-xl"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-bold text-gray-800 truncate">{product.name}</h3>
+                              <p className="text-sm text-gray-600 truncate">{product.brand} • ${product.price}</p>
+                              <div className="flex items-center space-x-2 mt-2">
+                                <Badge className={`${getScoreBg(product.sustainabilityScore)} text-gray-800 border-0 text-xs`}>
+                                  {product.sustainabilityScore}
+                                </Badge>
+                                <span className="text-xs text-gray-500">Score</span>
+                                <div className="flex text-yellow-400">
+                                  {[...Array(Math.floor(product.rating))].map((_, i) => (
+                                    <Star key={i} className="w-3 h-3 fill-current" />
+                                  ))}
                                 </div>
                               </div>
-                              <Button
-                                size="sm"
-                                onClick={() => addProduct(product)}
-                                className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl"
-                              >
-                                Add
-                              </Button>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                  </div>
+                            <Button 
+                              size="sm" 
+                              onClick={() => addProduct(product)}
+                              disabled={comparisonProducts.length >= 4}
+                              className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl disabled:opacity-50"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                 </div>
-              )}
+
+                {availableProducts.filter(product => !comparisonProducts.find(cp => cp.id === product.id)).length === 0 && (
+                  <div className="text-center py-8">
+                    <Search className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-500">No new products to add. All available products are already in your comparison.</p>
+                  </div>
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="insights" className="mt-6">
@@ -459,7 +624,7 @@ const ProductComparison = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {comparisonProducts.length > 1 ? ( // Check comparisonProducts length
+                    {comparisonProducts.length > 1 ? (
                       <>
                         <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
                           <div className="flex items-start space-x-3">
@@ -467,19 +632,22 @@ const ProductComparison = () => {
                             <div>
                               <p className="font-medium text-green-800">Best Overall Choice</p>
                               <p className="text-sm text-green-700 mt-1">
-                                {comparisonProducts.sort((a, b) => b.sustainabilityScore - a.sustainabilityScore)[0].name} scores highest with {Math.max(...comparisonProducts.map(p => p.sustainabilityScore))}/100, offering the best balance of sustainability and value.
+                                {bestProduct?.name} scores highest with {bestProduct?.sustainabilityScore}/100, offering the best balance of sustainability and value.
+                                {bestProduct && bestProduct.price <= avgScore && " Plus, it's competitively priced!"}
                               </p>
                             </div>
                           </div>
                         </div>
-
+                        
                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
                           <div className="flex items-start space-x-3">
-                            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                            <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5" />
                             <div>
-                              <p className="font-medium text-blue-800">Key Differences</p>
+                              <p className="font-medium text-blue-800">Market Analysis</p>
                               <p className="text-sm text-blue-700 mt-1">
-                                Price variations reflect different investments in sustainable materials and ethical practices.
+                                Price range: ${priceRange.min} - ${priceRange.max}. 
+                                Average sustainability score: {avgScore}/100. 
+                                {avgScore >= 75 ? "You're comparing high-quality sustainable products!" : "Consider looking for higher-rated alternatives."}
                               </p>
                             </div>
                           </div>
@@ -489,16 +657,46 @@ const ProductComparison = () => {
                           <div className="flex items-start space-x-3">
                             <Star className="w-5 h-5 text-purple-600 mt-0.5" />
                             <div>
-                              <p className="font-medium text-purple-800">Recommendation</p>
+                              <p className="font-medium text-purple-800">Personalized Recommendation</p>
                               <p className="text-sm text-purple-700 mt-1">
-                                Consider long-term value: sustainable products often have better durability and lower environmental costs over time.
+                                Based on your comparison pattern, you value sustainability over price. 
+                                {bestProduct && `${bestProduct.name} aligns perfectly with your preferences.`}
+                                Consider checking for local availability to reduce shipping impact.
                               </p>
                             </div>
                           </div>
                         </div>
+
+                        {/* Category breakdown */}
+                        {comparisonProducts.length > 2 && (
+                          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                            <div className="flex items-start space-x-3">
+                              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+                              <div>
+                                <p className="font-medium text-amber-800">Key Differences</p>
+                                <div className="text-sm text-amber-700 mt-1 space-y-1">
+                                  <p>• Highest carbon efficiency: {
+                                  comparisonProducts.reduce((max, p: any) => // Explicitly type as any or refine type
+                                      (p.metrics?.carbon || 0) > (max.metrics?.carbon || 0) ? p : max
+                                    , comparisonProducts[0]).name
+                                  }</p>
+                                  <p>• Best water conservation: {
+                                  comparisonProducts.reduce((max, p: any) => // Explicitly type as any or refine type
+                                      (p.metrics?.water || 0) > (max.metrics?.water || 0) ? p : max // Ensure comparison values are numbers
+                                    , comparisonProducts[0]).name
+                                  }</p>
+                                  <p>• Most affordable: {
+                                  comparisonProducts.length > 0 ? comparisonProducts.reduce((min, p) => (p.price ?? 0) < (min.price ?? 0) ? p : min, comparisonProducts[0]).name : 'N/A'
+                                  } (${comparisonProducts.length > 0 ? comparisonProducts.reduce((min, p) => (p.price ?? 0) < (min.price ?? 0) ? p : min, comparisonProducts[0]).price : 'N/A'})</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <div className="text-center py-8">
+                        <Lightbulb className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                         <p className="text-gray-500">Add more products to see AI-powered comparison insights.</p>
                       </div>
                     )}
