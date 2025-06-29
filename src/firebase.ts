@@ -5,13 +5,13 @@ import { getDatabase } from 'firebase/database'; // Import getDatabase
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCbMzZWZjR2RQhz7Hlx2-HejprAhuVHp70",
-  authDomain: "ecoscope-f3be7.firebaseapp.com",
-  projectId: "ecoscope-f3be7",
-  storageBucket: "ecoscope-f3be7.firebasestorage.app",
-  messagingSenderId: "68843231274",
-  appId: "1:68843231274:web:ada6023586a3cfed680b53",
-  measurementId: "G-10YPYWG9MS"
+  apiKey: "AIzaSyBsY9cFgrLX7lQlSpsU9uMkhPSYIawqzeI",
+  authDomain: "ecoscope-89cb8.firebaseapp.com",
+  projectId: "ecoscope-89cb8",
+  storageBucket: "ecoscope-89cb8.firebasestorage.app",
+  messagingSenderId: "614859320165",
+  appId: "1:614859320165:web:eeb495360b25a5ba784f8c",
+  measurementId: "G-ZSDT5YRPJ0"
 };
 
 // Initialize Firebase
