@@ -32,12 +32,14 @@ import { useAuth } from "../contexts/AuthContext";
 import { db } from "../firebase";
 import { getRandomProducts } from '../data/productsData';
 import { useUserData } from '../contexts/UserDataContext';
+import { useProductComparison } from '../contexts/ProductComparisonContext';
 
 import { useCart } from "../contexts/CartContext";
 
 const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
   const { scannedProducts, addScannedProduct } = useUserData();
   const { addToCart } = useCart();
+  const { addProductToComparison } = useProductComparison();
   const [isScanning, setIsScanning] = useState(false);
   const [detectedProduct, setDetectedProduct] = useState(null);
   const [scanMode, setScanMode] = useState(false);
@@ -104,16 +106,27 @@ const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
       
       // Add to user's scanned products
       const today = new Date();
-      addScannedProduct({
+      // Removed addScannedProduct here to prevent adding to recent scans
+      // addScannedProduct({
+      //   id: randomProduct.id.toString(),
+      //   name: randomProduct.name,
+      //   brand: randomProduct.brand,
+      //   sustainabilityScore: randomProduct.sustainabilityScore,
+      //   category: randomProduct.category,
+      //   date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`,
+      //   alternatives: randomProduct.alternatives, // Store alternatives here
+      // });
+      // Add to product comparison
+      addProductToComparison({
         id: randomProduct.id.toString(),
         name: randomProduct.name,
         brand: randomProduct.brand,
         sustainabilityScore: randomProduct.sustainabilityScore,
         category: randomProduct.category,
-        date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`,
-        alternatives: randomProduct.alternatives, // Store alternatives here
+        date: new Date().toISOString(),
+        price: randomProduct.price,
+        image: `https://images.unsplash.com/${randomProduct.image}?w=400&h=400&fit=crop`,
       });
-      
       setIsScanning(false);
     }, 2000);
   };
@@ -213,13 +226,25 @@ const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
       };
       
       setDetectedProduct(productData);
-      addScannedProduct({
+      // Removed addScannedProduct here to prevent adding to recent scans
+      // addScannedProduct({
+      //   id: product.id.toString(),
+      //   name: product.name,
+      //   brand: product.brand,
+      //   sustainabilityScore: product.sustainabilityScore,
+      //   category: product.category,
+      //   date: new Date().toLocaleDateString(),
+      // });
+      // Add to product comparison
+      addProductToComparison({
         id: product.id.toString(),
         name: product.name,
         brand: product.brand,
         sustainabilityScore: product.sustainabilityScore,
         category: product.category,
-        date: new Date().toLocaleDateString(),
+        date: new Date().toISOString(),
+        price: product.price,
+        image: `https://images.unsplash.com/${product.image}?w=400&h=400&fit=crop`,
       });
       setIsScanning(false);
     }, 2000);

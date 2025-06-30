@@ -29,75 +29,49 @@ import { getRandomProducts, searchProducts } from '@/data/productsData';
 import { useUserData } from '@/contexts/UserDataContext';
 import { toast } from '@/hooks/use-toast';
 
-// Define the type for a scanned product
+// Define the type for a product used in comparison
 interface ScannedProduct {
   id: string; // Add id
   date: string; // Add date
   name: string;
   brand: string;
   sustainabilityScore: number;
-  category?: string;
+  category: string;
   price?: number;
+  metrics?: { // Add metrics property
+    carbon: number;
+    water: number;
+    waste: number;
+    energy: number;
+    ethics: number;
+  };
+  image?: string;
+  certifications?: string[];
+  pros?: string[];
+  cons?: string[];
+  rating?: number;
+  reviews?: number;
+  inStock?: boolean;
+  features?: string[];
 }
+import { useProductComparison } from '../contexts/ProductComparisonContext';
+
 const ProductComparison = () => {
   const { addScannedProduct, addPoints } = useUserData();
-  
-  const [comparisonProducts, setComparisonProducts] = useState(() => {
-    // Load from localStorage or use random products
-    const saved = localStorage.getItem('comparisonProducts');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Failed to parse saved comparison products:', e);
-      }
-    }
-    
-    const randomProducts = getRandomProducts(2);
-    return randomProducts.map(product => ({
-      id: product.id,
-      name: product.name,
-      brand: product.brand,
-      price: product.price,
-      sustainabilityScore: product.sustainabilityScore,
-      metrics: {
-        carbon: Math.floor(product.sustainabilityScore * 0.9),
-        water: Math.floor(product.sustainabilityScore * 0.95),
-        waste: Math.floor(product.sustainabilityScore * 0.85),
-        energy: Math.floor(product.sustainabilityScore * 0.92),
-        ethics: Math.floor(product.sustainabilityScore * 1.05)
-      },
-      image: product.image,
-      certifications: product.certifications.slice(0, 3),
-      pros: [
-        product.vegan ? 'Vegan friendly' : 'Quality materials',
-        product.packaging.recyclable ? 'Recyclable packaging' : 'Durable design',
-        'Good value'
-      ],
-      cons: [
-        product.price > 50 ? 'Higher price point' : 'Limited availability',
-        'Could improve packaging'
-      ],
-      rating: product.rating,
-      reviews: product.reviews,
-      inStock: product.inStock,
-      features: product.features,
-      category: product.category
-    }));
-  });
+  const { comparisonProducts, addProductToComparison, clearComparison } = useProductComparison();
+
+  // Explicitly type comparisonProducts as ScannedProduct[]
+  const typedComparisonProducts = comparisonProducts as ScannedProduct[];
 
   const [searchQuery, setSearchQuery] = useState('');
   const [availableProducts, setAvailableProducts] = useState(() => getRandomProducts(8));
   const [isLoading, setIsLoading] = useState(false);
   const [sortBy, setSortBy] = useState('score'); // score, price, rating
 
-  // Save to localStorage whenever comparisonProducts changes
-  useEffect(() => {
-    localStorage.setItem('comparisonProducts', JSON.stringify(comparisonProducts));
-  }, [comparisonProducts]);
-
   const removeProduct = (productId) => {
-    setComparisonProducts(comparisonProducts.filter(p => p.id !== productId));
+    const updated = comparisonProducts.filter(p => p.id !== productId);
+    clearComparison();
+    updated.forEach(p => addProductToComparison(p));
     toast({
       title: "Product Removed",
       description: "Product has been removed from comparison.",
@@ -115,7 +89,7 @@ const ProductComparison = () => {
     }
 
     // Check if product already exists
-    if (comparisonProducts.find(p => p.id === product.id)) {
+    if (comparisonProducts.find(cp => cp.id === String(product.id))) {
       toast({
         title: "Already Added",
         description: "This product is already in your comparison.",
@@ -124,18 +98,20 @@ const ProductComparison = () => {
       return;
     }
 
+    const score = typeof product.sustainabilityScore === 'number' ? product.sustainabilityScore : 0;
+
     const fullProduct = {
       id: product.id,
       name: product.name,
       brand: product.brand,
       price: product.price,
-      sustainabilityScore: product.sustainabilityScore,
+      sustainabilityScore: score,
       metrics: {
-        carbon: Math.floor(product.sustainabilityScore * 0.9 + Math.random() * 10 - 5),
-        water: Math.floor(product.sustainabilityScore * 0.95 + Math.random() * 10 - 5),
-        waste: Math.floor(product.sustainabilityScore * 0.85 + Math.random() * 10 - 5),
-        energy: Math.floor(product.sustainabilityScore * 0.92 + Math.random() * 10 - 5),
-        ethics: Math.floor(product.sustainabilityScore * 1.05 + Math.random() * 10 - 5)
+        carbon: Math.floor(score * 0.9 + Math.random() * 10 - 5),
+        water: Math.floor(score * 0.95 + Math.random() * 10 - 5),
+        waste: Math.floor(score * 0.85 + Math.random() * 10 - 5),
+        energy: Math.floor(score * 0.92 + Math.random() * 10 - 5),
+        ethics: Math.floor(score * 1.05 + Math.random() * 10 - 5)
       },
       image: product.image,
       certifications: product.certifications.slice(0, 3),
@@ -155,17 +131,41 @@ const ProductComparison = () => {
       category: product.category
     };
     
-    setComparisonProducts([...comparisonProducts, fullProduct]);
+    addProductToComparison(fullProduct);
     
     // Add to user data for tracking
     // Ensure the object conforms to the ScannedProduct type
+
     addScannedProduct({
       id: product.id, // Provide a unique ID
       date: new Date().toISOString(), // Provide the current date
       name: product.name,
       brand: product.brand,
-      sustainabilityScore: product.sustainabilityScore, // Ensure this is a number
-      category: product.category
+      sustainabilityScore: score, // Use local score variable
+      category: product.category,
+      price: product.price,
+      metrics: {
+        carbon: Math.floor(score * 0.9 + Math.random() * 10 - 5),
+        water: Math.floor(score * 0.95 + Math.random() * 10 - 5),
+        waste: Math.floor(score * 0.85 + Math.random() * 10 - 5),
+        energy: Math.floor(score * 0.92 + Math.random() * 10 - 5),
+        ethics: Math.floor(score * 1.05 + Math.random() * 10 - 5)
+      },
+      image: product.image,
+      certifications: product.certifications.slice(0, 3),
+      pros: [
+        product.vegan ? 'Vegan friendly' : 'Quality materials',
+        product.packaging.recyclable ? 'Recyclable packaging' : 'Durable design',
+        'Good sustainability score'
+      ],
+      cons: [
+        product.price > 50 ? 'Higher price point' : 'Limited color options',
+        'Consider shipping impact'
+      ],
+      rating: product.rating,
+      reviews: product.reviews,
+      inStock: product.inStock,
+      features: product.features
     });
     
     addPoints(5); // Award points for adding products to comparison
@@ -204,23 +204,18 @@ const ProductComparison = () => {
     }
   };
 
-  const clearComparison = () => {
-    setComparisonProducts([]);
-    toast({
-      title: "Comparison Cleared",
-      description: "All products have been removed from comparison.",
-    });
-  };
+  // Remove local clearComparison function to avoid redeclaration error
+  // Use clearComparison from context instead
 
   const sortProducts = (products) => {
     switch (sortBy) {
       case 'price':
-        return [...products].sort((a, b) => a.price - b.price);
+        return [...products].sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
       case 'rating':
-        return [...products].sort((a, b) => b.rating - a.rating);
+        return [...products].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
       case 'score':
       default:
-        return [...products].sort((a, b) => b.sustainabilityScore - a.sustainabilityScore);
+        return [...products].sort((a, b) => (b.sustainabilityScore ?? 0) - (a.sustainabilityScore ?? 0));
     }
   };
 
@@ -252,18 +247,18 @@ const ProductComparison = () => {
     ethics: 'Ethics'
   };
 
-  const bestProduct = comparisonProducts.reduce((best, current) => 
-    current.sustainabilityScore > (best?.sustainabilityScore || 0) ? current : best, null
+  const bestProduct = typedComparisonProducts.reduce((best, current) => 
+    (current.sustainabilityScore ?? 0) > (best?.sustainabilityScore ?? 0) ? current : best, null
   );
 
-  const avgScore = comparisonProducts.length > 0 
-    ? Math.round(comparisonProducts.reduce((acc, p) => acc + p.sustainabilityScore, 0) / comparisonProducts.length)
+  const avgScore: number = typedComparisonProducts.length > 0 
+    ? Math.round(typedComparisonProducts.reduce((acc, p) => acc + (p.sustainabilityScore ?? 0), 0) / typedComparisonProducts.length)
     : 0;
 
-  const priceRange = comparisonProducts.length > 0 
+  const priceRange: {min: number, max: number} = typedComparisonProducts.length > 0 
     ? {
-        min: Math.min(...comparisonProducts.map(p => p.price)),
-        max: Math.max(...comparisonProducts.map(p => p.price))
+        min: Math.min(...typedComparisonProducts.map(p => Number(p.price ?? 0))),
+        max: Math.max(...typedComparisonProducts.map(p => Number(p.price ?? 0)))
       }
     : { min: 0, max: 0 };
 
@@ -433,7 +428,8 @@ const ProductComparison = () => {
                           <div className="space-y-3">
                             {Object.entries(product.metrics || {}).map(([key, value]) => {
                               const Icon = metricIcons[key];
-                              const clampedValue = Math.max(0, Math.min(100, value));
+                              const numericValue = typeof value === 'number' ? value : 0;
+                              const clampedValue = Math.max(0, Math.min(100, numericValue));
                               return (
                                 <div key={key} className="flex items-center justify-between">
                                   <div className="flex items-center space-x-2">
@@ -498,12 +494,13 @@ const ProductComparison = () => {
                             </div>
                           </div>
 
-                          <div className="flex space-x-2 pt-2">
+                          {/* Removed View Details button as per user request */}
+                          {/* <div className="flex space-x-2 pt-2">
                             <Button className="flex-1 bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl">
                               <ShoppingCart className="w-4 h-4 mr-2" />
                               View Details
                             </Button>
-                          </div>
+                          </div> */}
                         </CardContent>
                       </Card>
                     ))}
@@ -565,7 +562,7 @@ const ProductComparison = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {availableProducts
-                    .filter(product => !comparisonProducts.find(cp => cp.id === product.id))
+ .filter(product => !comparisonProducts.find(cp => cp.id === String(product.id))) // Ensure product.id is a string for comparison
                     .slice(0, 9)
                     .map((product) => (
                       <Card key={product.id} className="hover:shadow-lg transition-all duration-200 border border-gray-200 rounded-2xl overflow-hidden">
@@ -605,7 +602,7 @@ const ProductComparison = () => {
                     ))}
                 </div>
 
-                {availableProducts.filter(product => !comparisonProducts.find(cp => cp.id === product.id)).length === 0 && (
+                {availableProducts.filter(product => !comparisonProducts.find(cp => cp.id === String(product.id))).length === 0 && (
                   <div className="text-center py-8">
                     <Search className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                     <p className="text-gray-500">No new products to add. All available products are already in your comparison.</p>
@@ -632,9 +629,9 @@ const ProductComparison = () => {
                             <div>
                               <p className="font-medium text-green-800">Best Overall Choice</p>
                               <p className="text-sm text-green-700 mt-1">
-                                {bestProduct?.name} scores highest with {bestProduct?.sustainabilityScore}/100, offering the best balance of sustainability and value.
-                                {bestProduct && bestProduct.price <= avgScore && " Plus, it's competitively priced!"}
-                              </p>
+                        {bestProduct?.name} scores highest with {bestProduct?.sustainabilityScore}/100, offering the best balance of sustainability and value.
+                        {bestProduct && Number(bestProduct.price ?? 0) <= Number(avgScore) && " Plus, it's competitively priced!"}
+                      </p>
                             </div>
                           </div>
                         </div>
@@ -647,7 +644,7 @@ const ProductComparison = () => {
                               <p className="text-sm text-blue-700 mt-1">
                                 Price range: ${priceRange.min} - ${priceRange.max}. 
                                 Average sustainability score: {avgScore}/100. 
-                                {avgScore >= 75 ? "You're comparing high-quality sustainable products!" : "Consider looking for higher-rated alternatives."}
+                                {(avgScore >= 75) ? "You're comparing high-quality sustainable products!" : "Consider looking for higher-rated alternatives."}
                               </p>
                             </div>
                           </div>
@@ -675,19 +672,19 @@ const ProductComparison = () => {
                               <div>
                                 <p className="font-medium text-amber-800">Key Differences</p>
                                 <div className="text-sm text-amber-700 mt-1 space-y-1">
-                                  <p>• Highest carbon efficiency: {
-                                  comparisonProducts.reduce((max, p: any) => // Explicitly type as any or refine type
-                                      (p.metrics?.carbon || 0) > (max.metrics?.carbon || 0) ? p : max
-                                    , comparisonProducts[0]).name
-                                  }</p>
-                                  <p>• Best water conservation: {
-                                  comparisonProducts.reduce((max, p: any) => // Explicitly type as any or refine type
-                                      (p.metrics?.water || 0) > (max.metrics?.water || 0) ? p : max // Ensure comparison values are numbers
-                                    , comparisonProducts[0]).name
-                                  }</p>
-                                  <p>• Most affordable: {
-                                  comparisonProducts.length > 0 ? comparisonProducts.reduce((min, p) => (p.price ?? 0) < (min.price ?? 0) ? p : min, comparisonProducts[0]).name : 'N/A'
-                                  } (${comparisonProducts.length > 0 ? comparisonProducts.reduce((min, p) => (p.price ?? 0) < (min.price ?? 0) ? p : min, comparisonProducts[0]).price : 'N/A'})</p>
+                          <p>• Highest carbon efficiency: {
+                          typedComparisonProducts.reduce((max, p) => 
+                              (p.metrics?.carbon ?? 0) > (max.metrics?.carbon ?? 0) ? p : max
+                            , typedComparisonProducts[0]).name
+                          }</p>
+                          <p>• Best water conservation: {
+                          typedComparisonProducts.reduce((max, p) => 
+                              (p.metrics?.water ?? 0) > (max.metrics?.water ?? 0) ? p : max
+                            , typedComparisonProducts[0]).name
+                          }</p>
+                                <p>• Most affordable: {
+                          typedComparisonProducts.length > 0 ? typedComparisonProducts.reduce((min, p) => Number(p.price ?? 0) < Number(min.price ?? 0) ? p : min, typedComparisonProducts[0]).name : 'N/A'
+                          } (${typedComparisonProducts.length > 0 ? typedComparisonProducts.reduce((min, p) => Number(p.price ?? 0) < Number(min.price ?? 0) ? p : min, typedComparisonProducts[0]).price : 'N/A'})</p>
                                 </div>
                               </div>
                             </div>
