@@ -24,6 +24,22 @@ interface ScannedProduct {
   sustainabilityScore: number;
   date: string;
   category: string;
+  price?: number;
+  metrics?: {
+    carbon: number;
+    water: number;
+    waste: number;
+    energy: number;
+    ethics: number;
+  };
+  image?: string;
+  certifications?: string[];
+  pros?: string[];
+  cons?: string[];
+  rating?: number;
+  reviews?: number;
+  inStock?: boolean;
+  features?: string[];
   alternatives?: {
     name: string;
     reason: string;
@@ -75,9 +91,18 @@ interface UserDataContextType {
   scannedProducts: ScannedProduct[];
   userStats: UserStats;
   completedActions: number[];
-  actionProgress: Record<string, any>;
   setCompletedActions: React.Dispatch<React.SetStateAction<number[]>>;
+  actionProgress: Record<string, any>;
   setActionProgress: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+  selectedAICategory: string;
+  setSelectedAICategory: React.Dispatch<React.SetStateAction<string>>;
+  selectedAIPriority: string;
+  setSelectedAIPriority: React.Dispatch<React.SetStateAction<string>>;
+  // Properties needed by AIRecommendations
+  selectedCategory: string;
+  setSelectedCategory: React.Dispatch<React.SetStateAction<string>>;
+  selectedPriority: string;
+  setSelectedPriority: React.Dispatch<React.SetStateAction<string>>;
   addCarbonEntry: (entry: Omit<CarbonEntry, 'id' | 'date'>) => void;
   addScannedProduct: (product: ScannedProduct) => void;
   addPoints: (points: number) => void;
@@ -126,9 +151,13 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     achievements: [],
   });
 
+  // State for AI Recommendations persistence
   const [completedActions, setCompletedActions] = useState<number[]>([]);
   const [actionProgress, setActionProgress] = useState<Record<string, any>>({});
-
+  const [selectedAICategory, setSelectedAICategory] = useState('all');
+  const [selectedAIPriority, setSelectedAIPriority] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all'); // State for AI Recommendations
+  const [selectedPriority, setSelectedPriority] = useState('all'); // State for AI Recommendations
   // Fetch user data on authentication state change
   const [loading, setLoading] = React.useState(true);
 
@@ -139,6 +168,11 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
 
     if (!currentUser) {
       setLoading(false);
+      // Reset AI Recommendations state on logout
+      setCompletedActions([]);
+      setActionProgress({});
+      setSelectedAICategory('all');
+      setSelectedAIPriority('all');
       setUserStats({ // Reset to default zeros when no user is logged in
         totalPoints: 0,
         level: 0,
@@ -292,11 +326,55 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       unsubscribeScans();
     };
   }, [currentUser]);
+
+  // Load AI Recommendations state from localStorage on component mount
+  useEffect(() => {
+    const savedCompletedActions = localStorage.getItem('completedActions');
+    if (savedCompletedActions) {
+      setCompletedActions(JSON.parse(savedCompletedActions));
+    }
+
+    const savedActionProgress = localStorage.getItem('actionProgress');
+    if (savedActionProgress) {
+      setActionProgress(JSON.parse(savedActionProgress));
+    }
+
+    const savedSelectedAICategory = localStorage.getItem('selectedAICategory');
+    if (savedSelectedAICategory) {
+      setSelectedAICategory(savedSelectedAICategory);
+    }
+
+    const savedSelectedAIPriority = localStorage.getItem('selectedAIPriority');
+    if (savedSelectedAIPriority) {
+      setSelectedAIPriority(savedSelectedAIPriority);
+    }
+    const savedSelectedCategory = localStorage.getItem('selectedCategory');
+    if (savedSelectedCategory) {
+      setSelectedCategory(savedSelectedCategory);
+    }
+    const savedSelectedPriority = localStorage.getItem('selectedPriority');
+    if (savedSelectedPriority) {
+      setSelectedPriority(savedSelectedPriority);
+    }
+  }, []);
+
+  // Save AI Recommendations state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('completedActions', JSON.stringify(completedActions));
+    localStorage.setItem('actionProgress', JSON.stringify(actionProgress));
+  }, [currentUser]);
+
+
   const updateFirestoreUserStats = async (stats: UserStats) => {
     if (currentUser) {
       const userDocRef = doc(db, 'users', currentUser.uid);
       try {
-        await updateDoc(userDocRef, { ...stats });
+        // Sanitize stats to remove non-serializable fields like React components (icon)
+        const sanitizedStats = {
+          ...stats,
+          achievements: stats.achievements?.map(({ icon, ...rest }) => rest) || [],
+        };
+        await updateDoc(userDocRef, { ...sanitizedStats });
       } catch (error) {
         console.error("Error updating user stats:", error);
       }
@@ -457,6 +535,14 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       actionProgress,
       setCompletedActions,
       setActionProgress,
+      selectedAICategory,
+      selectedAIPriority,
+      setSelectedAICategory,
+      setSelectedAIPriority,
+      selectedCategory, // Add these to context value
+      setSelectedCategory, // Add these to context value
+      selectedPriority, // Add these to context value
+      setSelectedPriority, // Add these to context value
       addCarbonEntry,
       addScannedProduct,
       addPoints,

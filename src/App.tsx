@@ -14,6 +14,7 @@ import ProductLifecycle from "./components/ProductLifecycle";
 import ProductComparison from "./components/ProductComparison";
 import Footer from "./components/Footer";
 import Layout from "./components/Layout";
+import { ProductComparisonProvider } from "./contexts/ProductComparisonContext";
 
 const queryClient = new QueryClient();
 
@@ -22,22 +23,24 @@ const App = () => (
     <ThemeProvider>
       <AuthProvider>
         <UserDataProvider> {/* Wrap with UserDataProvider */}
-          <CartProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Layout><Index /></Layout>} />
-                  <Route path="/goals" element={<Layout><Goals /></Layout>} />
-                  <Route path="/product-lifecycle" element={<Layout><ProductLifecycle /></Layout>} />
-                  <Route path="/product-comparison" element={<Layout><ProductComparison /></Layout>} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} /> {/* NotFound can be outside the layout if you want a different layout for 404 */}
-                </Routes>
-              </BrowserRouter>
-            </TooltipProvider>
-          </CartProvider>
+          <ProductComparisonProvider>
+            <CartProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<Layout><Index /></Layout>} />
+                    <Route path="/goals" element={<Layout><Goals /></Layout>} />
+                    <Route path="/product-lifecycle" element={<Layout><ProductLifecycle /></Layout>} />
+                    <Route path="/product-comparison" element={<Layout><ProductComparison /></Layout>} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} /> {/* NotFound can be outside the layout if you want a different layout for 404 */}
+                  </Routes>
+                </BrowserRouter>
+              </TooltipProvider>
+            </CartProvider>
+          </ProductComparisonProvider>
         </UserDataProvider> {/* Close UserDataProvider */}
       </AuthProvider>
     </ThemeProvider>

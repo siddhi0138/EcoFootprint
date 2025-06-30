@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { 
   Brain, 
   Lightbulb, 
@@ -24,8 +24,8 @@ import {
   Calendar,
   Users
 } from 'lucide-react';
-import { productsData, searchProducts } from '@/data/productsData';
-import { useUserData } from '@/contexts/UserDataContext';
+import { productsData, searchProducts } from '../data/productsData';
+import { useUserData } from '../contexts/UserDataContext';
 
 interface Recommendation {
   id: number;
@@ -52,17 +52,37 @@ interface ActionProgress {
 }
 
 const AIRecommendations = () => {
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedPriority, setSelectedPriority] = useState('all');
-  const [completedActions, setCompletedActions] = useState<number[]>([]);
-  const [actionProgress, setActionProgress] = useState<Record<string, ActionProgress>>({});
-  const { userStats, scannedProducts, carbonEntries, addPoints } = useUserData();
+  const { 
+    userStats, 
+    scannedProducts, 
+    carbonEntries, 
+    addPoints,
+    selectedCategory, setSelectedCategory,
+    selectedPriority, setSelectedPriority,
+    completedActions, setCompletedActions,
+    actionProgress, setActionProgress,
+  } = useUserData();
 
-  // Generate user-specific recommendations based on their data
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+
+  // New state for selected tab with persistence
+  const [selectedTab, setSelectedTab] = React.useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const storedTab = localStorage.getItem('aiRecommendationsSelectedTab') || 'insights';
+      console.log('Initializing selectedTab from localStorage:', storedTab);
+      return storedTab;
+    }
+    return 'insights';
+  });
+
+  React.useEffect(() => {
+    console.log('selectedTab changed to:', selectedTab);
+    localStorage.setItem('aiRecommendationsSelectedTab', selectedTab);
+  }, [selectedTab]);
+
   const generateRecommendations = (): Recommendation[] => {
     const recommendations: Recommendation[] = [];
     
-    // Analyze scanned products for recommendations
     if (scannedProducts.length > 0) {
       const avgScore = userStats.avgScore;
       const lastScannedProduct = scannedProducts[0];
@@ -86,7 +106,6 @@ const AIRecommendations = () => {
         });
       }
       
-      // Category-specific recommendations
       const categoryCount = scannedProducts.reduce((acc, product) => {
         acc[product.category] = (acc[product.category] || 0) + 1;
         return acc;
@@ -114,7 +133,6 @@ const AIRecommendations = () => {
       }
     }
     
-    // Carbon tracking recommendations
     if (carbonEntries.length === 0) {
       recommendations.push({
         id: 3,
@@ -154,7 +172,6 @@ const AIRecommendations = () => {
       }
     }
     
-    // Streak-based recommendations
     if (userStats.streakDays < 7) {
       recommendations.push({
         id: 5,
@@ -177,16 +194,26 @@ const AIRecommendations = () => {
     return recommendations;
   };
 
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-
   useEffect(() => {
     setRecommendations(generateRecommendations());
   }, [userStats, scannedProducts, carbonEntries]);
 
   // Dynamic insights based on user data
   const generateInsights = () => {
+    console.log('User streakDays:', userStats.streakDays);
     const insights = [];
     
+    // Daily streak insight
+ insights.push({
+ title: 'Daily Streak',
+ value: `${userStats.streakDays} days`,
+ trend: userStats.streakDays > 7 ? 'Excellent streak!' : userStats.streakDays > 3 ? 'Building momentum' : 'Start your streak',
+ icon: Zap,
+ change: userStats.streakDays > 7 ? 'positive' : userStats.streakDays > 3 ? 'neutral' : 'negative',
+ description: 'Consecutive days with eco actions'
+    });
+
+
     // Scanning streak insight
     const scanningTrend = userStats.currentWeekScans > 5 ? 'up' : userStats.currentWeekScans > 2 ? 'stable' : 'down';
     insights.push({
@@ -196,17 +223,6 @@ const AIRecommendations = () => {
       icon: Brain,
       change: scanningTrend,
       description: 'Products scanned this week'
-    });
-    
-    // Score improvement insight
-    const scoreImprovement = userStats.avgScore > 70 ? 'positive' : userStats.avgScore > 50 ? 'neutral' : 'negative';
-    insights.push({
-      title: 'Sustainability Score',
-      value: `${userStats.avgScore}/100`,
-      trend: scoreImprovement === 'positive' ? 'Above average!' : scoreImprovement === 'neutral' ? 'Good progress' : 'Needs attention',
-      icon: Target,
-      change: scoreImprovement,
-      description: 'Average product sustainability score'
     });
     
     // Carbon impact insight
@@ -219,16 +235,17 @@ const AIRecommendations = () => {
       description: 'Total CO₂ saved through better choices'
     });
     
-    // Engagement insight
+    // Average Sustainability Score insight
     insights.push({
-      title: 'Engagement Level',
-      value: `${userStats.streakDays} days`,
-      trend: userStats.streakDays > 7 ? 'Excellent streak!' : userStats.streakDays > 3 ? 'Building momentum' : 'Start your streak',
+      title: 'Avg Sustainability Score',
+      value: `${userStats.avgScore}/100`,
+      trend: userStats.avgScore > 80 ? 'Excellent!' : userStats.avgScore > 60 ? 'Good progress' : 'Room for growth',
       icon: Star,
-      change: userStats.streakDays > 7 ? 'positive' : userStats.streakDays > 3 ? 'neutral' : 'negative',
-      description: 'Current sustainability streak'
+      change: userStats.avgScore > 80 ? 'positive' : userStats.avgScore > 60 ? 'neutral' : 'negative',
+      description: 'Average score of scanned products'
     });
-    
+
+
     return insights;
   };
 
@@ -352,7 +369,7 @@ const AIRecommendations = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <Tabs defaultValue="insights" className="w-full">
+          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="insights">Your Insights</TabsTrigger>
               <TabsTrigger value="recommendations">Smart Recommendations</TabsTrigger>
