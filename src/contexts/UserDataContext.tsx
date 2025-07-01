@@ -105,6 +105,8 @@ interface UserDataContextType {
   setSelectedCategory: React.Dispatch<React.SetStateAction<string>>;
   selectedPriority: string;
   setSelectedPriority: React.Dispatch<React.SetStateAction<string>>;
+  selectedTab?: string;
+  setSelectedTab?: React.Dispatch<React.SetStateAction<string>>;
   addCarbonEntry: (entry: Omit<CarbonEntry, 'id' | 'date'>) => void;
   addScannedProduct: (product: ScannedProduct) => void;
   addPoints: (points: number) => void;
@@ -207,6 +209,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
   const [selectedAIPriority, setSelectedAIPriority] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all'); // State for AI Recommendations
   const [selectedPriority, setSelectedPriority] = useState('all'); // State for AI Recommendations
+  const [selectedTab, setSelectedTab] = useState('insights'); // Add selectedTab state for AIRecommendations tab persistence
   // Fetch user data on authentication state change
   const [loading, setLoading] = React.useState(true);
 
@@ -383,63 +386,89 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [currentUser]);
 
-  // Load AI Recommendations state from localStorage on component mount
-  React.useEffect(() => {
-    const savedCompletedActions = localStorage.getItem('completedActions');
-    if (savedCompletedActions) {
-      console.log('Loading completedActions from localStorage:', savedCompletedActions);
-      setCompletedActions(JSON.parse(savedCompletedActions));
-    }
+  // Removed redundant localStorage loading on component mount as Firestore loading on login covers this
 
-    const savedActionProgress = localStorage.getItem('actionProgress');
-    if (savedActionProgress) {
-      console.log('Loading actionProgress from localStorage:', savedActionProgress);
-      setActionProgress(JSON.parse(savedActionProgress));
-    }
-
-    const savedSelectedAICategory = localStorage.getItem('selectedAICategory');
-    if (savedSelectedAICategory) {
-      setSelectedAICategory(savedSelectedAICategory);
-    }
-
-    const savedSelectedAIPriority = localStorage.getItem('selectedAIPriority');
-    if (savedSelectedAIPriority) {
-      setSelectedAIPriority(savedSelectedAIPriority);
-    }
-    const savedSelectedCategory = localStorage.getItem('selectedCategory');
-    if (savedSelectedCategory) {
-      setSelectedCategory(savedSelectedCategory);
-    }
-    const savedSelectedPriority = localStorage.getItem('selectedPriority');
-    if (savedSelectedPriority) {
-      setSelectedPriority(savedSelectedPriority);
-    }
-  }, []);
-
-  // Load AI Recommendations state from localStorage on user login
+  // Load AI Recommendations state from Firestore on user login
   React.useEffect(() => {
     if (currentUser) {
-      const savedCompletedActions = localStorage.getItem('completedActions');
-      if (savedCompletedActions) {
-        console.log('Loading completedActions from localStorage on login:', savedCompletedActions);
-        setCompletedActions(JSON.parse(savedCompletedActions));
-      }
-
-      const savedActionProgress = localStorage.getItem('actionProgress');
-      if (savedActionProgress) {
-        console.log('Loading actionProgress from localStorage on login:', savedActionProgress);
-        setActionProgress(JSON.parse(savedActionProgress));
-      }
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      getDoc(userDocRef).then(docSnap => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.completedActions) {
+            console.log('Loading completedActions from Firestore on login:', data.completedActions);
+            setCompletedActions(data.completedActions);
+          }
+          if (data.actionProgress) {
+            console.log('Loading actionProgress from Firestore on login:', data.actionProgress);
+            setActionProgress(data.actionProgress);
+          }
+          if (data.selectedAICategory) {
+            setSelectedAICategory(data.selectedAICategory);
+          }
+          if (data.selectedAIPriority) {
+            setSelectedAIPriority(data.selectedAIPriority);
+          }
+          if (data.selectedCategory) {
+            setSelectedCategory(data.selectedCategory);
+          }
+          if (data.selectedPriority) {
+            setSelectedPriority(data.selectedPriority);
+          }
+          if (data.selectedTab) {
+            setSelectedTab(data.selectedTab);
+          }
+        }
+      }).catch(error => {
+        console.error('Error loading AI Recommendations state from Firestore:', error);
+      });
     }
   }, [currentUser]);
 
-  // Save AI Recommendations state to localStorage whenever it changes
+  // Save AI Recommendations state to Firestore and localStorage whenever it changes
   React.useEffect(() => {
+    // Helper function to sanitize actionProgress by removing icon fields
+    const sanitizeActionProgress = (progress: Record<string, any>) => {
+      const sanitized: Record<string, any> = {};
+      for (const key in progress) {
+        if (progress.hasOwnProperty(key)) {
+          const action = progress[key];
+          // Deep copy excluding icon in recommendation
+          const { icon, ...restRecommendation } = action.recommendation || {};
+          sanitized[key] = {
+            ...action,
+            recommendation: restRecommendation
+          };
+        }
+      }
+      return sanitized;
+    };
+
+    if (currentUser) {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const sanitizedActionProgress = sanitizeActionProgress(actionProgress);
+      updateDoc(userDocRef, {
+        completedActions,
+        actionProgress: sanitizedActionProgress,
+        selectedAICategory,
+        selectedAIPriority,
+        selectedCategory,
+        selectedPriority,
+        selectedTab
+      }).catch(error => {
+        console.error('Error saving AI Recommendations state to Firestore:', error);
+      });
+    }
     localStorage.setItem('completedActions', JSON.stringify(completedActions));
     localStorage.setItem('actionProgress', JSON.stringify(actionProgress));
-  }, [completedActions, actionProgress]);
+    localStorage.setItem('selectedAICategory', selectedAICategory);
+    localStorage.setItem('selectedAIPriority', selectedAIPriority);
+    localStorage.setItem('selectedCategory', selectedCategory);
+    localStorage.setItem('selectedPriority', selectedPriority);
+    localStorage.setItem('selectedTab', selectedTab);
+  }, [completedActions, actionProgress, selectedAICategory, selectedAIPriority, selectedCategory, selectedPriority, selectedTab]);
   
-  // Clear in-memory state on logout but keep localStorage intact
+  // Clear in-memory and localStorage state on logout
   React.useEffect(() => {
     if (!currentUser) {
       setCompletedActions([]);
@@ -448,6 +477,12 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       setSelectedAIPriority('all');
       setSelectedCategory('all');
       setSelectedPriority('all');
+      localStorage.removeItem('completedActions');
+      localStorage.removeItem('actionProgress');
+      localStorage.removeItem('selectedAICategory');
+      localStorage.removeItem('selectedAIPriority');
+      localStorage.removeItem('selectedCategory');
+      localStorage.removeItem('selectedPriority');
     }
   }, [currentUser]);
 
@@ -654,6 +689,8 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       setSelectedCategory, // Add these to context value
       selectedPriority, // Add these to context value
       setSelectedPriority, // Add these to context value
+      selectedTab, // Add selectedTab to context value
+      setSelectedTab, // Add setSelectedTab to context value
       addCarbonEntry,
       addScannedProduct,
       addPoints,
