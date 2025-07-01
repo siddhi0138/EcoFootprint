@@ -79,10 +79,10 @@ const ProductComparison = () => {
   };
 
   const addProduct = (product) => {
-    if (comparisonProducts.length >= 4) {
+    if (comparisonProducts.length >= 10) {
       toast({
         title: "Maximum Reached",
-        description: "You can compare up to 4 products at a time.",
+        description: "You can compare up to 10 products at a time.",
         variant: "destructive"
       });
       return;
@@ -591,7 +591,7 @@ const ProductComparison = () => {
                             <Button 
                               size="sm" 
                               onClick={() => addProduct(product)}
-                              disabled={comparisonProducts.length >= 4}
+                              disabled={comparisonProducts.length >= 10}
                               className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 rounded-xl disabled:opacity-50"
                             >
                               <Plus className="w-4 h-4" />

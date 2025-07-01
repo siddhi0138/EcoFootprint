@@ -107,15 +107,15 @@ const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
       // Add to user's scanned products
       const today = new Date();
       // Removed addScannedProduct here to prevent adding to recent scans
-      // addScannedProduct({
-      //   id: randomProduct.id.toString(),
-      //   name: randomProduct.name,
-      //   brand: randomProduct.brand,
-      //   sustainabilityScore: randomProduct.sustainabilityScore,
-      //   category: randomProduct.category,
-      //   date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`,
-      //   alternatives: randomProduct.alternatives, // Store alternatives here
-      // });
+      addScannedProduct({
+        id: randomProduct.id.toString(),
+        name: randomProduct.name,
+        brand: randomProduct.brand,
+        sustainabilityScore: randomProduct.sustainabilityScore,
+        category: randomProduct.category,
+        date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`,
+        alternatives: randomProduct.alternatives, // Store alternatives here
+      });
       // Add to product comparison
       addProductToComparison({
         id: randomProduct.id.toString(),
@@ -227,14 +227,14 @@ const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
       
       setDetectedProduct(productData);
       // Removed addScannedProduct here to prevent adding to recent scans
-      // addScannedProduct({
-      //   id: product.id.toString(),
-      //   name: product.name,
-      //   brand: product.brand,
-      //   sustainabilityScore: product.sustainabilityScore,
-      //   category: product.category,
-      //   date: new Date().toLocaleDateString(),
-      // });
+      addScannedProduct({
+        id: product.id.toString(),
+        name: product.name,
+        brand: product.brand,
+        sustainabilityScore: product.sustainabilityScore,
+        category: product.category,
+        date: new Date().toLocaleDateString(),
+      });
       // Add to product comparison
       addProductToComparison({
         id: product.id.toString(),

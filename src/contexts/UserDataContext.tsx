@@ -1,10 +1,12 @@
 
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { collection, doc, onSnapshot, addDoc, updateDoc, getDoc, setDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 import { db } from '../firebase';
 import { Timestamp } from 'firebase/firestore';
 import { Brain, Star, Leaf } from 'lucide-react';
+import { useProductComparison } from './ProductComparisonContext';
 interface CarbonEntry {
   id: string;
   category: string;
@@ -253,37 +255,41 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         }));
       } else {
         // Create initial user stats if not exists with a comprehensive default object
-        const initialStatsForNewUser: UserStats = {
-          totalPoints: 0,
-          level: 1, // Start at level 1
-          totalScans: 0,
-          avgScore: 0,
-          co2Saved: 0,
-          rank: 0, // New user, no rank yet
-          badges: 0,
-          weeklyGoal: 75,
-          currentWeekScans: 0,
-          streakDays: 0,
-          coursesCompleted: 0,
-          recipesViewed: 0,
-          transportTrips: 0,
-          esgReports: 0,
-          goals: [],
-          investmentsMade: 0,
-          monthlyReduction: 0,
-          carbonGoal: 0,
-          maxSustainabilityScore: 1000,
-          weeklyFootprint: [0, 0, 0, 0, 0, 0, 0],
-          categoryBreakdown: { transport: 0, energy: 0, food: 0, waste: 0 },
-          topCategory: 'none',
-          achievements: [],
-          monthlyTrend: 0,
-          sustainabilityScore: 0,
-          totalCarbonFootprint: 0
-        };
-        setDoc(userDocRef, initialStatsForNewUser)
-          .then(() => setUserStats(initialStatsForNewUser)) // Update local state after setting in Firestore
-          .catch(error => console.error("Error setting initial user stats:", error));
+        if (currentUser) {
+          const initialStatsForNewUser: UserStats = {
+            totalPoints: 0,
+            level: 1, // Start at level 1
+            totalScans: 0,
+            avgScore: 0,
+            co2Saved: 0,
+            rank: 0, // New user, no rank yet
+            badges: 0,
+            weeklyGoal: 75,
+            currentWeekScans: 0,
+            streakDays: 0,
+            coursesCompleted: 0,
+            recipesViewed: 0,
+            transportTrips: 0,
+            esgReports: 0,
+            goals: [],
+            investmentsMade: 0,
+            monthlyReduction: 0,
+            carbonGoal: 0,
+            maxSustainabilityScore: 1000,
+            weeklyFootprint: [0, 0, 0, 0, 0, 0, 0],
+            categoryBreakdown: { transport: 0, energy: 0, food: 0, waste: 0 },
+            topCategory: 'none',
+            achievements: [],
+            monthlyTrend: 0,
+            sustainabilityScore: 0,
+            totalCarbonFootprint: 0
+          };
+          setDoc(userDocRef, initialStatsForNewUser)
+            .then(() => setUserStats(initialStatsForNewUser)) // Update local state after setting in Firestore
+            .catch(error => console.error("Error setting initial user stats:", error));
+        } else {
+          console.error("Cannot set initial user stats: no authenticated user");
+        }
       }
       setLoading(false);
     }, (error) => {
@@ -410,6 +416,14 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
 
   const addScannedProduct = async (product: ScannedProduct) => {
     if (currentUser) {
+      const { comparisonProducts } = useProductComparison();
+
+      // Skip saving if product is in product comparison list
+      if (comparisonProducts.find(p => p.id === product.id)) {
+        console.log(`Skipping saving product ${product.id} as it is in product comparison.`);
+        return;
+      }
+
       const userDocRef = doc(db, 'users', currentUser.uid);
       const scannedCollectionRef = collection(userDocRef, 'scannedProducts');
 
