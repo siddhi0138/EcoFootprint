@@ -200,21 +200,19 @@ const AIRecommendations = () => {
 
   // Dynamic insights based on user data
   const generateInsights = () => {
-    console.log('User streakDays:', userStats.streakDays);
     const insights = [];
-    
+
     // Daily streak insight
- insights.push({
- title: 'Daily Streak',
- value: `${userStats.streakDays} days`,
- trend: userStats.streakDays > 7 ? 'Excellent streak!' : userStats.streakDays > 3 ? 'Building momentum' : 'Start your streak',
- icon: Zap,
- change: userStats.streakDays > 7 ? 'positive' : userStats.streakDays > 3 ? 'neutral' : 'negative',
- description: 'Consecutive days with eco actions'
+    insights.push({
+      title: 'Daily Streak',
+      value: `${userStats.streakDays} days`,
+      trend: userStats.streakDays > 7 ? 'Excellent streak!' : userStats.streakDays > 3 ? 'Building momentum' : 'Start your streak',
+      icon: Zap,
+      change: userStats.streakDays > 7 ? 'positive' : userStats.streakDays > 3 ? 'neutral' : 'negative',
+      description: 'Consecutive days with eco actions'
     });
 
-
-    // Scanning streak insight
+    // Weekly scanning activity insight
     const scanningTrend = userStats.currentWeekScans > 5 ? 'up' : userStats.currentWeekScans > 2 ? 'stable' : 'down';
     insights.push({
       title: 'Weekly Scanning Activity',
@@ -224,7 +222,7 @@ const AIRecommendations = () => {
       change: scanningTrend,
       description: 'Products scanned this week'
     });
-    
+
     // Carbon impact insight
     insights.push({
       title: 'Carbon Impact',
@@ -234,7 +232,7 @@ const AIRecommendations = () => {
       change: userStats.co2Saved > 10 ? 'positive' : userStats.co2Saved > 5 ? 'neutral' : 'negative',
       description: 'Total CO₂ saved through better choices'
     });
-    
+
     // Average Sustainability Score insight
     insights.push({
       title: 'Avg Sustainability Score',
@@ -245,6 +243,56 @@ const AIRecommendations = () => {
       description: 'Average score of scanned products'
     });
 
+    // Monthly Trend insight
+    insights.push({
+      title: 'Monthly Trend',
+      value: `${userStats.monthlyTrend > 0 ? '+' : ''}${userStats.monthlyTrend}%`,
+      trend: userStats.monthlyTrend > 0 ? 'Improving' : userStats.monthlyTrend < 0 ? 'Declining' : 'Stable',
+      icon: TrendingUp,
+      change: userStats.monthlyTrend > 0 ? 'positive' : userStats.monthlyTrend < 0 ? 'negative' : 'neutral',
+      description: 'Change in sustainability score over the last month'
+    });
+
+    // Top Category insight
+    insights.push({
+      title: 'Top Category',
+      value: userStats.topCategory || 'None',
+      trend: 'Most scanned product category',
+      icon: Target,
+      change: 'neutral',
+      description: 'Category with highest scan frequency'
+    });
+
+    // Total Carbon Footprint insight
+    insights.push({
+      title: 'Total Carbon Footprint',
+      value: `${userStats.totalCarbonFootprint.toFixed(1)}kg`,
+      trend: userStats.totalCarbonFootprint > 100 ? 'High footprint' : 'Manageable footprint',
+      icon: Leaf,
+      change: userStats.totalCarbonFootprint > 100 ? 'negative' : 'positive',
+      description: 'Your overall carbon footprint'
+    });
+
+    // Achievements count insight
+    insights.push({
+      title: 'Achievements',
+      value: `${userStats.achievements.length}`,
+      trend: 'Achievements unlocked',
+      icon: Star,
+      change: 'positive',
+      description: 'Number of achievements earned'
+    });
+
+    // Goals progress insight (showing count of active goals)
+    const activeGoals = userStats.goals.filter(goal => goal.progress < 100).length;
+    insights.push({
+      title: 'Active Goals',
+      value: `${activeGoals}`,
+      trend: 'Goals in progress',
+      icon: CheckCircle,
+      change: activeGoals > 0 ? 'neutral' : 'positive',
+      description: 'Number of sustainability goals you are working on'
+    });
 
     return insights;
   };
@@ -378,24 +426,41 @@ const AIRecommendations = () => {
             </TabsList>
 
             <TabsContent value="insights" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {insights.map((insight, index) => (
-                  <div key={index} className="bg-slate-50/80 dark:bg-slate-800/80 rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg transition-all duration-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-8 h-8 bg-slate-700 dark:bg-slate-600 rounded-lg flex items-center justify-center">
-                        <insight.icon className="w-4 h-4 text-white" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {insights.slice(0, 4).map((insight, index) => {
+                  const trendColors = {
+                    positive: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                    neutral: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+                    negative: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+                  };
+                  const trendIcons = {
+                    positive: <ArrowRight className="w-4 h-4 rotate-45 text-green-600" />,
+                    neutral: <ArrowRight className="w-4 h-4 text-amber-600" />,
+                    negative: <ArrowRight className="w-4 h-4 -rotate-45 text-red-600" />,
+                  };
+                  return (
+                    <div key={index} className="bg-slate-50/90 dark:bg-slate-800/90 rounded-2xl p-5 border border-slate-300 dark:border-slate-700 hover:shadow-xl transition-shadow duration-300">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-10 h-10 bg-slate-700 dark:bg-slate-600 rounded-lg flex items-center justify-center">
+                          <insight.icon className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-200">{insight.value}</span>
                       </div>
-                      <span className="text-2xl font-bold text-slate-800 dark:text-slate-200">{insight.value}</span>
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-200 text-base mb-1">{insight.title}</h3>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${trendColors[insight.change] || trendColors.neutral}`}>
+                          {trendIcons[insight.change] || trendIcons.neutral}
+                          <span className="ml-1">{insight.trend}</span>
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{insight.description}</p>
                     </div>
-                    <h3 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">{insight.title}</h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{insight.trend}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{insight.description}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               {/* Recent Activity Summary */}
-              <Card className="bg-white dark:bg-gray-800 border border-slate-200/50 dark:border-slate-700/50">
+              <Card className="bg-white dark:bg-gray-800 border border-slate-200/50 dark:border-slate-700/50 rounded-2xl shadow-md">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center space-x-2">
                     <Calendar className="w-5 h-5" />

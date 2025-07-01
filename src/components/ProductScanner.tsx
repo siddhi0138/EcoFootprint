@@ -106,7 +106,6 @@ const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
       
       // Add to user's scanned products
       const today = new Date();
-      // Removed addScannedProduct here to prevent adding to recent scans
       addScannedProduct({
         id: randomProduct.id.toString(),
         name: randomProduct.name,
@@ -115,18 +114,9 @@ const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
         category: randomProduct.category,
         date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`,
         alternatives: randomProduct.alternatives, // Store alternatives here
+        source: 'ProductScanner',
       });
       // Add to product comparison
-      addProductToComparison({
-        id: randomProduct.id.toString(),
-        name: randomProduct.name,
-        brand: randomProduct.brand,
-        sustainabilityScore: randomProduct.sustainabilityScore,
-        category: randomProduct.category,
-        date: new Date().toISOString(),
-        price: randomProduct.price,
-        image: `https://images.unsplash.com/${randomProduct.image}?w=400&h=400&fit=crop`,
-      });
       setIsScanning(false);
     }, 2000);
   };
@@ -226,7 +216,6 @@ const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
       };
       
       setDetectedProduct(productData);
-      // Removed addScannedProduct here to prevent adding to recent scans
       addScannedProduct({
         id: product.id.toString(),
         name: product.name,
@@ -234,6 +223,7 @@ const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
         sustainabilityScore: product.sustainabilityScore,
         category: product.category,
         date: new Date().toLocaleDateString(),
+        source: 'ProductScanner',
       });
       // Add to product comparison
       addProductToComparison({
