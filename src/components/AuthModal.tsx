@@ -26,16 +26,84 @@ const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
 
   const { login, register, loginWithGoogle, isLoading } = useAuth();
 
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+
+  const validateEmail = (email: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setErrorMessage(null);
+
+    // Additional form validation for login form
+    if (isLogin) {
+      if (!formData.email) {
+        setErrorMessage('Email is required.');
+        toast.error('Email is required.');
+        return;
+      }
+      if (!validateEmail(formData.email)) {
+        setErrorMessage('Please enter a valid email address.');
+        toast.error('Please enter a valid email address.');
+        return;
+      }
+      if (!formData.password) {
+        setErrorMessage('Password is required.');
+        toast.error('Password is required.');
+        return;
+      }
+      if (formData.password.length < 6) {
+        setErrorMessage('Password must be at least 6 characters.');
+        toast.error('Password must be at least 6 characters.');
+        return;
+      }
+    } else {
+      if (!formData.name.trim()) {
+        setErrorMessage('Please enter your full name.');
+        toast.error('Please enter your full name.');
+        return;
+      }
+      if (!formData.email) {
+        setErrorMessage('Email is required.');
+        toast.error('Email is required.');
+        return;
+      }
+      if (!validateEmail(formData.email)) {
+        setErrorMessage('Please enter a valid email address.');
+        toast.error('Please enter a valid email address.');
+        return;
+      }
+      if (!formData.password) {
+        setErrorMessage('Password is required.');
+        toast.error('Password is required.');
+        return;
+      }
+      if (formData.password.length < 6) {
+        setErrorMessage('Password must be at least 6 characters.');
+        toast.error('Password must be at least 6 characters.');
+        return;
+      }
+    }
+
     try {
       if (isLogin) {
-        await login(formData.email, formData.password);
+        const error = await login(formData.email, formData.password);
+        if (typeof error === 'string' && error !== '') {
+          setErrorMessage(error);
+          toast.error(error);
+          return;
+        }
         toast.success('Successfully logged in!');
         onSuccess();
       } else {
-        await register(formData.name, formData.email, formData.password);
+        const error = await register(formData.name, formData.email, formData.password);
+        if (typeof error === 'string' && error !== '') {
+          setErrorMessage(error);
+          toast.error(error);
+          return;
+        }
         toast.success('Successfully registered! Please login.');
         setIsLogin(true);
         setFormData({ name: '', email: '', password: '' });

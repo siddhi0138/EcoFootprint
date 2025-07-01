@@ -57,8 +57,8 @@ export const ProductComparisonProvider = ({ children }: { children: ReactNode })
       if (prev.find(p => p.id === product.id)) {
         return prev; // Already added
       }
-      if (prev.length >= 4) {
-        return prev; // Max 4 products
+      if (prev.length >= 10) {
+        return prev; // Max 10 products
       }
       return [...prev, product];
     });

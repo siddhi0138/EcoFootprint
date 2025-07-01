@@ -22,8 +22,8 @@ interface User {
 interface AuthContextType {
   currentUser: User | null;
   user: User | null; 
- login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<string | null>;
+  register: (name: string, email: string, password: string) => Promise<string | null>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
@@ -35,58 +35,117 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const login = async (email: string, password: string) => {
+const login = async (email: string, password: string) => {
     setIsLoading(true);
+    localStorage.removeItem('user'); // Clear stale user data at login start
+    setCurrentUser(null);
     try {
+      if (!email || !password) {
+        throw new Error('Email and password must not be empty.');
+      }
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
       const appUser: User = {
         id: firebaseUser.uid,
- uid: firebaseUser.uid,
+        uid: firebaseUser.uid,
         name: firebaseUser.displayName || firebaseUser.email || '',
         email: firebaseUser.email || '',
       };
 
-      setCurrentUser(appUser);
-      localStorage.setItem('user', JSON.stringify(appUser));
-    } catch (error) {
-      console.error('Login error:', error);
+      // Only set currentUser and localStorage if login is successful
+      if (firebaseUser) {
+        setCurrentUser(appUser);
+        localStorage.setItem('user', JSON.stringify(appUser));
+      }
+      return null; // no error
+    } catch (error: any) {
+      console.error('Login error full object:', error);
+      // Return error message for display
+      if (error.code === 'auth/user-not-found') {
+        return 'User not found. Please register first.';
+      } else if (error.code === 'auth/wrong-password') {
+        return 'Incorrect password. Please try again.';
+      } else if (error.code === 'auth/invalid-email') {
+        return 'Invalid email address.';
+      } else if (error.code === 'auth/user-disabled') {
+        return 'User account is disabled.';
+      } else if (error.message) {
+        return error.message;
+      } else {
+        return 'Login failed. Please try again.';
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (name: string, email: string, password: string): Promise<string | null> => {
     setIsLoading(true);
     try {
+      if (!email || !password || !name) {
+        return 'Name, email, and password must not be empty.';
+      }
+      if (!validateEmail(email)) {
+        return 'Invalid email format.';
+      }
+      if (password.length < 6) {
+        return 'Password must be at least 6 characters.';
+      }
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
+
+      if (!firebaseUser) {
+        return 'Registration failed. Please try again.';
+      }
 
       await updateProfile(firebaseUser, {
         displayName: name,
       });
 
-      await setDoc(doc(db, 'users', firebaseUser.uid), {
-        uid: firebaseUser.uid,
-        name,
-        email: firebaseUser.email,
-      });
+      // Wait for auth state to update before writing to Firestore with retry
+      const writeUserData = async () => {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const user = auth.currentUser;
+            if (user && user.uid === firebaseUser.uid) {
+              await setDoc(doc(db, 'users', firebaseUser.uid), {
+                uid: firebaseUser.uid,
+                name,
+                email: firebaseUser.email,
+              });
+              console.log('Firestore write successful on attempt', attempt);
+              return;
+            } else {
+              console.warn('Auth user not ready, attempt', attempt);
+            }
+          } catch (firestoreError) {
+            console.error('Firestore write error during registration attempt', attempt, firestoreError);
+            if (attempt === 3) throw firestoreError;
+          }
+          await new Promise(res => setTimeout(res, 1000)); // wait 1 second before retry
+        }
+      };
+      await writeUserData();
 
-      const appUser: User = {
-        id: firebaseUser.uid,
-        uid: firebaseUser.uid, // Make sure this is included
-        name: firebaseUser.displayName || firebaseUser.email || '',
-        email: firebaseUser.email || '',
- };
-
-      setCurrentUser(appUser);
-      localStorage.setItem('user', JSON.stringify(appUser));
-    } catch (error) {
+      return null; // no error
+    } catch (error: any) {
       console.error('Registration error:', error);
+      if (error.code === 'auth/email-already-in-use') {
+        return 'Email is already in use. Please login or use a different email.';
+      } else if (error.message) {
+        return error.message;
+      } else {
+        return 'Registration failed. Please try again.';
+      }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const validateEmail = (email: string) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
   };
 
   const loginWithGoogle = async () => {
@@ -98,17 +157,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const appUser: User = {
         id: firebaseUser.uid,
- uid: firebaseUser.uid,
+        uid: firebaseUser.uid,
         name: firebaseUser.displayName || '',
         email: firebaseUser.email || '',
       };
 
-      // ✅ Save to Firestore
-      await setDoc(doc(db, 'users', firebaseUser.uid), {
-        uid: firebaseUser.uid,
-        name: firebaseUser.displayName || '',
-        email: firebaseUser.email || '',
-      }, { merge: true });
+      // Save to Firestore with retry
+      const writeUserData = async () => {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const user = auth.currentUser;
+            if (user && user.uid === firebaseUser.uid) {
+              await setDoc(doc(db, 'users', firebaseUser.uid), {
+                uid: firebaseUser.uid,
+                name: firebaseUser.displayName || '',
+                email: firebaseUser.email || '',
+              }, { merge: true });
+              console.log('Firestore write successful on attempt', attempt);
+              return;
+            } else {
+              console.warn('Auth user not ready, attempt', attempt);
+            }
+          } catch (firestoreError) {
+            console.error('Firestore write error during Google login attempt', attempt, firestoreError);
+            if (attempt === 3) throw firestoreError;
+          }
+          await new Promise(res => setTimeout(res, 1000)); // wait 1 second before retry
+        }
+      };
+      await writeUserData();
+
+      // Initialize subcollections with empty/default data
+      const userDocRef = doc(db, 'users', firebaseUser.uid);
+
+      const subcollectionsInit = async () => {
+        const batchPromises = [];
+
+        // profile/data document
+        batchPromises.push(setDoc(doc(userDocRef, 'profile', 'data'), {}));
+
+        // recentScans subcollection - empty
+        // scannedProducts subcollection - empty
+        // carbonEntries subcollection - empty
+        // aiRecommendations subcollection - empty
+        // userInsights subcollection - empty
+        // userRewards subcollection - empty
+        // reminders subcollection - empty
+        // goals subcollection - empty
+        // productComparison subcollection - empty
+        // cart/items document with empty items array
+        batchPromises.push(setDoc(doc(userDocRef, 'cart', 'items'), { items: [] }));
+
+        // favorites subcollection - empty
+        // productLifecycleViewedProducts subcollection - empty
+
+        await Promise.all(batchPromises);
+      };
+
+      await subcollectionsInit();
 
       setCurrentUser(appUser);
       localStorage.setItem('user', JSON.stringify(appUser));
@@ -118,6 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   };
+
 
   const logout = async () => {
     try {
@@ -130,10 +237,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
+    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+      if (firebaseUser) {
+        const appUser: User = {
+          id: firebaseUser.uid,
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.email || '',
+          email: firebaseUser.email || '',
+        };
+        setCurrentUser(appUser);
+        localStorage.setItem('user', JSON.stringify(appUser));
+      } else {
+        setCurrentUser(null);
+        localStorage.removeItem('user');
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   return (
