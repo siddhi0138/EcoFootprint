@@ -65,19 +65,13 @@ const AIRecommendations = () => {
 
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 
-  // New state for selected tab with persistence
-  const [selectedTab, setSelectedTab] = React.useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const storedTab = localStorage.getItem('aiRecommendationsSelectedTab') || 'insights';
-      console.log('Initializing selectedTab from localStorage:', storedTab);
-      return storedTab;
-    }
-    return 'insights';
-  });
+  // Use selectedTab from context instead of local state
+  const { selectedTab, setSelectedTab } = useUserData();
 
   React.useEffect(() => {
-    console.log('selectedTab changed to:', selectedTab);
-    localStorage.setItem('aiRecommendationsSelectedTab', selectedTab);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('aiRecommendationsSelectedTab', selectedTab);
+    }
   }, [selectedTab]);
 
   const generateRecommendations = (): Recommendation[] => {
