@@ -165,7 +165,8 @@ const ProductComparison = () => {
       rating: product.rating,
       reviews: product.reviews,
       inStock: product.inStock,
-      features: product.features
+      features: product.features,
+      source: 'ProductComparison'
     });
     
     addPoints(5); // Award points for adding products to comparison

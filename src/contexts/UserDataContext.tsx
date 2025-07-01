@@ -48,7 +48,7 @@ interface ScannedProduct {
     priceComparison: string;
     score: number;
   }[];
-
+  source?: string; // Added source field to identify data source
 }
 
 export interface UserStats {
@@ -152,6 +152,53 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     sustainabilityScore: 0, // Assuming a current score separate from max
     achievements: [],
   });
+
+  // Recalculate userStats based on scannedProducts and carbonEntries
+  React.useEffect(() => {
+    if (!currentUser) return;
+
+    const totalScans = scannedProducts.length;
+    const totalCO2Saved = carbonEntries.reduce((acc, entry) => acc + (entry.amount || 0), 0);
+    const avgScore = totalScans > 0 ? Math.round(scannedProducts.reduce((acc, p) => acc + (p.sustainabilityScore || 0), 0) / totalScans) : 0;
+
+    // Calculate current week scans (assuming date is ISO string)
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday as start of week
+    const currentWeekScans = scannedProducts.filter(p => {
+      const scanDate = new Date(p.date);
+      return scanDate >= startOfWeek && scanDate <= now;
+    }).length;
+
+    // Calculate streakDays (consecutive days with scans)
+    const scanDatesSet = new Set(scannedProducts.map(p => p.date.split('T')[0]));
+    let streak = 0;
+    for (let i = 0; i < 30; i++) {
+      const date = new Date();
+      date.setDate(now.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      if (scanDatesSet.has(dateStr)) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    // Calculate totalPoints (example: 10 points per scan + 5 points per kg CO2 saved)
+    const totalPoints = totalScans * 10 + totalCO2Saved * 5;
+
+    // Update userStats with recalculated values
+    setUserStats(prev => ({
+      ...prev,
+      totalScans,
+      co2Saved: totalCO2Saved,
+      avgScore,
+      currentWeekScans,
+      streakDays: streak,
+      totalPoints,
+    }));
+
+  }, [scannedProducts, carbonEntries, currentUser]);
 
   // State for AI Recommendations persistence
   const [completedActions, setCompletedActions] = useState<number[]>([]);
@@ -310,18 +357,21 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
 
     // Listen for scanned products
     unsubscribeScans = onSnapshot(scannedCollectionRef, (snapshot) => {
-      const productsMap: { [productId: string]: ScannedProduct } = {};
-      snapshot.docs.forEach(doc => {
-        const productData = {
-          ...(doc.data() as Omit<ScannedProduct, 'date'>),
-          date: doc.data().timestamp?.toDate().toISOString() || new Date().toISOString(), // Use Firestore timestamp, fallback to current date
-        };
+    const productsMap: { [productId: string]: ScannedProduct } = {};
+    snapshot.docs.forEach(doc => {
+      const productData = {
+        ...(doc.data() as Omit<ScannedProduct, 'date'>),
+        date: doc.data().timestamp?.toDate().toISOString() || new Date().toISOString(), // Use Firestore timestamp, fallback to current date
+      };
+      // Filter to only include products with source 'ProductScanner'
+      if (productData.source === 'ProductScanner') {
         // Use product's actual ID for grouping, keeping the most recent scan
         if (!productsMap[productData.id] || new Date(productData.date) > new Date(productsMap[productData.id].date || 0)) {
           productsMap[productData.id] = productData;
         }
-      });
-      setScannedProducts(Object.values(productsMap).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())); // Sort by date
+      }
+    });
+    setScannedProducts(Object.values(productsMap).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())); // Sort by date
     }, (error) => {
       console.error("Error fetching scanned products:", error);
     });
@@ -334,14 +384,16 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
   }, [currentUser]);
 
   // Load AI Recommendations state from localStorage on component mount
-  useEffect(() => {
+  React.useEffect(() => {
     const savedCompletedActions = localStorage.getItem('completedActions');
     if (savedCompletedActions) {
+      console.log('Loading completedActions from localStorage:', savedCompletedActions);
       setCompletedActions(JSON.parse(savedCompletedActions));
     }
 
     const savedActionProgress = localStorage.getItem('actionProgress');
     if (savedActionProgress) {
+      console.log('Loading actionProgress from localStorage:', savedActionProgress);
       setActionProgress(JSON.parse(savedActionProgress));
     }
 
@@ -364,10 +416,57 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Load AI Recommendations state from localStorage on user login
+  React.useEffect(() => {
+    if (currentUser) {
+      const savedCompletedActions = localStorage.getItem('completedActions');
+      if (savedCompletedActions) {
+        console.log('Loading completedActions from localStorage on login:', savedCompletedActions);
+        setCompletedActions(JSON.parse(savedCompletedActions));
+      }
+
+      const savedActionProgress = localStorage.getItem('actionProgress');
+      if (savedActionProgress) {
+        console.log('Loading actionProgress from localStorage on login:', savedActionProgress);
+        setActionProgress(JSON.parse(savedActionProgress));
+      }
+    }
+  }, [currentUser]);
+
   // Save AI Recommendations state to localStorage whenever it changes
-  useEffect(() => {
+  React.useEffect(() => {
     localStorage.setItem('completedActions', JSON.stringify(completedActions));
     localStorage.setItem('actionProgress', JSON.stringify(actionProgress));
+  }, [completedActions, actionProgress]);
+  
+  // Clear in-memory state on logout but keep localStorage intact
+  React.useEffect(() => {
+    if (!currentUser) {
+      setCompletedActions([]);
+      setActionProgress({});
+      setSelectedAICategory('all');
+      setSelectedAIPriority('all');
+      setSelectedCategory('all');
+      setSelectedPriority('all');
+    }
+  }, [currentUser]);
+
+  // Save AI Recommendations state to localStorage whenever it changes
+  React.useEffect(() => {
+    localStorage.setItem('completedActions', JSON.stringify(completedActions));
+    localStorage.setItem('actionProgress', JSON.stringify(actionProgress));
+  }, [completedActions, actionProgress]);
+  
+  // Clear in-memory state on logout but keep localStorage intact
+  React.useEffect(() => {
+    if (!currentUser) {
+      setCompletedActions([]);
+      setActionProgress({});
+      setSelectedAICategory('all');
+      setSelectedAIPriority('all');
+      setSelectedCategory('all');
+      setSelectedPriority('all');
+    }
   }, [currentUser]);
 
 
@@ -416,13 +515,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
 
   const addScannedProduct = async (product: ScannedProduct) => {
     if (currentUser) {
-      const { comparisonProducts } = useProductComparison();
-
-      // Skip saving if product is in product comparison list
-      if (comparisonProducts.find(p => p.id === product.id)) {
-        console.log(`Skipping saving product ${product.id} as it is in product comparison.`);
-        return;
-      }
+      // Removed skip logic for product comparison to ensure all scanned products are saved
 
       const userDocRef = doc(db, 'users', currentUser.uid);
       const scannedCollectionRef = collection(userDocRef, 'scannedProducts');
@@ -436,18 +529,22 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         if (!existingScanQuery.empty) {
           // If a scan for this product exists, update the existing document
           const existingDocRef = existingScanQuery.docs[0].ref;
-          await updateDoc(existingDocRef, {
-            ...product, // Update with the latest product data
-            timestamp: serverTimestamp(), // Update timestamp
-          });
+      await updateDoc(existingDocRef, {
+        ...product, // Update with the latest product data
+        alternatives: product.alternatives || [], // Ensure alternatives are saved
+        source: product.source || 'ProductScanner', // Save source field
+        timestamp: serverTimestamp(), // Update timestamp
+      });
           // The onSnapshot listener will handle updating the local state
         } else {
           // If no scan for this product exists, add a new document
-          await addDoc(scannedCollectionRef, {
-            ...product,
-            date: new Date().toISOString(), // Add a local date for display consistency before Firestore sync
-            timestamp: serverTimestamp(), // Add timestamp
-          });
+        await addDoc(scannedCollectionRef, {
+          ...product,
+          alternatives: product.alternatives || [], // Ensure alternatives are saved
+          source: product.source || 'ProductScanner', // Save source field
+          date: new Date().toISOString(), // Add a local date for display consistency before Firestore sync
+          timestamp: serverTimestamp(), // Add timestamp
+        });
         }
         // Update user stats
         const updatedStats = {
