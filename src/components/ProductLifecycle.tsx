@@ -1,127 +1,102 @@
-
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Progress } from './ui/progress';
 import { 
- Package, Truck, Factory, Recycle, Leaf, AlertCircle, CheckCircle, Clock, MapPin, Zap, Droplets, Globe 
+  Package, Truck, Factory, Recycle, Leaf, AlertCircle, CheckCircle, Clock, MapPin, Zap, Droplets, Globe 
 } from 'lucide-react';
-import { db } from '../firebase'; // Import Firebase database instance
-import { doc, setDoc, getDocs, collection } from 'firebase/firestore'; // Import Firebase functions
-import { useAuth } from '../contexts/AuthContext'; // Import AuthContext
+import { db } from '../firebase';
+import { doc, setDoc, getDocs, getDoc, collection } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
 
+interface ProductLifecycleProps {
+  product?: any;
+}
 
-const ProductLifecycle = () => {
-  const [selectedProduct, setSelectedProduct] = useState('organic-cotton-shirt');
-  const { user } = useAuth(); // Get the current user
-  const [viewedProducts, setViewedProducts] = useState({}); // State to store viewed products
+const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduct }) => {
+  const { user } = useAuth();
+  const [viewedProducts, setViewedProducts] = useState<{ [key: string]: any }>({});
+  const [savedProduct, setSavedProduct] = React.useState<any>(null);
+  const location = useLocation();
+  const product = propProduct || location.state?.product;
 
-
-  const products = {
-    'organic-cotton-shirt': {
-      name: 'Organic Cotton T-Shirt',
-      brand: 'EcoWear',
-      sustainabilityScore: 85,
-      stages: [
-        {
-          name: 'Raw Materials',
-          icon: Leaf,
-          status: 'completed',
-          impact: {
-            co2: 2.4,
-            water: 180,
-            energy: 12
-          },
-          details: 'Organic cotton sourced from certified farms in India. No pesticides used.',
-          location: 'Gujarat, India',
-          duration: '90 days'
-        },
-        {
-          name: 'Manufacturing',
-          icon: Factory,
-          status: 'completed',
-          impact: {
-            co2: 3.2,
-            water: 95,
-            energy: 18
-          },
-          details: 'Manufactured in solar-powered facility with water recycling system.',
-          location: 'Tamil Nadu, India',
-          duration: '7 days'
-        },
-        {
-          name: 'Transportation',
-          icon: Truck,
-          status: 'completed',
-          impact: {
-            co2: 1.8,
-            water: 0,
-            energy: 8
-          },
-          details: 'Shipped via ocean freight in consolidated containers.',
-          location: 'Mumbai to Los Angeles',
-          duration: '21 days'
-        },
-        {
-          name: 'Use Phase',
-          icon: Package,
-          status: 'active',
-          impact: {
-            co2: 4.5,
-            water: 240,
-            energy: 25
-          },
-          details: 'Expected to last 3+ years with proper care. Washing at 30°C recommended.',
-          location: 'Consumer Home',
-          duration: '3+ years'
-        },
-        {
-          name: 'End of Life',
-          icon: Recycle,
-          status: 'pending',
-          impact: {
-            co2: -0.5,
-            water: 15,
-            energy: 3
-          },
-          details: 'Can be composted or recycled into new textile fibers.',
-          location: 'Recycling Facility',
-          duration: '6 months'
-        }
-      ]
-    }
+  // Map stage names or keys to icon components
+  const iconMap: { [key: string]: React.ElementType } = {
+    Package,
+    Truck,
+    Factory,
+    Recycle,
+    Leaf,
+    AlertCircle,
+    CheckCircle,
+    Clock,
+    MapPin,
+    Zap,
+    Droplets,
+    Globe,
   };
 
-  // Fetch viewed products from Firebase on component mount or user change
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchViewedProducts = async () => {
       if (user) {
-        // Fix collection path to have odd number of segments
-        const viewedProductsRef = collection(db, `users/${user.uid}/productLifecycleViewedProducts`);
-        const snapshot = await getDocs(viewedProductsRef);
-        const data = {};
-        snapshot.forEach(doc => {
-          data[doc.id] = doc.data();
-        });
-        setViewedProducts(data);
+        try {
+          const viewedProductsRef = collection(db, `users/${user.uid}/productLifecycleViewedProducts`);
+          const snapshot = await getDocs(viewedProductsRef);
+          const data: { [key: string]: any } = {};
+          snapshot.forEach(doc => {
+            data[doc.id] = doc.data();
+          });
+          setViewedProducts(data);
+        } catch (error) {
+          console.error('Error fetching viewed products:', error);
+          setViewedProducts({});
+        }
       } else {
-        setViewedProducts({}); // Clear viewed products if no user
+        setViewedProducts({});
       }
     };
-
     fetchViewedProducts();
   }, [user]);
 
-  const currentProduct = products[selectedProduct];
-  const totalImpact = currentProduct.stages.reduce((acc, stage) => ({
-    co2: acc.co2 + stage.impact.co2,
-    water: acc.water + stage.impact.water,
-    energy: acc.energy + stage.impact.energy
-  }), { co2: 0, water: 0, energy: 0 });
+  useEffect(() => {
+    const fetchSavedProduct = async () => {
+      if (user && (product?.id || savedProduct?.id)) {
+        try {
+          const productId = savedProduct?.id || product?.id;
+          const productRef = doc(db, `users/${user.uid}/savedProductLifecycles`, productId.toString());
+          const docSnap = await getDoc(productRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            // Restore icon property in stages
+            if (data.stages && Array.isArray(data.stages)) {
+              data.stages = data.stages.map((stage: any) => {
+                return {
+                  ...stage,
+                  icon: iconMap[stage.iconName] || null, // Use iconName property to map icon
+                };
+              });
+            }
+            setSavedProduct(data);
+          } else {
+            setSavedProduct(null);
+          }
+        } catch (error) {
+          console.error('Error fetching saved product lifecycle data:', error);
+          setSavedProduct(null);
+        }
+      } else {
+        setSavedProduct(null);
+      }
+    };
+    fetchSavedProduct();
+  }, [user, product?.id]);
 
-  const getStatusIcon = (status) => {
+  const displayProduct = savedProduct || product;
+
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="w-5 h-5 text-green-500" />;
       case 'active': return <Clock className="w-5 h-5 text-blue-500" />;
@@ -130,7 +105,7 @@ const ProductLifecycle = () => {
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'border-green-200 bg-green-50';
       case 'active': return 'border-blue-200 bg-blue-50';
@@ -139,15 +114,73 @@ const ProductLifecycle = () => {
     }
   };
 
-  // Function to add viewed product to Firebase
-  const addViewedProduct = async (productId) => {
+  const addViewedProduct = async (productId: string) => {
     if (user) {
-      // Fix document path to have even number of segments
-      const productRef = doc(db, `users/${user.uid}/productLifecycleViewedProducts`, productId);
+      const productRef = doc(db, `users/${user.uid}/productLifecycleViewedProducts`, productId.toString());
       await setDoc(productRef, {
         viewedAt: new Date(),
-        productId: productId // Store the product ID as well
-      }, { merge: true }); // Use merge to avoid overwriting
+      }, { merge: true });
+    }
+  };
+
+  if (!product) {
+    return <div>No product data available.</div>;
+  }
+
+  const totalImpact = (displayProduct.stages ?? []).reduce((acc: { co2: number; water: number; energy: number }, stage: any) => ({
+    co2: acc.co2 + (stage.impact?.co2 || 0),
+    water: acc.water + (stage.impact?.water || 0),
+    energy: acc.energy + (stage.impact?.energy || 0)
+  }), { co2: 0, water: 0, energy: 0 });
+
+  const saveProductLifecycle = async () => {
+    if (!user) {
+      alert('You must be logged in to save lifecycle data.');
+      return;
+    }
+    try {
+      // Create a copy of product without icon functions in stages
+      const sanitizedStages = (product.stages ?? []).map((stage: any) => {
+        const { icon, ...rest } = stage;
+        return {
+          ...rest,
+          iconName: icon?.displayName || null, // Save iconName for restoring icon later
+        };
+      });
+
+      // Include other product details explicitly to save all relevant info
+      const sanitizedProduct = {
+        id: product.id,
+        name: product.name,
+        brand: product.brand,
+        price: product.price,
+        image: product.image,
+        sustainabilityScore: product.sustainabilityScore,
+        carbon: product.carbon,
+        water: product.water,
+        packaging: product.packaging,
+        certifications: product.certifications,
+        materials: product.materials,
+        origin: product.origin,
+        barcode: product.barcode,
+        alternatives: product.alternatives,
+        features: product.features,
+        inStock: product.inStock,
+        rating: product.rating,
+        reviews: product.reviews,
+        description: product.description,
+        category: product.category,
+        sustainability: product.sustainability,
+        stages: sanitizedStages,
+      };
+
+      const productRef = doc(db, `users/${user.uid}/savedProductLifecycles`, product.id.toString());
+      await setDoc(productRef, sanitizedProduct, { merge: true });
+      setSavedProduct(sanitizedProduct);
+      alert('Product lifecycle data saved successfully.');
+    } catch (error) {
+      console.error('Error saving product lifecycle data:', error);
+      alert('Failed to save product lifecycle data.');
     }
   };
 
@@ -155,49 +188,50 @@ const ProductLifecycle = () => {
     <div className="space-y-6">
       <Card className="bg-white/80 backdrop-blur-sm border-sage-200">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-sage-700">
-            <Package className="w-6 h-6" />
-            <span>Product Lifecycle Tracking</span>
-            {/* {user && viewedProducts[selectedProduct] && <Badge>Viewed: {new Date(viewedProducts[selectedProduct].viewedAt.toDate()).toLocaleDateString()}</Badge>} */}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center space-x-2 text-sage-700">
+              <Package className="w-6 h-6" />
+              <span>Product Lifecycle Tracking</span>
+            </CardTitle>
+            <Button onClick={saveProductLifecycle} className="bg-emerald-500 hover:bg-emerald-600 text-white">
+              Save
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          {/* Product Overview */}
           <div className="bg-gradient-to-r from-sage-50 to-emerald-50 rounded-xl p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-xl font-bold text-sage-800">{currentProduct.name}</h3>
-                <p className="text-sage-600">{currentProduct.brand}</p>
-              </div>
-              <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-lg px-4 py-2">
-                {currentProduct.sustainabilityScore}/100
-              </Badge>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-xl font-bold text-sage-800">{displayProduct.name}</h3>
+              <p className="text-sage-600">{displayProduct.brand || 'N/A'}</p>
             </div>
-            
-            {/* Total Impact Summary */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Globe className="w-5 h-5 text-red-500 mr-2" />
-                  <span className="text-2xl font-bold text-red-600">{totalImpact.co2.toFixed(1)}</span>
-                </div>
-                <p className="text-sm text-sage-600">kg CO₂</p>
+            <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-lg px-4 py-2">
+              {displayProduct.sustainabilityScore || 'N/A'}/100
+            </Badge>
+          </div> 
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Globe className="w-5 h-5 text-red-500 mr-2" />
+                <span className="text-2xl font-bold text-red-600">{totalImpact.co2.toFixed(1)}</span>
               </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Droplets className="w-5 h-5 text-blue-500 mr-2" />
-                  <span className="text-2xl font-bold text-blue-600">{totalImpact.water}</span>
-                </div>
-                <p className="text-sm text-sage-600">L Water</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Zap className="w-5 h-5 text-yellow-500 mr-2" />
-                  <span className="text-2xl font-bold text-yellow-600">{totalImpact.energy}</span>
-                </div>
-                <p className="text-sm text-sage-600">kWh Energy</p>
-              </div>
+              <p className="text-sm text-sage-600">kg CO₂</p>
             </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Droplets className="w-5 h-5 text-blue-500 mr-2" />
+                <span className="text-2xl font-bold text-blue-600">{totalImpact.water}</span>
+              </div>
+              <p className="text-sm text-sage-600">L Water</p>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Zap className="w-5 h-5 text-yellow-500 mr-2" />
+                <span className="text-2xl font-bold text-yellow-600">{totalImpact.energy}</span>
+              </div>
+              <p className="text-sm text-sage-600">kWh Energy</p>
+            </div>
+          </div>
           </div>
 
           <Tabs defaultValue="timeline" className="w-full">
@@ -206,15 +240,14 @@ const ProductLifecycle = () => {
               <TabsTrigger value="impact">Impact Analysis</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="timeline" className="space-y-6" onPointerEnter={() => addViewedProduct(selectedProduct)}> {/* Trigger addViewedProduct on tab enter */}
-              {/* Lifecycle Stages */}
+            <TabsContent value="timeline" className="space-y-6" onPointerEnter={() => displayProduct.id && addViewedProduct(displayProduct.id)}>
               <div className="space-y-4">
-                {currentProduct.stages.map((stage, index) => (
-                  <div key={index} className={`p-6 rounded-xl border-2 ${getStatusColor(stage.status)} transition-all duration-300`}>
+                {(displayProduct.stages ?? []).map((stage: any) => (
+                  <div key={stage.name} className={`p-6 rounded-xl border-2 ${getStatusColor(stage.status)} transition-all duration-300`}>
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-12 h-12 bg-sage-600 rounded-xl flex items-center justify-center">
-                          <stage.icon className="w-6 h-6 text-white" />
+                          {stage.icon ? <stage.icon className="w-6 h-6 text-white" /> : null}
                         </div>
                         <div>
                           <h3 className="font-semibold text-sage-800 flex items-center space-x-2">
@@ -224,11 +257,11 @@ const ProductLifecycle = () => {
                           <div className="flex items-center space-x-4 text-sm text-sage-600 mt-1">
                             <div className="flex items-center space-x-1">
                               <MapPin className="w-3 h-3" />
-                              <span>{stage.location}</span>
+                              <span>{stage.location || 'N/A'}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <Clock className="w-3 h-3" />
-                              <span>{stage.duration}</span>
+                              <span>{stage.duration || 'N/A'}</span>
                             </div>
                           </div>
                         </div>
@@ -251,9 +284,7 @@ const ProductLifecycle = () => {
                         </div>
                       </div>
                     </div>
-                    
                     <p className="text-sage-700">{stage.details}</p>
-                    
                     {stage.status === 'active' && (
                       <div className="mt-4">
                         <div className="flex justify-between text-sm text-sage-600 mb-2">
@@ -284,7 +315,6 @@ const ProductLifecycle = () => {
                         <Progress value={65} className="h-2" />
                         <p className="text-xs text-sage-500 mt-1">35% lower than industry average</p>
                       </div>
-                      
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Water Usage</span>
@@ -293,7 +323,6 @@ const ProductLifecycle = () => {
                         <Progress value={45} className="h-2" />
                         <p className="text-xs text-sage-500 mt-1">55% lower than conventional cotton</p>
                       </div>
-                      
                       <div>
                         <div className="flex justify-between text-sm mb-1">
                           <span>Energy Consumption</span>
@@ -305,7 +334,6 @@ const ProductLifecycle = () => {
                     </div>
                   </CardContent>
                 </Card>
-
                 <Card className="border-sage-200">
                   <CardHeader>
                     <CardTitle className="text-sage-700">Sustainability Certifications</CardTitle>
@@ -321,7 +349,6 @@ const ProductLifecycle = () => {
                           <p className="text-xs text-sage-600">Global Organic Textile Standard</p>
                         </div>
                       </div>
-                      
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                           <CheckCircle className="w-5 h-5 text-white" />
@@ -331,7 +358,6 @@ const ProductLifecycle = () => {
                           <p className="text-xs text-sage-600">Ethical labor practices</p>
                         </div>
                       </div>
-                      
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                           <CheckCircle className="w-5 h-5 text-white" />

@@ -96,12 +96,6 @@ const Navbar = ({
     { id: 'recipe-finder', label: 'Eco Recipes', icon: ChefHat },
     { id: 'transportation-planner', label: 'Transport Planner', icon: Navigation },
     { id: 'lifecycle', label: 'Product Lifecycle', icon: Package },
-    { id: 'environmental-alerts', label: 'Env. Alerts', icon: AlertTriangle }
-  ];
-
-  const businessItems = [
-    { id: 'esg-analyzer', label: 'ESG Analysis', icon: Building2 },
-    { id: 'investment-tracker', label: 'Green Investments', icon: TrendingUp }
   ];
 
   const handleLogout = () => {
@@ -327,33 +321,6 @@ const Navbar = ({
                       </div>
                     </div>
 
-                    {/* Business */}
-                    <div>
-                      <div className="px-3 py-2 text-xs font-semibold text-emerald-700 uppercase tracking-wide border-b border-emerald-100 dark:text-emerald-400 dark:border-emerald-800">
-                        Business
-                      </div>
-                      <div className="mt-2 space-y-1">
-                        {businessItems.map((item) => (
-                          <Button
-                            key={item.id}
-                            variant={activeTab === item.id ? "default" : "ghost"}
-                            size="sm"
-                            className={`w-full justify-start pl-6 transition-all duration-200 rounded-lg ${
-                              activeTab === item.id
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-emerald-400'
-                            }`}
-                            onClick={() => {
-                              onNavigate(item.id);
-                              setActiveDropdown(null);
-                            }}
-                          >
-                            <item.icon className="w-4 h-4 mr-3" />
-                            {item.label}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                 </div>
               )}
@@ -754,28 +721,6 @@ const Navbar = ({
                   </Button>
                 ))}
               </div>
-
-              {/* Business */}
-              <div className="mb-4">
-                <div className="px-4 py-2 text-xs font-semibold text-emerald-700 uppercase tracking-wide border-b border-emerald-100 dark:text-emerald-400 dark:border-emerald-800">
-                  Business
-                </div>
-                {businessItems.map((item) => (
-                  <Button
-                    key={item.id}
-                    variant={activeTab === item.id ? "default" : "ghost"}
-                    className="w-full justify-start pl-6 transition-all duration-200"
-                    onClick={() => {
-                      onNavigate(item.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    <item.icon className="w-4 h-4 mr-3" />
-                    {item.label}
-                  </Button>
-                ))}
-              </div>
-
               <div className="pt-4 border-t border-gray-200 space-y-2 dark:border-gray-700">
                 {user ? (
                   <>
