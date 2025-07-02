@@ -115,8 +115,6 @@ interface UserDataContextType {
   addToCart: (product: ScannedProduct) => Promise<void>;
   incrementRecipeViewed: () => void;
   incrementTransportTrip: () => void;
-  incrementESGReport: () => void;
-  incrementInvestment: () => void;
   loading: boolean;
 }
 
@@ -457,6 +455,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         selectedTab
       }).catch(error => {
         console.error('Error saving AI Recommendations state to Firestore:', error);
+        console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
       });
     }
     localStorage.setItem('completedActions', JSON.stringify(completedActions));
@@ -663,13 +662,6 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     incrementUserStat('transportTrips', 20);
   };
 
-  const incrementESGReport = () => {
-    incrementUserStat('esgReports', 30);
-  };
-
-  const incrementInvestment = () => {
-    incrementUserStat('investmentsMade', 100);
-  };
 
 
   return (
@@ -699,8 +691,6 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       incrementCourseCompleted,
       incrementRecipeViewed,
       incrementTransportTrip,
-      incrementESGReport,
-      incrementInvestment,
       loading
     }}>
       {children}

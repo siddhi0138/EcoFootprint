@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Dispatch } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -23,15 +23,14 @@ import EducationCenter from '../components/EducationCenter';
 import NotificationCenter from '../components/NotificationCenter';
 import UserProfile from '../components/UserProfile';
 import AIRecommendations from '../components/AIRecommendations';
-import EnvironmentalAlerts from '../components/EnvironmentalAlerts';
+/* Removed import of EnvironmentalAlerts as it was deleted */
+// import EnvironmentalAlerts from '../components/EnvironmentalAlerts';
 import RewardsSystem from '../components/RewardsSystem';
 import ProductLifecycle from '../components/ProductLifecycle';
 import SustainabilityChallenges from '../components/SustainabilityChallenges';
 import SocialImpactHub from '../components/SocialImpactHub';
 import SmartInsights from '../components/SmartInsights';
 import LiveEvents from '../components/LiveEvents';
-import InvestmentTracker from '../components/InvestmentTracker';
-import ESGAnalyzer from '../components/ESGAnalyzer';
 import TransportationPlanner from '../components/TransportationPlanner';
 import { EcoRecipeFinder } from '../components/EcoRecipeFinder';
 import EcoChatbot from '../components/EcoChatbot';
@@ -49,9 +48,28 @@ const Index = () => {
   const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
   const [activeTab, setActiveTab] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
-  const [scannedProduct, setScannedProduct] = useState(null);
+  const [scannedProduct, setScannedProductState] = useState<any>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [recentScans, setRecentScans] = useState([]);
+
+  // Load scannedProduct from localStorage on mount
+  React.useEffect(() => {
+    const savedProduct = localStorage.getItem('scannedProduct');
+    if (savedProduct) {
+      setScannedProductState(JSON.parse(savedProduct));
+      setActiveTab('lifecycle');
+    }
+  }, []);
+
+  // Wrapper to set scannedProduct and save to localStorage
+  const setScannedProduct = (product: any) => {
+    setScannedProductState(product);
+    if (product) {
+      localStorage.setItem('scannedProduct', JSON.stringify(product));
+    } else {
+      localStorage.removeItem('scannedProduct');
+    }
+  };
 
   const handleGetStarted = () => {
     setIsLoginModalOpen(true);
@@ -122,7 +140,7 @@ const Index = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsContent value="scanner" className="mt-6">
               <ProductScanner onTabChange={setActiveTab} scannedProduct={scannedProduct} setScannedProduct={setScannedProduct} />
-            </TabsContent>
+            </TabsContent>            
 
             <TabsContent value="chatbot" className="mt-6">
               <EcoChatbot />
@@ -195,9 +213,9 @@ const Index = () => {
               <ProductAnalysis product={scannedProduct} />
             </TabsContent>
 
-            <TabsContent value="comparison" className="mt-4">
-              <ProductComparison scannedProduct={scannedProduct} setScannedProduct={setScannedProduct} />
-            </TabsContent>
+<TabsContent value="comparison" className="mt-4">
+  <ProductComparison />
+</TabsContent>
 
             <TabsContent value="companies" className="mt-4">
               <CompanyProfile />
@@ -232,7 +250,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="environmental-alerts" className="mt-4">
-              <EnvironmentalAlerts />
+  {/* EnvironmentalAlerts component removed as per user request */}
             </TabsContent>
 
             <TabsContent value="rewards" className="mt-4">
@@ -240,7 +258,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="lifecycle" className="mt-4">
-              <ProductLifecycle />
+              <ProductLifecycle product={scannedProduct} />
             </TabsContent>
 
             <TabsContent value="challenges" className="mt-4">
@@ -257,14 +275,6 @@ const Index = () => {
 
             <TabsContent value="live-events" className="mt-4">
               <LiveEvents />
-            </TabsContent>
-
-            <TabsContent value="investment-tracker" className="mt-4">
-              <InvestmentTracker />
-            </TabsContent>
-
-            <TabsContent value="esg-analyzer" className="mt-4">
-              <ESGAnalyzer />
             </TabsContent>
 
             <TabsContent value="transportation-planner" className="mt-4">

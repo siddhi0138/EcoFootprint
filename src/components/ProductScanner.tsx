@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -28,6 +29,7 @@ import {
   setDoc,
   serverTimestamp,
 } from "firebase/firestore";
+import { Factory, Truck, Package } from 'lucide-react';
 import { useAuth } from "../contexts/AuthContext";
 import { db } from "../firebase";
 import { getRandomProducts } from '../data/productsData';
@@ -36,8 +38,14 @@ import { useProductComparison } from '../contexts/ProductComparisonContext';
 
 import { useCart } from "../contexts/CartContext";
 
-const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
-  const { scannedProducts, addScannedProduct } = useUserData();
+interface ProductScannerProps {
+  scannedProduct: any; // Define a more specific type if possible
+  setScannedProduct: React.Dispatch<any>; // Define a more specific type if possible
+  onTabChange?: (tab: string) => void;
+}
+
+const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScannedProduct, onTabChange }) => {
+  const navigate = useNavigate();  const { scannedProducts, addScannedProduct } = useUserData();
   const { addToCart } = useCart();
   const { addProductToComparison } = useProductComparison();
   const [isScanning, setIsScanning] = useState(false);
@@ -99,7 +107,45 @@ const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
           energy: Math.floor(randomProduct.sustainabilityScore * 0.92),
           ethics: Math.floor(randomProduct.sustainabilityScore * 1.05),
           overall: randomProduct.sustainabilityScore
-        }
+        },
+        stages: [
+          {
+            name: 'Raw Material Sourcing',
+            status: 'completed',
+            location: 'California, USA',
+            duration: '2 weeks',
+            impact: { co2: 1.2, water: 500, energy: 300 },
+            details: 'Sustainable sourcing of raw materials from certified farms.',
+            icon: () => <Factory className="w-6 h-6 text-white" />
+          },
+          {
+            name: 'Manufacturing',
+            status: 'active',
+            location: 'Oregon, USA',
+            duration: '4 weeks',
+            impact: { co2: 2.5, water: 800, energy: 1200 },
+            details: 'Eco-friendly manufacturing processes with renewable energy.',
+            icon: () => <Factory className="w-6 h-6 text-white" />
+          },
+          {
+            name: 'Transportation',
+            status: 'pending',
+            location: 'Distribution Center',
+            duration: '1 week',
+            impact: { co2: 0.8, water: 100, energy: 400 },
+            details: 'Low-emission transportation to retail locations.',
+            icon: () => <Truck className="w-6 h-6 text-white" />
+          },
+          {
+            name: 'Retail',
+            status: 'pending',
+            location: 'Various Stores',
+            duration: 'Ongoing',
+            impact: { co2: 0.5, water: 50, energy: 200 },
+            details: 'Sustainable retail practices and packaging.',
+            icon: () => <Package className="w-6 h-6 text-white" />
+          }
+        ]
       };
       
       setDetectedProduct(productData);
@@ -212,7 +258,45 @@ const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
           energy: Math.floor(product.sustainabilityScore * 0.92),
           ethics: Math.floor(product.sustainabilityScore * 1.05),
           overall: product.sustainabilityScore
-        }
+        },
+        stages: [
+          {
+            name: 'Raw Material Sourcing',
+            status: 'completed',
+            location: 'California, USA',
+            duration: '2 weeks',
+            impact: { co2: 1.2, water: 500, energy: 300 },
+            details: 'Sustainable sourcing of raw materials from certified farms.',
+            icon: () => <Factory className="w-6 h-6 text-white" />
+          },
+          {
+            name: 'Manufacturing',
+            status: 'active',
+            location: 'Oregon, USA',
+            duration: '4 weeks',
+            impact: { co2: 2.5, water: 800, energy: 1200 },
+            details: 'Eco-friendly manufacturing processes with renewable energy.',
+            icon: () => <Factory className="w-6 h-6 text-white" />
+          },
+          {
+            name: 'Transportation',
+            status: 'pending',
+            location: 'Distribution Center',
+            duration: '1 week',
+            impact: { co2: 0.8, water: 100, energy: 400 },
+            details: 'Low-emission transportation to retail locations.',
+            icon: () => <Truck className="w-6 h-6 text-white" />
+          },
+          {
+            name: 'Retail',
+            status: 'pending',
+            location: 'Various Stores',
+            duration: 'Ongoing',
+            impact: { co2: 0.5, water: 50, energy: 200 },
+            details: 'Sustainable retail practices and packaging.',
+            icon: () => <Package className="w-6 h-6 text-white" />
+          }
+        ]
       };
       
       setDetectedProduct(productData);
@@ -617,13 +701,20 @@ const ProductScanner = ({ onTabChange, scannedProduct, setScannedProduct }) => {
                 </div>
 
                 <div className="flex flex-wrap gap-3 mt-6">
-                  <Button 
-                    className="bg-slate-800 hover:bg-slate-900"
-                    onClick={() => onTabChange && onTabChange('lifecycle')}
-                  >
-                    View Full Analysis
-                  </Button>
-                  <Button 
+                  {detectedProduct && (
+                    <Button 
+                      className="bg-slate-800 hover:bg-slate-900"
+                      onClick={() => {
+                        setScannedProduct(detectedProduct);
+                        if (onTabChange) {
+                          onTabChange('lifecycle');
+                        }
+                      }}
+                    >
+                      View Full Analysis
+                    </Button>
+                  )}
+ <Button
                     variant="outline" 
                     className="border-slate-300"
                     onClick={() => onTabChange && onTabChange('comparison')}
