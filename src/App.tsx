@@ -9,6 +9,7 @@ import { CartProvider } from "./contexts/CartContext";
 import { UserDataProvider } from "./contexts/UserDataContext"; // Import UserDataProvider
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { Navigate } from "react-router-dom";
 import Goals from "./pages/Goals";
 import ProductLifecycle from "./components/ProductLifecycle";
 import ProductComparison from "./components/ProductComparison";
@@ -35,7 +36,7 @@ const App = () => (
                     <Route path="/product-lifecycle" element={<Layout><ProductLifecycle /></Layout>} />
                     <Route path="/product-comparison" element={<Layout><ProductComparison /></Layout>} />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} /> {/* NotFound can be outside the layout if you want a different layout for 404 */}
+                    <Route path="*" element={<Navigate to="/" replace />} /> {/* Redirect all unknown routes to homepage */}
                   </Routes>
                 </BrowserRouter>
               </TooltipProvider>
