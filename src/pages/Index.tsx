@@ -57,7 +57,8 @@ const Index = () => {
     const savedProduct = localStorage.getItem('scannedProduct');
     if (savedProduct) {
       setScannedProductState(JSON.parse(savedProduct));
-      setActiveTab('lifecycle');
+      // Removed setting activeTab to 'lifecycle' to always show homepage on refresh
+      // setActiveTab('lifecycle');
     }
   }, []);
 
