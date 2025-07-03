@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { collection, getDocs, setDoc, query, where, deleteDoc, doc } from 'firebase/firestore';
+import { useCart } from '../contexts/CartContext'; // Import useCart for cart context
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -7,21 +9,73 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Search, ShoppingCart, Star, Leaf, Award, Filter, Heart, Share2, Eye, TrendingUp, Download, BarChart3 } from 'lucide-react';
 import { productsData, searchProducts, getProductsByCategory } from '@/data/productsData';
-import { useUserData } from '@/contexts/UserDataContext';
+import { useUserData } from '/home/user/EcoFootprint/src/contexts/UserDataContext.tsx'; // Use absolute path
 import { useToast } from '@/hooks/use-toast';
+import { db } from '@/firebase'; // Import Firestore instance
+import { useAuth } from '@/contexts/AuthContext'; // Import AuthContext
+
+interface Product {
+  id: number;
+  name: string;
+  brand: string;
+  category: string;
+  description: string;
+  price: number;
+  originalPrice: number;
+  sustainabilityScore: number;
+  rating: number;
+  reviews: number;
+  inStock: boolean;
+  fastShipping: boolean;
+  origin: string;
+  features?: string[];
+  co2Saved?: string;
+  detailedAnalysis?: {
+    environmentalImpact?: string;
+    socialImpact?: string;
+    economicImpact?: string;
+  };
+  carbonFootprint?: {
+    production?: string;
+    transport?: string;
+    total?: string;
+  };
+  waterUsage?: string;
+  energySource?: string;
+  materials?: string[];
+  certifications?: string[];
+}
 
 const SustainabilityMarketplace = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('score');
   const [favorites, setFavorites] = useState([]);
-  const [cart, setCart] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { addPoints } = useUserData();
   const { toast } = useToast();
+  const { currentUser } = useAuth(); // Get current user from AuthContext
+  const { addToCart } = useCart();
+
+  // Fetch marketplace data from Firestore on component mount
+      useEffect(() => {
+        const fetchMarketplaceData = async () => {
+          if (currentUser) {
+            const favoritesRef = collection(db, 'users', currentUser.uid, 'favorites'); // Corrected path
+            const favoritesSnapshot = await getDocs(favoritesRef);
+            const userFavorites = favoritesSnapshot.docs.map(doc => {
+              console.log('Favorite doc id:', doc.id, 'productId:', doc.data().productId);
+              return doc.data().productId;
+            });
+            setFavorites(userFavorites);
+          }
+        };
+
+    fetchMarketplaceData();
+  }, [currentUser]);
 
   // More specific image mapping based on product names and categories
-  const getProductImage = (product, size = '400x300') => {
+  const getProductImage = (product: Product, size = '400x300') => {
     const imageMap = {
       // Personal Care
       'toothbrush': 'photo-1607613009820-a29f7bb81c04', // bamboo toothbrush
@@ -167,16 +221,18 @@ const SustainabilityMarketplace = () => {
   };
 
   // Get products based on search and filters
-  const getFilteredProducts = () => {
+  const getFilteredProducts = (): Product[] => {
     let products = productsData.slice(0, 100); // Show first 100 for performance
     
     if (searchQuery) {
       products = searchProducts(searchQuery).slice(0, 100);
     }
     
-    if (selectedCategory !== 'all') {
-      products = products.filter(product => product.category === selectedCategory);
-    }
+      if (selectedCategory === 'favorites') {
+        products = products.filter(product => favorites.includes(product.id.toString()));
+      } else if (selectedCategory !== 'all') {
+        products = products.filter(product => product.category === selectedCategory);
+      }
     
     return products.sort((a, b) => {
       switch (sortBy) {
@@ -193,6 +249,7 @@ const SustainabilityMarketplace = () => {
 
   const categories = [
     { id: 'all', label: 'All Products', icon: ShoppingCart, count: productsData.length },
+    { id: 'favorites', label: 'Favorites', icon: Heart, count: favorites.length },
     { id: 'personal-care', label: 'Personal Care', icon: Star, count: getProductsByCategory('personal-care').length },
     { id: 'food-beverage', label: 'Food & Beverage', icon: Award, count: getProductsByCategory('food-beverage').length },
     { id: 'electronics', label: 'Electronics', icon: Leaf, count: getProductsByCategory('electronics').length },
@@ -200,44 +257,38 @@ const SustainabilityMarketplace = () => {
     { id: 'home-garden', label: 'Home & Garden', icon: Heart, count: getProductsByCategory('home-garden').length }
   ];
 
-  const toggleFavorite = (productId) => {
-    setFavorites(prev => {
-      const newFavorites = prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId];
-      
-      if (!prev.includes(productId)) {
-        addPoints(5);
-        toast({
-          title: "Product Favorited!",
-          description: "You earned 5 points for favoriting a product!",
-        });
-      }
-      
-      return newFavorites;
-    });
-  };
+  const toggleFavorite = async (productId: number) => {
+    if (!currentUser) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to favorite products.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const addToCart = (product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      let newCart;
-      if (existing) {
-        newCart = prev.map(item => 
-          item.id === product.id 
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      } else {
-        newCart = [...prev, { ...product, quantity: 1 }];
-        addPoints(10);
-        toast({
-          title: "Added to Cart!",
-          description: `${product.name} added to cart. You earned 10 points!`,
-        });
-      }
-      return newCart;
-    });
+    // Corrected: Get reference to the 'favorites' subcollection
+    const favoritesCollectionRef = collection(db, 'users', currentUser.uid, 'favorites');
+    const favoriteDocRef = doc(db, 'users', currentUser.uid, 'favorites', productId.toString());
+
+    const productIdString = productId.toString();
+
+    if (favorites.includes(productIdString)) {
+      // Remove from favorites (Firestore)
+      await deleteDoc(favoriteDocRef);
+      setFavorites(prev => prev.filter(id => id !== productIdString));
+      // Removed redundant toast notification
+      // toast({ title: "Product Unfavorited", description: "This product has been removed from your favorites." });
+    } else {
+      // Add to favorites (Firestore)
+      await setDoc(favoriteDocRef, { productId: productIdString });
+      setFavorites(prev => [...prev, productIdString]);
+      addPoints(5);
+      toast({
+        title: "Product Favorited!",
+        description: "You earned 5 points for favoriting a product!",
+      });
+    }
   };
 
   const shareProduct = (product) => {
@@ -332,9 +383,10 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
               <Badge className="bg-green-600 text-white">
                 {filteredProducts.length} Products
               </Badge>
-              <Badge variant="outline" className="border-blue-300 text-blue-700">
+              {/* Removed cart count badge as part of removing incart feature */}
+              {/* <Badge variant="outline" className="border-blue-300 text-blue-700">
                 {cart.length} in Cart
-              </Badge>
+              </Badge> */}
             </div>
           </CardTitle>
           <p className="text-gray-600">Discover and purchase eco-friendly alternatives that make a difference</p>
@@ -416,18 +468,18 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                       size="sm"
                       variant="outline"
                       className="w-8 h-8 p-0 bg-white/90 hover:bg-white"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      onClick={async (e) => {
+                        e.stopPropagation(); // Prevent opening dialog
                         toggleFavorite(product.id);
                       }}
                     >
-                      <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
+                      <Heart className={`w-4 h-4 ${favorites.includes(product.id.toString()) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       className="w-8 h-8 p-0 bg-white/90 hover:bg-white"
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         shareProduct(product);
                       }}
@@ -498,9 +550,16 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
 
                     {/* Action Buttons */}
                     <div className="flex gap-2 pt-2">
+                      {/* Removed Add to Cart button as part of removing incart feature */}
                       <Button 
                         className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                        onClick={() => addToCart(product)}
+                        onClick={() => addToCart({
+                          id: product.id.toString(),
+                          name: product.name,
+                          price: product.price,
+                          image: getProductImage(product),
+                          brand: product.brand
+                        })}
                         disabled={!product.inStock}
                       >
                         {product.inStock ? (
@@ -578,9 +637,16 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                             )}
                             
                             <div className="flex gap-2">
+                              {/* Removed Add to Cart button in dialog as part of removing incart feature */}
                               <Button 
                                 className="flex-1"
-                                onClick={() => addToCart(product)}
+                                onClick={() => addToCart({
+                                  id: product.id.toString(),
+                                  name: product.name,
+                                  price: product.price,
+                                  image: getProductImage(product),
+                                  brand: product.brand
+                                })}
                                 disabled={!product.inStock}
                               >
                                 <ShoppingCart className="w-4 h-4 mr-2" />
