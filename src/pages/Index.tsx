@@ -38,12 +38,14 @@ import AuthModal from '../components/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
 import { UserDataProvider } from '../contexts/UserDataContext';
 import { CartProvider, useCart } from '../contexts/CartContext';
+import { useUserData } from '../contexts/UserDataContext';
 import Checkout from './Checkout';
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 
 const Index = () => {
   const { user } = useAuth();
+  const { addScannedProduct } = useUserData();
 
   const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
   const [activeTab, setActiveTab] = useState('home');
@@ -53,22 +55,42 @@ const Index = () => {
   const [recentScans, setRecentScans] = useState([]);
 
   // Load scannedProduct from localStorage on mount
-  React.useEffect(() => {
-    const savedProduct = localStorage.getItem('scannedProduct');
-    if (savedProduct) {
-      setScannedProductState(JSON.parse(savedProduct));
-      // Removed setting activeTab to 'lifecycle' to always show homepage on refresh
-      // setActiveTab('lifecycle');
-    }
-  }, []);
+  // Disabled automatic loading to prevent default scans on refresh
+  // React.useEffect(() => {
+  //   const savedProduct = localStorage.getItem('scannedProduct');
+  //   if (savedProduct) {
+  //     setScannedProductState(JSON.parse(savedProduct));
+  //     // Removed setting activeTab to 'lifecycle' to always show homepage on refresh
+  //     // setActiveTab('lifecycle');
+  //   }
+  // }, []);
 
-  // Wrapper to set scannedProduct and save to localStorage
+  // Wrapper to set scannedProduct without saving to localStorage automatically
   const setScannedProduct = (product: any) => {
     setScannedProductState(product);
-    if (product) {
-      localStorage.setItem('scannedProduct', JSON.stringify(product));
-    } else {
-      localStorage.removeItem('scannedProduct');
+  };
+
+  // Utility function to sanitize product object by removing function properties
+  const sanitizeProduct = (product: any) => {
+    if (!product) return product;
+    const sanitized = { ...product };
+    if (sanitized.stages && Array.isArray(sanitized.stages)) {
+      sanitized.stages = sanitized.stages.map((stage: any) => {
+        const { icon, ...rest } = stage;
+        return rest;
+      });
+    }
+    return sanitized;
+  };
+
+  // Explicit save function to save scanned product to localStorage and recent scans
+  const saveScannedProductHandler = (product: any) => {
+    if (!product) return;
+    const sanitizedProduct = sanitizeProduct(product);
+    setScannedProductState(sanitizedProduct);
+    localStorage.setItem('scannedProduct', JSON.stringify(sanitizedProduct));
+    if (addScannedProduct) {
+      addScannedProduct(sanitizedProduct);
     }
   };
 
@@ -139,9 +161,9 @@ const Index = () => {
       <div className="pt-20">
         <div className="container mx-auto px-6 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsContent value="scanner" className="mt-6">
-              <ProductScanner onTabChange={setActiveTab} scannedProduct={scannedProduct} setScannedProduct={setScannedProduct} />
-            </TabsContent>            
+              <TabsContent value="scanner" className="mt-6">
+                <ProductScanner onTabChange={setActiveTab} scannedProduct={scannedProduct} setScannedProduct={setScannedProduct} saveScannedProduct={saveScannedProductHandler} />
+              </TabsContent>            
 
             <TabsContent value="chatbot" className="mt-6">
               <EcoChatbot />

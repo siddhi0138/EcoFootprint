@@ -10,6 +10,20 @@ export interface ScannedProduct {
   category?: string;
   price?: number;
   image?: string;
+  metrics?: {
+    carbon: number;
+    water: number;
+    waste: number;
+    energy: number;
+    ethics: number;
+  };
+  certifications?: string[];
+  pros?: string[];
+  cons?: string[];
+  rating?: number;
+  reviews?: number;
+  inStock?: boolean;
+  features?: string[];
 }
 
 interface ProductComparisonContextType {

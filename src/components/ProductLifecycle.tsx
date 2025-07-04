@@ -145,6 +145,8 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
         return {
           ...rest,
           iconName: icon?.displayName || null, // Save iconName for restoring icon later
+          details: stage.details || '', // Save details field explicitly
+          progress: stage.progress || null, // Save progress if exists (e.g., progress through use phase)
         };
       });
 
