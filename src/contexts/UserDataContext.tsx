@@ -445,6 +445,15 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     if (currentUser) {
       const userDocRef = doc(db, 'users', currentUser.uid);
       const sanitizedActionProgress = sanitizeActionProgress(actionProgress);
+      console.log('Saving AI Recommendations state to Firestore:', {
+        completedActions,
+        actionProgress: sanitizedActionProgress,
+        selectedAICategory,
+        selectedAIPriority,
+        selectedCategory,
+        selectedPriority,
+        selectedTab
+      });
       updateDoc(userDocRef, {
         completedActions,
         actionProgress: sanitizedActionProgress,
@@ -453,6 +462,8 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         selectedCategory,
         selectedPriority,
         selectedTab
+      }).then(() => {
+        console.log('Successfully saved AI Recommendations state to Firestore');
       }).catch(error => {
         console.error('Error saving AI Recommendations state to Firestore:', error);
         console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));

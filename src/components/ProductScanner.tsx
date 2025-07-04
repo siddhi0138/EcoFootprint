@@ -44,7 +44,14 @@ interface ProductScannerProps {
   onTabChange?: (tab: string) => void;
 }
 
-const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScannedProduct, onTabChange }) => {
+interface ProductScannerProps {
+  scannedProduct: any; // Define a more specific type if possible
+  setScannedProduct: React.Dispatch<any>; // Define a more specific type if possible
+  onTabChange?: (tab: string) => void;
+  saveScannedProduct?: (product: any) => void;
+}
+
+const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScannedProduct, onTabChange, saveScannedProduct }) => {
   const navigate = useNavigate();  const { scannedProducts, addScannedProduct } = useUserData();
   const { addToCart } = useCart();
   const { addProductToComparison } = useProductComparison();
@@ -151,18 +158,50 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
       setDetectedProduct(productData);
       
       // Add to user's scanned products
-      const today = new Date();
-      addScannedProduct({
+      // Removed automatic addScannedProduct call to prevent default saving
+      // const today = new Date();
+      // addScannedProduct({
+      //   id: randomProduct.id.toString(),
+      //   name: randomProduct.name,
+      //   brand: randomProduct.brand,
+      //   sustainabilityScore: randomProduct.sustainabilityScore,
+      //   category: randomProduct.category,
+      //   date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`,
+      //   alternatives: randomProduct.alternatives, // Store alternatives here
+      //   source: 'ProductScanner',
+      // });
+      // Add to product comparison
+      addProductToComparison({
         id: randomProduct.id.toString(),
         name: randomProduct.name,
         brand: randomProduct.brand,
         sustainabilityScore: randomProduct.sustainabilityScore,
         category: randomProduct.category,
-        date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`,
-        alternatives: randomProduct.alternatives, // Store alternatives here
-        source: 'ProductScanner',
+        date: new Date().toISOString(),
+        price: randomProduct.price,
+        image: `https://images.unsplash.com/${randomProduct.image}?w=400&h=400&fit=crop`,
+        metrics: {
+          carbon: Math.floor(randomProduct.sustainabilityScore * 0.9),
+          water: Math.floor(randomProduct.sustainabilityScore * 0.95),
+          waste: Math.floor(randomProduct.sustainabilityScore * 0.85),
+          energy: Math.floor(randomProduct.sustainabilityScore * 0.92),
+          ethics: Math.floor(randomProduct.sustainabilityScore * 1.05),
+        },
+        certifications: randomProduct.certifications || [],
+        pros: [
+          randomProduct.vegan ? 'Vegan friendly' : 'Quality materials',
+          randomProduct.packaging?.recyclable ? 'Recyclable packaging' : 'Durable design',
+          'Good sustainability score'
+        ],
+        cons: [
+          randomProduct.price > 50 ? 'Higher price point' : 'Limited color options',
+          'Consider shipping impact'
+        ],
+        rating: randomProduct.rating,
+        reviews: randomProduct.reviews,
+        inStock: randomProduct.inStock,
+        features: randomProduct.features,
       });
-      // Add to product comparison
       setIsScanning(false);
     }, 2000);
   };
@@ -300,15 +339,16 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
       };
       
       setDetectedProduct(productData);
-      addScannedProduct({
-        id: product.id.toString(),
-        name: product.name,
-        brand: product.brand,
-        sustainabilityScore: product.sustainabilityScore,
-        category: product.category,
-        date: new Date().toLocaleDateString(),
-        source: 'ProductScanner',
-      });
+      // Removed automatic addScannedProduct call to prevent default saving
+      // addScannedProduct({
+      //   id: product.id.toString(),
+      //   name: product.name,
+      //   brand: product.brand,
+      //   sustainabilityScore: product.sustainabilityScore,
+      //   category: product.category,
+      //   date: new Date().toLocaleDateString(),
+      //   source: 'ProductScanner',
+      // });
       // Add to product comparison
       addProductToComparison({
         id: product.id.toString(),
@@ -319,6 +359,27 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
         date: new Date().toISOString(),
         price: product.price,
         image: `https://images.unsplash.com/${product.image}?w=400&h=400&fit=crop`,
+        metrics: {
+          carbon: Math.floor(product.sustainabilityScore * 0.9),
+          water: Math.floor(product.sustainabilityScore * 0.95),
+          waste: Math.floor(product.sustainabilityScore * 0.85),
+          energy: Math.floor(product.sustainabilityScore * 0.92),
+          ethics: Math.floor(product.sustainabilityScore * 1.05),
+        },
+        certifications: product.certifications || [],
+        pros: [
+          product.vegan ? 'Vegan friendly' : 'Quality materials',
+          product.packaging?.recyclable ? 'Recyclable packaging' : 'Durable design',
+          'Good sustainability score'
+        ],
+        cons: [
+          product.price > 50 ? 'Higher price point' : 'Limited color options',
+          'Consider shipping impact'
+        ],
+        rating: product.rating,
+        reviews: product.reviews,
+        inStock: product.inStock,
+        features: product.features,
       });
       setIsScanning(false);
     }, 2000);
@@ -702,19 +763,28 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
 
                 <div className="flex flex-wrap gap-3 mt-6">
                   {detectedProduct && (
-                    <Button 
-                      className="bg-slate-800 hover:bg-slate-900"
-                      onClick={() => {
-                        setScannedProduct(detectedProduct);
-                        if (onTabChange) {
-                          onTabChange('lifecycle');
-                        }
-                      }}
-                    >
-                      View Full Analysis
-                    </Button>
+                    <>
+                      <Button 
+                        className="bg-slate-800 hover:bg-slate-900"
+                        onClick={() => {
+                          setScannedProduct(detectedProduct);
+                          if (onTabChange) {
+                            onTabChange('lifecycle');
+                          }
+                        }}
+                      >
+                        View Full Analysis
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-slate-300"
+                        onClick={() => saveScannedProduct && saveScannedProduct(detectedProduct)}
+                      >
+                        Save Scan
+                      </Button>
+                    </>
                   )}
- <Button
+                  <Button
                     variant="outline" 
                     className="border-slate-300"
                     onClick={() => onTabChange && onTabChange('comparison')}
@@ -726,7 +796,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                     className="border-green-300 text-green-700 hover:bg-green-50"
                     onClick={() => {
                       if (detectedProduct && detectedProduct.price !== undefined) {
- addToCart({
+                        addToCart({
                           id: detectedProduct.id.toString(),
                           name: detectedProduct.name,
                           price: detectedProduct.price,
