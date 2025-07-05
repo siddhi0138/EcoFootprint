@@ -327,7 +327,15 @@ const NotificationCenter = () => {
                             {notification.title}
                           </h3>
                           <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-500">{notification.timestamp}</span>
+<span className="text-xs text-gray-500">
+  {notification.timestamp
+    ? typeof notification.timestamp.toDate === 'function'
+      ? notification.timestamp.toDate().toLocaleString()
+      : notification.timestamp.seconds
+      ? new Date(notification.timestamp.seconds * 1000).toLocaleString()
+      : String(notification.timestamp)
+    : ''}
+</span>
                             {!notification.read && (
                               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                             )}
