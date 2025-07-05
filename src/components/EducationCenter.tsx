@@ -46,11 +46,23 @@ const EducationCenter = () => {
     updateCourseProgress,
     userStats,
     incrementCourseCompleted,
+    incrementRecipeViewed,
   } = useUserData();
   const { addCourseCompletionNotification, addRecipeViewNotification, addGeneralNotification } = useNotificationHelper();
-  const [likedArticles, setLikedArticles] = useState(new Set());
-  const [bookmarkedArticles, setBookmarkedArticles] = useState(new Set());
-  const [registeredWebinars, setRegisteredWebinars] = useState(new Set());
+  // Remove local state for likedArticles, bookmarkedArticles, registeredWebinars
+  // const [likedArticles, setLikedArticles] = useState(new Set());
+  // const [bookmarkedArticles, setBookmarkedArticles] = useState(new Set());
+  // const [registeredWebinars, setRegisteredWebinars] = useState(new Set());
+
+  // Use from context instead
+  const {
+    likedArticles,
+    bookmarkedArticles,
+    registeredWebinars,
+    likeArticle,
+    bookmarkArticle,
+    registerWebinar,
+  } = useUserData();
   const { toast } = useToast();
   const [watchingVideo, setWatchingVideo] = useState(false);
 
@@ -259,6 +271,7 @@ The fashion industry is the second-largest polluter globally, responsible for 10
       
       if (newProgress === 100) {
         incrementCourseCompleted();
+        console.log('incrementCourseCompleted called');
         addCourseCompletionNotification(course?.title || 'Course');
         toast({
           title: "Course Completed! 🎉",
@@ -272,23 +285,23 @@ The fashion industry is the second-largest polluter globally, responsible for 10
       }
     }, 2000);
   };
+  
+  // Removed duplicate handleLikeArticle and fixed missing incrementRecipeViewed import
 
   const handleLikeArticle = (articleId) => {
     const article = articles.find(a => a.id === articleId);
     if (likedArticles.has(articleId)) {
-      setLikedArticles(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(articleId);
-        return newSet;
-      });
+      likeArticle(articleId);
       toast({
         title: "Like Removed",
         description: "Article removed from your liked articles.",
       });
     } else {
-      setLikedArticles(prev => new Set([...prev, articleId]));
+      likeArticle(articleId);
       if (article) {
         addRecipeViewNotification(article.title);
+        incrementRecipeViewed();
+        console.log('incrementRecipeViewed called');
         toast({
           title: "Article Liked!",
           description: "Article added to your liked articles.",
@@ -300,17 +313,13 @@ The fashion industry is the second-largest polluter globally, responsible for 10
   const handleBookmarkArticle = (articleId) => {
     const article = articles.find(a => a.id === articleId);
     if (bookmarkedArticles.has(articleId)) {
-      setBookmarkedArticles(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(articleId);
-        return newSet;
-      });
+      bookmarkArticle(articleId);
       toast({
         title: "Bookmark Removed",
         description: "Article removed from your bookmarks.",
       });
     } else {
-      setBookmarkedArticles(prev => new Set([...prev, articleId]));
+      bookmarkArticle(articleId);
       if (article) {
         addGeneralNotification("Article Bookmarked", `"${article.title}" has been saved to your bookmarks.`, "info");
         toast({
@@ -329,7 +338,7 @@ The fashion industry is the second-largest polluter globally, responsible for 10
         description: "You're already registered for this webinar.",
       });
     } else {
-      setRegisteredWebinars(prev => new Set([...prev, webinarId]));
+      registerWebinar(webinarId);
       if (webinar) {
         addGeneralNotification("Webinar Registration", `You're now registered for "${webinar.title}" on ${webinar.date}.`, "info");
         toast({
@@ -680,12 +689,15 @@ The fashion industry is the second-largest polluter globally, responsible for 10
                           <span>{article.comments}</span>
                         </div>
                       </div>
-                      <Button 
-                        size="sm" 
-                        onClick={() => setSelectedArticle(article)}
-                      >
-                        Read Article
-                      </Button>
+              <Button 
+                size="sm" 
+                onClick={() => {
+                  setSelectedArticle(article);
+                  incrementRecipeViewed();
+                }}
+              >
+                Read Article
+              </Button>
                     </div>
                   </div>
                 </CardContent>
