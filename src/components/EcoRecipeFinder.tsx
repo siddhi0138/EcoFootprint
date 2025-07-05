@@ -75,6 +75,7 @@ export const EcoRecipeFinder = () => {
   const [activeTab, setActiveTab] = useState('recipes');
   const [firebaseFavoriteRecipes, setFirebaseFavoriteRecipes] = useState<Set<number>>(new Set()); // Specify type
   const [firebaseMealPlan, setFirebaseMealPlan] = useState<MealPlanEntry[]>([]); // Specify type
+  const [selectedDayToAdd, setSelectedDayToAdd] = useState<string>('Monday'); // New state for day selection
   const { incrementRecipeViewed, addPoints } = useUserData();
   const { toast } = useToast();
 
@@ -582,10 +583,25 @@ export const EcoRecipeFinder = () => {
                                 />
                                 {firebaseFavoriteRecipes.has(recipe.id) ? 'Favorited' : 'Add to Favorites'}
                               </Button>
-                              <Button onClick={() => handleAddToMealPlan(recipe, 'Monday')}>
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add to Meal Plan
-                              </Button>
+                              <div className="flex items-center space-x-2 mt-2">
+                                <select
+                                  value={selectedDayToAdd}
+                                  onChange={(e) => setSelectedDayToAdd(e.target.value)}
+                                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                                >
+                                  <option value="Monday">Monday</option>
+                                  <option value="Tuesday">Tuesday</option>
+                                  <option value="Wednesday">Wednesday</option>
+                                  <option value="Thursday">Thursday</option>
+                                  <option value="Friday">Friday</option>
+                                  <option value="Saturday">Saturday</option>
+                                  <option value="Sunday">Sunday</option>
+                                </select>
+                                <Button onClick={() => handleAddToMealPlan(recipe, selectedDayToAdd)}>
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Add to Meal Plan
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </DialogContent>
