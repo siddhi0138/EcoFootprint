@@ -40,12 +40,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     let unsubscribe: () => void;
 
     if (user && user.uid) {
+      console.log(`Subscribing to cart for user ${user.uid}`);
       const userCartDocRef = doc(db, 'users', user.uid, 'cart', 'items');
       setLoadingCart(true); // Start loading
 
       unsubscribe = onSnapshot(userCartDocRef, (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
+          console.log('Cart data received:', data);
           // Ensure 'items' field exists and is an array
           if (data && Array.isArray(data.items)) {
             setCartItems(data.items as CartItem[]);
@@ -53,6 +55,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
             setCartItems([]);
           }
         } else {
+          console.log('Cart document does not exist, initializing empty cart');
           // Document doesn't exist, initialize with empty array
           setCartItems([]);
         }
@@ -68,6 +71,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         });
       });
     } else {
+      console.log('No user logged in, clearing cart');
       // Clear local state for unauthenticated users
       setCartItems([]);
       setLoadingCart(false); // Not loading if no user
@@ -76,6 +80,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     return () => {
       // Unsubscribe when the component unmounts or user changes
       if (unsubscribe) {
+        console.log('Unsubscribing from cart');
         unsubscribe();
       }
     };
@@ -106,6 +111,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
 
     try {
+      console.log(`Adding product ${product.id} to cart for user ${user.uid}`);
       const userCartDocRef = doc(db, 'users', user.uid, 'cart', 'items');
       const docSnap = await getDoc(userCartDocRef);
       let currentCartItems: CartItem[] = [];
@@ -113,6 +119,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       if (docSnap.exists() && Array.isArray(docSnap.data().items)) {
         currentCartItems = docSnap.data().items as CartItem[];
       } else {
+         console.log('Cart document does not exist or items field missing, initializing empty cart');
          // If document doesn't exist or items is not an array, initialize it.
          // This is a fallback, onSnapshot should ideally handle initial state.
          await setDoc(userCartDocRef, { items: [] }, { merge: true });
@@ -130,6 +137,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       }
 
       await setDoc(userCartDocRef, { items: updatedCart }, { merge: true });
+      console.log('Cart updated successfully');
 
       addPoints(10); // Award points for adding to cart
       toast({
@@ -252,9 +260,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     }
 
     try {
+      console.log(`Clearing cart for user ${user.uid}`);
       const userCartDocRef = doc(db, 'users', user.uid, 'cart', 'items');
       // Set the items array to an empty array to clear the cart
       await setDoc(userCartDocRef, { items: [] }, { merge: true });
+      console.log('Cart cleared successfully');
 
       // Optional: Award points for clearing cart (if that's a feature)
       // addPoints(somePoints);

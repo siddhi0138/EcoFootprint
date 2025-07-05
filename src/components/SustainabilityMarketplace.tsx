@@ -423,9 +423,9 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
 
           {/* Category Tabs */}
           <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="mb-6">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
+            <TabsList className="inline-flex h-10 items-center justify-start gap-x-4 rounded-md bg-muted p-1 text-muted-foreground w-full">
               {categories.map((category) => (
-                <TabsTrigger key={category.id} value={category.id} className="flex flex-col items-center space-y-1 text-xs">
+                <TabsTrigger key={category.id} value={category.id} className="flex items-center space-x-1 text-xs px-3 py-1.5">
                   <category.icon className="w-4 h-4" />
                   <span className="hidden sm:inline">{category.label}</span>
                   <Badge variant="outline" className="text-xs px-1">{category.count}</Badge>

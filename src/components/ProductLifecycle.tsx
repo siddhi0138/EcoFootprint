@@ -21,7 +21,6 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
   const [viewedProducts, setViewedProducts] = useState<{ [key: string]: any }>({});
   const [savedProduct, setSavedProduct] = React.useState<any>(null);
   const location = useLocation();
-  const product = propProduct || location.state?.product;
 
   // Map stage names or keys to icon components
   const iconMap: { [key: string]: React.ElementType } = {
@@ -38,6 +37,27 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
     Droplets,
     Globe,
   };
+
+  // Load product from props, location state, or localStorage
+  const storedProductJSON = localStorage.getItem('persistedProductLifecycle');
+  let initialProduct = propProduct || location.state?.product;
+  if (!initialProduct && storedProductJSON) {
+    try {
+      initialProduct = JSON.parse(storedProductJSON);
+      // Restore icon functions in stages if needed
+      if (initialProduct.stages && Array.isArray(initialProduct.stages)) {
+        initialProduct.stages = initialProduct.stages.map((stage: any) => ({
+          ...stage,
+          icon: iconMap[stage.iconName] || null,
+        }));
+      }
+    } catch (e) {
+      console.error('Error parsing persisted product lifecycle from localStorage', e);
+      initialProduct = null;
+    }
+  }
+  // Prioritize savedProduct over initialProduct
+  const product = savedProduct || initialProduct;
 
   useEffect(() => {
     const fetchViewedProducts = async () => {
@@ -63,32 +83,53 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
 
   useEffect(() => {
     const fetchSavedProduct = async () => {
-      if (user && (product?.id || savedProduct?.id)) {
+      if (user) {
         try {
-          const productId = savedProduct?.id || product?.id;
-          const productRef = doc(db, `users/${user.uid}/savedProductLifecycles`, productId.toString());
-          const docSnap = await getDoc(productRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data();
+          let productIdToFetch = product?.id || savedProduct?.id;
+          let data = null;
+          if (productIdToFetch) {
+            const productRef = doc(db, `users/${user.uid}/savedProductLifecycles`, productIdToFetch.toString());
+            const docSnap = await getDoc(productRef);
+            if (docSnap.exists()) {
+              data = docSnap.data();
+            }
+          } else {
+            // Fetch the most recent saved product lifecycle if no product id is available
+            const savedProductsRef = collection(db, `users/${user.uid}/savedProductLifecycles`);
+            const querySnapshot = await getDocs(savedProductsRef);
+            let latestProduct = null;
+            querySnapshot.forEach(doc => {
+              const docData = doc.data();
+              if (!latestProduct || (docData.savedAt && docData.savedAt.toMillis() > latestProduct.savedAt.toMillis())) {
+                latestProduct = docData;
+              }
+            });
+            data = latestProduct;
+          }
+          if (data) {
             // Restore icon property in stages
             if (data.stages && Array.isArray(data.stages)) {
               data.stages = data.stages.map((stage: any) => {
                 return {
                   ...stage,
-                  icon: iconMap[stage.iconName] || null, // Use iconName property to map icon
+                  icon: iconMap[stage.iconName] || null,
                 };
               });
             }
             setSavedProduct(data);
+            localStorage.setItem('persistedProductLifecycle', JSON.stringify(data));
           } else {
             setSavedProduct(null);
+            localStorage.removeItem('persistedProductLifecycle');
           }
         } catch (error) {
           console.error('Error fetching saved product lifecycle data:', error);
           setSavedProduct(null);
+          localStorage.removeItem('persistedProductLifecycle');
         }
       } else {
         setSavedProduct(null);
+        localStorage.removeItem('persistedProductLifecycle');
       }
     };
     fetchSavedProduct();
@@ -179,6 +220,8 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
       const productRef = doc(db, `users/${user.uid}/savedProductLifecycles`, product.id.toString());
       await setDoc(productRef, sanitizedProduct, { merge: true });
       setSavedProduct(sanitizedProduct);
+      // Persist to localStorage
+      localStorage.setItem('persistedProductLifecycle', JSON.stringify(sanitizedProduct));
       alert('Product lifecycle data saved successfully.');
     } catch (error) {
       console.error('Error saving product lifecycle data:', error);
