@@ -6,10 +6,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
-import { UserDataProvider } from "./contexts/UserDataContext"; // Import UserDataProvider
+import { UserDataProvider } from "./contexts/UserDataContext";
+import { NotificationProvider } from "./contexts/NotificationsContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { Navigate } from "react-router-dom";
+import Cart from "./components/Cart";
 import Goals from "./pages/Goals";
 import ProductLifecycle from "./components/ProductLifecycle";
 import ProductComparison from "./components/ProductComparison";
@@ -23,26 +24,31 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
-        <UserDataProvider> {/* Wrap with UserDataProvider */}
+        <UserDataProvider>
           <ProductComparisonProvider>
             <CartProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<Layout><Index /></Layout>} />
-                    <Route path="/goals" element={<Layout><Goals /></Layout>} />
-                    <Route path="/product-lifecycle" element={<Layout><ProductLifecycle /></Layout>} />
-                    <Route path="/product-comparison" element={<Layout><ProductComparison /></Layout>} />
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<Navigate to="/" replace />} /> {/* Redirect all unknown routes to homepage */}
-                  </Routes>
-                </BrowserRouter>
-              </TooltipProvider>
+              <NotificationProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <Routes>
+                      <Route path="/" element={<Layout><Index /></Layout>} />
+                      <Route path="/cart" element={<Layout><Cart setActiveTab={function (tab: string): void {
+                        throw new Error("Function not implemented.");
+                      } } /></Layout>} />
+                      <Route path="/goals" element={<Layout><Goals /></Layout>} />
+                      <Route path="/product-lifecycle" element={<Layout><ProductLifecycle /></Layout>} />
+                      <Route path="/product-comparison" element={<Layout><ProductComparison /></Layout>} />
+                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </BrowserRouter>
+                </TooltipProvider>
+              </NotificationProvider>
             </CartProvider>
           </ProductComparisonProvider>
-        </UserDataProvider> {/* Close UserDataProvider */}
+        </UserDataProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>

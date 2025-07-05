@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useUserData } from '@/contexts/UserDataContext';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Gift, 
   Trophy, 
@@ -24,9 +25,9 @@ import {
 
 const RewardsSystem = () => {
   const { userStats, redeemReward, addPoints } = useUserData();
-  const nextRewardThreshold = 1000;
+  const { toast } = useToast();
 
-  // Dynamic achievements based on user data
+  // Dynamic achievements based on actual user data
   const achievements = [
     {
       id: 1,
@@ -66,42 +67,72 @@ const RewardsSystem = () => {
     },
     {
       id: 4,
-      name: 'Sustainability Champion',
-      description: 'Reach 1000 total points',
-      points: 500,
-      unlocked: userStats.totalPoints >= 1000,
-      progress: Math.min((userStats.totalPoints / 1000) * 100, 100),
+      name: 'Learning Champion',
+      description: `Complete ${userStats.coursesCompleted >= 5 ? '10' : '5'} courses`,
+      points: userStats.coursesCompleted >= 5 ? 400 : 250,
+      unlocked: userStats.coursesCompleted >= (userStats.coursesCompleted >= 5 ? 10 : 5),
+      progress: userStats.coursesCompleted >= 5 ? 
+        Math.min((userStats.coursesCompleted / 10) * 100, 100) : 
+        Math.min((userStats.coursesCompleted / 5) * 100, 100),
       icon: Crown,
       color: 'bg-purple-500',
-      category: 'Points & Achievements'
+      category: 'Education'
     },
     {
       id: 5,
-      name: 'Streak Master',
-      description: `Maintain a ${userStats.streakDays >= 7 ? '30-day' : '7-day'} sustainability streak`,
-      points: userStats.streakDays >= 7 ? 400 : 150,
-      unlocked: userStats.streakDays >= (userStats.streakDays >= 7 ? 30 : 7),
-      progress: userStats.streakDays >= 7 ? 
-        Math.min((userStats.streakDays / 30) * 100, 100) : 
-        Math.min((userStats.streakDays / 7) * 100, 100),
-      icon: Star,
-      color: 'bg-yellow-500',
-      category: 'Consistency'
+      name: 'Community Helper',
+      description: `Help ${userStats.communityHelpCount >= 5 ? '15' : '5'} community members`,
+      points: userStats.communityHelpCount >= 5 ? 350 : 200,
+      unlocked: userStats.communityHelpCount >= (userStats.communityHelpCount >= 5 ? 15 : 5),
+      progress: userStats.communityHelpCount >= 5 ? 
+        Math.min((userStats.communityHelpCount / 15) * 100, 100) : 
+        Math.min((userStats.communityHelpCount / 5) * 100, 100),
+      icon: Users,
+      color: 'bg-indigo-500',
+      category: 'Community'
     },
     {
       id: 6,
-      name: 'Quality Seeker',
-      description: 'Achieve an average sustainability score of 80+',
-      points: 250,
-      unlocked: userStats.avgScore >= 80,
-      progress: Math.min((userStats.avgScore / 80) * 100, 100),
+      name: 'Recipe Explorer',
+      description: `Try ${userStats.recipesViewed >= 10 ? '25' : '10'} sustainable recipes`,
+      points: userStats.recipesViewed >= 10 ? 300 : 150,
+      unlocked: userStats.recipesViewed >= (userStats.recipesViewed >= 10 ? 25 : 10),
+      progress: userStats.recipesViewed >= 10 ? 
+        Math.min((userStats.recipesViewed / 25) * 100, 100) : 
+        Math.min((userStats.recipesViewed / 10) * 100, 100),
       icon: Sparkles,
       color: 'bg-pink-500',
-      category: 'Product Quality'
+      category: 'Lifestyle'
+    },
+    {
+      id: 7,
+      name: 'Transport Pioneer',
+      description: `Use sustainable transport ${userStats.transportTrips >= 5 ? '20' : '5'} times`,
+      points: userStats.transportTrips >= 5 ? 400 : 200,
+      unlocked: userStats.transportTrips >= (userStats.transportTrips >= 5 ? 20 : 5),
+      progress: userStats.transportTrips >= 5 ? 
+        Math.min((userStats.transportTrips / 20) * 100, 100) : 
+        Math.min((userStats.transportTrips / 5) * 100, 100),
+      icon: Zap,
+      color: 'bg-cyan-500',
+      category: 'Transport'
+    },
+    {
+      id: 8,
+      name: 'Sustainable Investor',
+      description: `Make ${userStats.investmentsMade >= 1 ? '5' : '1'} sustainable investments`,
+      points: userStats.investmentsMade >= 1 ? 600 : 300,
+      unlocked: userStats.investmentsMade >= (userStats.investmentsMade >= 1 ? 5 : 1),
+      progress: userStats.investmentsMade >= 1 ? 
+        Math.min((userStats.investmentsMade / 5) * 100, 100) : 
+        Math.min((userStats.investmentsMade / 1) * 100, 100),
+      icon: Crown,
+      color: 'bg-amber-500',
+      category: 'Investment'
     }
   ];
 
-  // Dynamic rewards based on user progress
+  // User-specific rewards based on actual points and activity
   const rewards = [
     {
       id: 1,
@@ -171,14 +202,15 @@ const RewardsSystem = () => {
     }
   ];
 
-  // Dynamic daily challenges based on user behavior
+  // Real daily challenges based on user's actual behavior
   const generateDailyChallenges = () => {
     const challenges = [];
     
-    // Scanning challenge
-    const scanningTarget = Math.max(3, Math.ceil(userStats.currentWeekScans / 7));
+    // Scanning challenge based on user's average
+    const avgScansPerDay = Math.max(1, Math.ceil(userStats.totalScans / 30)); // Assuming 30 days
+    const scanningTarget = Math.max(1, avgScansPerDay);
     challenges.push({
-      task: `Scan ${scanningTarget} eco-friendly products`,
+      task: `Scan ${scanningTarget} sustainable product${scanningTarget > 1 ? 's' : ''}`,
       progress: Math.min(userStats.currentWeekScans, scanningTarget),
       total: scanningTarget,
       points: scanningTarget * 15,
@@ -187,37 +219,37 @@ const RewardsSystem = () => {
     });
     
     // Carbon tracking challenge
+    const carbonTarget = Math.max(1, Math.ceil(userStats.co2Saved / 10));
     challenges.push({
-      task: 'Log your daily carbon footprint',
-      progress: userStats.co2Saved > 0 ? 1 : 0,
-      total: 1,
-      points: 30,
-      completed: userStats.co2Saved > 0,
+      task: `Save ${carbonTarget}kg CO₂ today`,
+      progress: userStats.co2Saved >= carbonTarget ? carbonTarget : userStats.co2Saved % carbonTarget || 0,
+      total: carbonTarget,
+      points: carbonTarget * 20,
+      completed: (userStats.co2Saved % 10) >= carbonTarget,
       category: 'Carbon Tracking'
     });
     
-    // Points challenge
-    const pointsTarget = Math.max(50, userStats.totalPoints < 100 ? 50 : 100);
-    challenges.push({
-      task: `Earn ${pointsTarget} points today`,
-      progress: Math.min(userStats.totalPoints, pointsTarget),
-      total: pointsTarget,
-      points: Math.floor(pointsTarget * 0.5),
-      completed: userStats.totalPoints >= pointsTarget,
-      category: 'Points'
-    });
-    
-    // Quality challenge if user has scanned products
-    if (userStats.totalScans > 0) {
+    // Learning challenge
+    if (userStats.coursesCompleted < 10) {
       challenges.push({
-        task: 'Find a product with 85+ sustainability score',
-        progress: userStats.avgScore >= 85 ? 1 : 0,
+        task: 'Complete 1 sustainability course',
+        progress: userStats.coursesCompleted > 0 ? 1 : 0,
         total: 1,
-        points: 40,
-        completed: userStats.avgScore >= 85,
-        category: 'Quality'
+        points: 50,
+        completed: userStats.coursesCompleted > 0,
+        category: 'Learning'
       });
     }
+    
+    // Community challenge
+    challenges.push({
+      task: 'Help 1 community member',
+      progress: userStats.communityHelpCount > 0 ? 1 : 0,
+      total: 1,
+      points: 30,
+      completed: userStats.communityHelpCount > 0,
+      category: 'Community'
+    });
     
     return challenges;
   };
@@ -226,32 +258,44 @@ const RewardsSystem = () => {
 
   const handleRedeemReward = (reward: typeof rewards[0]) => {
     if (redeemReward(reward.cost)) {
-      // Here you would integrate with actual reward system
-      alert(`Congratulations! You've redeemed: ${reward.name}. Check your email for details.`);
+      toast({
+        title: "Reward Redeemed! 🎉",
+        description: `You've successfully redeemed: ${reward.name}. Check your email for details.`,
+        duration: 5000,
+      });
     } else {
-      alert(`You need ${reward.cost - userStats.totalPoints} more points to redeem this reward.`);
+      toast({
+        title: "Insufficient Points",
+        description: `You need ${reward.cost - userStats.totalPoints} more points to redeem this reward.`,
+        variant: "destructive",
+        duration: 3000,
+      });
     }
   };
 
   const getUnlockedAchievements = () => achievements.filter(a => a.unlocked).length;
   const getCompletedChallenges = () => dailyChallenges.filter(c => c.completed).length;
 
-  // Calculate next level threshold
+  // Calculate actual level progression
   const levelThresholds = [0, 100, 300, 600, 1000, 1500, 2500, 4000, 6000, 10000];
-  const currentLevelThreshold = levelThresholds[userStats.level - 1] || 0;
-  const nextLevelThreshold = levelThresholds[userStats.level] || levelThresholds[levelThresholds.length - 1];
+  const currentLevel = levelThresholds.findIndex((threshold, index) => 
+    userStats.totalPoints >= threshold && (levelThresholds[index + 1] === undefined || userStats.totalPoints < levelThresholds[index + 1])
+  ) + 1;
+  
+  const currentLevelThreshold = levelThresholds[currentLevel - 1] || 0;
+  const nextLevelThreshold = levelThresholds[currentLevel] || levelThresholds[levelThresholds.length - 1];
   const levelProgress = nextLevelThreshold ? ((userStats.totalPoints - currentLevelThreshold) / (nextLevelThreshold - currentLevelThreshold)) * 100 : 100;
 
   return (
     <div className="space-y-6">
-      {/* Enhanced Points Overview */}
+      {/* User-Specific Points Overview */}
       <Card className="bg-gradient-to-r from-emerald-500 to-green-600 text-white border-0 shadow-xl">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-3xl font-bold mb-2">{userStats.totalPoints.toLocaleString()} Points</h2>
               <div className="flex items-center space-x-4 text-emerald-100">
-                <span>Level {userStats.level}</span>
+                <span>Level {currentLevel}</span>
                 <span>•</span>
                 <span>{getUnlockedAchievements()}/{achievements.length} achievements</span>
                 <span>•</span>
@@ -265,15 +309,15 @@ const RewardsSystem = () => {
               </div>
               <div className="text-center">
                 <Trophy className="w-8 h-8 mx-auto mb-1" />
-                <div className="text-xs">Level {userStats.level}</div>
+                <div className="text-xs">Level {currentLevel}</div>
               </div>
             </div>
           </div>
           
-          {/* Level Progress */}
+          {/* Real Level Progress */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Progress to Level {userStats.level + 1}</span>
+              <span>Progress to Level {currentLevel + 1}</span>
               <span>{nextLevelThreshold ? `${nextLevelThreshold - userStats.totalPoints} points to go` : 'Max Level!'}</span>
             </div>
             <Progress 
@@ -285,7 +329,7 @@ const RewardsSystem = () => {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Enhanced Daily Challenges */}
+        {/* User-Specific Daily Challenges */}
         <Card className="bg-white/80 backdrop-blur-sm border-green-200 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center justify-between text-green-700">
@@ -335,7 +379,7 @@ const RewardsSystem = () => {
           </CardContent>
         </Card>
 
-        {/* Enhanced Achievements */}
+        {/* User-Specific Achievements */}
         <Card className="bg-white/80 backdrop-blur-sm border-green-200 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2 text-green-700">
@@ -388,7 +432,7 @@ const RewardsSystem = () => {
         </Card>
       </div>
 
-      {/* Enhanced Rewards Store */}
+      {/* User-Specific Rewards Store */}
       <Card className="bg-white/80 backdrop-blur-sm border-green-200 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center justify-between text-green-700">
@@ -411,6 +455,9 @@ const RewardsSystem = () => {
                 <p className="text-sm text-green-700">
                   <strong>Next reward unlocks at 150 points!</strong> You need {150 - userStats.totalPoints} more points.
                 </p>
+                <div className="mt-3">
+                  <Progress value={(userStats.totalPoints / 150) * 100} className="h-2" />
+                </div>
               </div>
             </div>
           ) : (
