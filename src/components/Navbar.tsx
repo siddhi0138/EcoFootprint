@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
+
   Leaf,
   Menu,
   X,
@@ -41,6 +42,8 @@ import {
   Trash2,
   ArrowRight
 } from 'lucide-react';
+import { useNotifications } from '@/contexts/NotificationsContextNew'; // Import the hook
+import { Badge } from '@/components/ui/badge'; // Assuming you have a Badge component
 
 const Navbar = ({
   onNavigate,
@@ -64,6 +67,7 @@ const Navbar = ({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { unreadCount } = useNotifications();
   const { user, logout } = useAuth();
 
   // Calculate cart total items and price
@@ -459,13 +463,18 @@ const Navbar = ({
 
             {/* Notification Icon */}
             <Button
-              variant="ghost"
-              size="sm"
-              className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20"
-              onClick={() => onNavigate('notifications')}
-            >
-              <Bell className="w-5 h-5" />
-            </Button>
+ variant="ghost"
+ size="sm"
+ className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20 relative"
+ onClick={() => onNavigate('notifications')}
+ >
+ <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+ </Button>
 
             {/* Theme Toggle */}
             <Button
@@ -559,14 +568,18 @@ const Navbar = ({
 
             {/* Notifications */}
             <Button
-              variant="ghost"
-              size="sm"
-              className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20"
-              onClick={() => onNavigate('notifications')}
-            >
-              <Bell className="w-5 h-5" />
+ variant="ghost"
+ size="sm"
+ className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20 relative"
+ onClick={() => onNavigate('notifications')}
+ >
+ <Bell className="w-5 h-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </Button>
-
             {/* Theme Toggle */}
             <Button
               variant="ghost"
