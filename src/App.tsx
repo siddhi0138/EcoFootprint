@@ -7,7 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { UserDataProvider } from "./contexts/UserDataContext";
-import { NotificationProvider } from "./contexts/NotificationsContext";
+import { NotificationProvider } from "./contexts/NotificationsContextNew";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Cart from "./components/Cart";

@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { db } from '../firebase';
+import { collection, doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 export interface ScannedProduct {
   id: string;
@@ -39,31 +41,46 @@ export const ProductComparisonProvider = ({ children }: { children: ReactNode })
   const { currentUser } = useAuth();
   const [comparisonProducts, setComparisonProducts] = useState<ScannedProduct[]>([]);
 
-  // Load from localStorage on user change
   useEffect(() => {
-    if (currentUser) {
-      const saved = localStorage.getItem(`comparisonProducts_${currentUser.uid}`);
-      if (saved) {
-        try {
-          setComparisonProducts(JSON.parse(saved));
-        } catch (e) {
-          console.error('Failed to parse saved comparison products:', e);
+    if (!currentUser) {
+      setComparisonProducts([]);
+      return;
+    }
+
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const comparisonDocRef = doc(userDocRef, 'productComparison', 'comparisonProducts');
+
+    // Subscribe to Firestore document changes
+    const unsubscribe = onSnapshot(comparisonDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data && data.products) {
+          setComparisonProducts(data.products);
+        } else {
           setComparisonProducts([]);
         }
       } else {
         setComparisonProducts([]);
       }
-    } else {
-      // Clear on logout
+    }, (error) => {
+      console.error('Error fetching product comparison from Firestore:', error);
       setComparisonProducts([]);
-    }
+    });
+
+    return () => unsubscribe();
   }, [currentUser]);
 
-  // Save to localStorage on comparisonProducts change
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(`comparisonProducts_${currentUser.uid}`, JSON.stringify(comparisonProducts));
-    }
+    if (!currentUser) return;
+
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const comparisonDocRef = doc(userDocRef, 'productComparison', 'comparisonProducts');
+
+    // Save comparisonProducts to Firestore
+    setDoc(comparisonDocRef, { products: comparisonProducts })
+      .catch(error => {
+        console.error('Error saving product comparison to Firestore:', error);
+      });
   }, [comparisonProducts, currentUser]);
 
   const addProductToComparison = (product: ScannedProduct) => {
