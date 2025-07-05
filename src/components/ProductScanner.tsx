@@ -42,12 +42,6 @@ interface ProductScannerProps {
   scannedProduct: any; // Define a more specific type if possible
   setScannedProduct: React.Dispatch<any>; // Define a more specific type if possible
   onTabChange?: (tab: string) => void;
-}
-
-interface ProductScannerProps {
-  scannedProduct: any; // Define a more specific type if possible
-  setScannedProduct: React.Dispatch<any>; // Define a more specific type if possible
-  onTabChange?: (tab: string) => void;
   saveScannedProduct?: (product: any) => void;
 }
 
@@ -65,12 +59,36 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
   const videoRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Sync detectedProduct with scannedProduct prop
+  // Sync detectedProduct with scannedProduct prop and preserve on tab switch
   useEffect(() => {
     if (scannedProduct) {
       setDetectedProduct(scannedProduct);
     }
   }, [scannedProduct]);
+
+  // Automatically save detectedProduct to recent scans when it changes
+  useEffect(() => {
+    if (detectedProduct) {
+      // Check if product is already in scannedProducts to avoid duplicates and infinite loops
+      const alreadySaved = scannedProducts.some(p => p.id === detectedProduct.id.toString());
+      if (!alreadySaved) {
+        const today = new Date();
+        addScannedProduct({
+          id: detectedProduct.id.toString(),
+          name: detectedProduct.name,
+          brand: detectedProduct.brand,
+          sustainabilityScore: detectedProduct.sustainabilityScore,
+          category: detectedProduct.category,
+          date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`,
+          alternatives: detectedProduct.alternatives || [],
+          source: 'ProductScanner',
+        });
+      }
+    }
+  }, [detectedProduct, addScannedProduct, scannedProducts]);
+
+  // Preserve detectedProduct on tab switch by not clearing it
+  // If you want to clear detectedProduct on some condition, handle it explicitly
 
   // Cleanup camera stream when component unmounts or scan mode changes
   useEffect(() => {
@@ -268,121 +286,89 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
     setIsScanning(true);
     setSearchResults([]);
     setSearchQuery('');
-    setTimeout(() => {
-      const productData = {
-        id: product.id,
-        name: product.name,
-        brand: product.brand,
-        sustainabilityScore: product.sustainabilityScore,
-        price: product.price,
-        image: `https://images.unsplash.com/${product.image}?w=400&h=400&fit=crop`,
-        carbon: product.carbonFootprint.total,
-        water: product.waterUsage,
-        packaging: product.packaging.type,
-        certifications: product.certifications,
-        materials: product.materials,
-        origin: product.origin,
-        barcode: product.barcode,
-        alternatives: product.alternatives,
-        features: product.features,
-        inStock: product.inStock,
-        rating: product.rating,
-        reviews: product.reviews,
-        description: product.description,
-        category: product.category,
-        sustainability: {
-          carbon: Math.floor(product.sustainabilityScore * 0.9),
-          water: Math.floor(product.sustainabilityScore * 0.95),
-          waste: Math.floor(product.sustainabilityScore * 0.85),
-          energy: Math.floor(product.sustainabilityScore * 0.92),
-          ethics: Math.floor(product.sustainabilityScore * 1.05),
-          overall: product.sustainabilityScore
-        },
-        stages: [
-          {
-            name: 'Raw Material Sourcing',
-            status: 'completed',
-            location: 'California, USA',
-            duration: '2 weeks',
-            impact: { co2: 1.2, water: 500, energy: 300 },
-            details: 'Sustainable sourcing of raw materials from certified farms.',
-            icon: () => <Factory className="w-6 h-6 text-white" />
+      setTimeout(() => {
+        const productData = {
+          id: product.id,
+          name: product.name,
+          brand: product.brand,
+          sustainabilityScore: product.sustainabilityScore,
+          price: product.price,
+          image: `https://images.unsplash.com/${product.image}?w=400&h=400&fit=crop`,
+          carbon: product.carbonFootprint.total,
+          water: product.waterUsage,
+          packaging: product.packaging.type,
+          certifications: product.certifications,
+          materials: product.materials,
+          origin: product.origin,
+          barcode: product.barcode,
+          alternatives: product.alternatives,
+          features: product.features,
+          inStock: product.inStock,
+          rating: product.rating,
+          reviews: product.reviews,
+          description: product.description,
+          category: product.category,
+          sustainability: {
+            carbon: Math.floor(product.sustainabilityScore * 0.9),
+            water: Math.floor(product.sustainabilityScore * 0.95),
+            waste: Math.floor(product.sustainabilityScore * 0.85),
+            energy: Math.floor(product.sustainabilityScore * 0.92),
+            ethics: Math.floor(product.sustainabilityScore * 1.05),
+            overall: product.sustainabilityScore
           },
-          {
-            name: 'Manufacturing',
-            status: 'active',
-            location: 'Oregon, USA',
-            duration: '4 weeks',
-            impact: { co2: 2.5, water: 800, energy: 1200 },
-            details: 'Eco-friendly manufacturing processes with renewable energy.',
-            icon: () => <Factory className="w-6 h-6 text-white" />
-          },
-          {
-            name: 'Transportation',
-            status: 'pending',
-            location: 'Distribution Center',
-            duration: '1 week',
-            impact: { co2: 0.8, water: 100, energy: 400 },
-            details: 'Low-emission transportation to retail locations.',
-            icon: () => <Truck className="w-6 h-6 text-white" />
-          },
-          {
-            name: 'Retail',
-            status: 'pending',
-            location: 'Various Stores',
-            duration: 'Ongoing',
-            impact: { co2: 0.5, water: 50, energy: 200 },
-            details: 'Sustainable retail practices and packaging.',
-            icon: () => <Package className="w-6 h-6 text-white" />
-          }
-        ]
-      };
-      
-      setDetectedProduct(productData);
-      // Removed automatic addScannedProduct call to prevent default saving
-      // addScannedProduct({
-      //   id: product.id.toString(),
-      //   name: product.name,
-      //   brand: product.brand,
-      //   sustainabilityScore: product.sustainabilityScore,
-      //   category: product.category,
-      //   date: new Date().toLocaleDateString(),
-      //   source: 'ProductScanner',
-      // });
-      // Add to product comparison
-      addProductToComparison({
-        id: product.id.toString(),
-        name: product.name,
-        brand: product.brand,
-        sustainabilityScore: product.sustainabilityScore,
-        category: product.category,
-        date: new Date().toISOString(),
-        price: product.price,
-        image: `https://images.unsplash.com/${product.image}?w=400&h=400&fit=crop`,
-        metrics: {
-          carbon: Math.floor(product.sustainabilityScore * 0.9),
-          water: Math.floor(product.sustainabilityScore * 0.95),
-          waste: Math.floor(product.sustainabilityScore * 0.85),
-          energy: Math.floor(product.sustainabilityScore * 0.92),
-          ethics: Math.floor(product.sustainabilityScore * 1.05),
-        },
-        certifications: product.certifications || [],
-        pros: [
-          product.vegan ? 'Vegan friendly' : 'Quality materials',
-          product.packaging?.recyclable ? 'Recyclable packaging' : 'Durable design',
-          'Good sustainability score'
-        ],
-        cons: [
-          product.price > 50 ? 'Higher price point' : 'Limited color options',
-          'Consider shipping impact'
-        ],
-        rating: product.rating,
-        reviews: product.reviews,
-        inStock: product.inStock,
-        features: product.features,
-      });
-      setIsScanning(false);
-    }, 2000);
+          stages: [
+            {
+              name: 'Raw Material Sourcing',
+              status: 'completed',
+              location: 'California, USA',
+              duration: '2 weeks',
+              impact: { co2: 1.2, water: 500, energy: 300 },
+              details: 'Sustainable sourcing of raw materials from certified farms.',
+              icon: () => <Factory className="w-6 h-6 text-white" />
+            },
+            {
+              name: 'Manufacturing',
+              status: 'active',
+              location: 'Oregon, USA',
+              duration: '4 weeks',
+              impact: { co2: 2.5, water: 800, energy: 1200 },
+              details: 'Eco-friendly manufacturing processes with renewable energy.',
+              icon: () => <Factory className="w-6 h-6 text-white" />
+            },
+            {
+              name: 'Transportation',
+              status: 'pending',
+              location: 'Distribution Center',
+              duration: '1 week',
+              impact: { co2: 0.8, water: 100, energy: 400 },
+              details: 'Low-emission transportation to retail locations.',
+              icon: () => <Truck className="w-6 h-6 text-white" />
+            },
+            {
+              name: 'Retail',
+              status: 'pending',
+              location: 'Various Stores',
+              duration: 'Ongoing',
+              impact: { co2: 0.5, water: 50, energy: 200 },
+              details: 'Sustainable retail practices and packaging.',
+              icon: () => <Package className="w-6 h-6 text-white" />
+            }
+          ]
+        };
+        
+        setDetectedProduct(productData);
+        // Removed automatic addScannedProduct call to prevent default saving
+        // addScannedProduct({
+        //   id: product.id.toString(),
+        //   name: product.name,
+        //   brand: product.brand,
+        //   sustainabilityScore: product.sustainabilityScore,
+        //   category: product.category,
+        //   date: new Date().toLocaleDateString(),
+        //   source: 'ProductScanner',
+        // });
+        setIsScanning(false);
+      }, 2000);
   };
 
   const triggerFileUpload = () => {
@@ -775,19 +761,50 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                       >
                         View Full Analysis
                       </Button>
-                      <Button
+                      {/* Remove Save Scan button since saving is automatic */}
+                      {/* <Button
                         variant="outline"
                         className="border-slate-300"
                         onClick={() => saveScannedProduct && saveScannedProduct(detectedProduct)}
                       >
                         Save Scan
-                      </Button>
+                      </Button> */}
                     </>
                   )}
                   <Button
                     variant="outline" 
                     className="border-slate-300"
-                    onClick={() => onTabChange && onTabChange('comparison')}
+                    onClick={() => {
+                      if (detectedProduct) {
+                        addProductToComparison({
+                          id: detectedProduct.id.toString(),
+                          name: detectedProduct.name,
+                          brand: detectedProduct.brand,
+                          sustainabilityScore: detectedProduct.sustainabilityScore,
+                          category: detectedProduct.category,
+                          date: new Date().toISOString(),
+                          price: detectedProduct.price,
+                          image: detectedProduct.image,
+                          metrics: {
+                            carbon: detectedProduct.sustainability?.carbon || 0,
+                            water: detectedProduct.sustainability?.water || 0,
+                            waste: detectedProduct.sustainability?.waste || 0,
+                            energy: detectedProduct.sustainability?.energy || 0,
+                            ethics: detectedProduct.sustainability?.ethics || 0,
+                          },
+                          certifications: detectedProduct.certifications || [],
+                          pros: detectedProduct.pros || [],
+                          cons: detectedProduct.cons || [],
+                          rating: detectedProduct.rating,
+                          reviews: detectedProduct.reviews,
+                          inStock: detectedProduct.inStock,
+                          features: detectedProduct.features,
+                        });
+                      }
+                      if (onTabChange) {
+                        onTabChange('comparison');
+                      }
+                    }}
                   >
                     Compare Products
                   </Button>
