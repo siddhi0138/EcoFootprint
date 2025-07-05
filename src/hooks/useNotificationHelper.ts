@@ -1,4 +1,4 @@
-import { useNotifications } from '../contexts/NotificationsContext';
+import { useNotifications } from '../contexts/NotificationsContextNew';
 import { Bell, Award, ShoppingCart, BookOpen, Users, Leaf, Target, Zap, TrendingUp, AlertCircle } from 'lucide-react';
 
 export const useNotificationHelper = () => {
