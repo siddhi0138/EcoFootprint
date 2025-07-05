@@ -31,6 +31,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useUserData } from '@/contexts/UserDataContext';
+import { useNotificationHelper } from '@/hooks/useNotificationHelper';
 
 const EducationCenter = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,12 +40,27 @@ const EducationCenter = () => {
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [selectedWebinar, setSelectedWebinar] = useState(null);
   const [watchingVideo, setWatchingVideo] = useState(false);
-  const [enrolledCourses, setEnrolledCourses] = useState(new Set([1]));
-  const [courseProgress, setCourseProgress] = useState(new Map([[1, 100], [2, 30]]));
+  const { userStats, incrementCourseCompleted } = useUserData();
+  const { addCourseCompletionNotification, addRecipeViewNotification, addGeneralNotification } = useNotificationHelper();
+  
+  const [enrolledCourses, setEnrolledCourses] = useState(() => {
+    const enrolled = new Set();
+    if (userStats.totalScans >= 10) enrolled.add(1);
+    if (userStats.co2Saved >= 5) enrolled.add(2);
+    return enrolled;
+  });
+  
+  const [courseProgress, setCourseProgress] = useState(() => {
+    const progress = new Map();
+    if (userStats.coursesCompleted >= 1) progress.set(1, 100);
+    if (userStats.coursesCompleted >= 2) progress.set(2, 100);
+    if (userStats.totalScans >= 5 && userStats.coursesCompleted < 1) progress.set(1, 30);
+    return progress;
+  });
+  
   const [likedArticles, setLikedArticles] = useState(new Set());
   const [bookmarkedArticles, setBookmarkedArticles] = useState(new Set());
   const [registeredWebinars, setRegisteredWebinars] = useState(new Set());
-  const { userStats, incrementCourseCompleted } = useUserData();
   const { toast } = useToast();
 
   const courses = [
@@ -221,10 +237,15 @@ The fashion industry is the second-largest polluter globally, responsible for 10
   const handleEnrollCourse = (courseId) => {
     setEnrolledCourses(prev => new Set([...prev, courseId]));
     setCourseProgress(prev => new Map([...prev, [courseId, 0]]));
-    toast({
-      title: "Enrollment Successful!",
-      description: "You've been enrolled in the course. Start learning now!",
-    });
+    
+    const course = courses.find(c => c.id === courseId);
+    if (course) {
+      addGeneralNotification("Course Enrollment", `You've successfully enrolled in "${course.title}". Start learning now!`, "achievement");
+      toast({
+        title: "Enrollment Successful!",
+        description: `You've been enrolled in ${course.title}. Start learning now!`,
+      });
+    }
   };
 
   const handleStartCourse = (course) => {
@@ -239,11 +260,13 @@ The fashion industry is the second-largest polluter globally, responsible for 10
     setTimeout(() => {
       setWatchingVideo(false);
       const currentProgress = courseProgress.get(courseId) || 0;
-      const newProgress = Math.min(currentProgress + (100 / courses.find(c => c.id === courseId)?.lessons || 8), 100);
+      const course = courses.find(c => c.id === courseId);
+      const newProgress = Math.min(currentProgress + (100 / (course?.lessons || 8)), 100);
       setCourseProgress(prev => new Map([...prev, [courseId, newProgress]]));
       
       if (newProgress === 100) {
         incrementCourseCompleted();
+        addCourseCompletionNotification(course?.title || 'Course');
         toast({
           title: "Course Completed! 🎉",
           description: "Congratulations! You've completed the course and earned a new badge.",
@@ -251,13 +274,14 @@ The fashion industry is the second-largest polluter globally, responsible for 10
       } else {
         toast({
           title: "Lesson Complete",
-          description: "Great job! Continue to the next lesson.",
+          description: `Great job completing "${lesson.title}"! Continue to the next lesson.`,
         });
       }
     }, 2000);
   };
 
   const handleLikeArticle = (articleId) => {
+    const article = articles.find(a => a.id === articleId);
     if (likedArticles.has(articleId)) {
       setLikedArticles(prev => {
         const newSet = new Set(prev);
@@ -270,14 +294,18 @@ The fashion industry is the second-largest polluter globally, responsible for 10
       });
     } else {
       setLikedArticles(prev => new Set([...prev, articleId]));
-      toast({
-        title: "Article Liked!",
-        description: "Article added to your liked articles.",
-      });
+      if (article) {
+        addRecipeViewNotification(article.title);
+        toast({
+          title: "Article Liked!",
+          description: "Article added to your liked articles.",
+        });
+      }
     }
   };
 
   const handleBookmarkArticle = (articleId) => {
+    const article = articles.find(a => a.id === articleId);
     if (bookmarkedArticles.has(articleId)) {
       setBookmarkedArticles(prev => {
         const newSet = new Set(prev);
@@ -290,14 +318,18 @@ The fashion industry is the second-largest polluter globally, responsible for 10
       });
     } else {
       setBookmarkedArticles(prev => new Set([...prev, articleId]));
-      toast({
-        title: "Article Bookmarked!",
-        description: "Article saved to your bookmarks.",
-      });
+      if (article) {
+        addGeneralNotification("Article Bookmarked", `"${article.title}" has been saved to your bookmarks.`, "info");
+        toast({
+          title: "Article Bookmarked!",
+          description: "Article saved to your bookmarks.",
+        });
+      }
     }
   };
 
   const handleRegisterWebinar = (webinarId) => {
+    const webinar = webinars.find(w => w.id === webinarId);
     if (registeredWebinars.has(webinarId)) {
       toast({
         title: "Already Registered",
@@ -305,10 +337,13 @@ The fashion industry is the second-largest polluter globally, responsible for 10
       });
     } else {
       setRegisteredWebinars(prev => new Set([...prev, webinarId]));
-      toast({
-        title: "Registration Successful!",
-        description: "You're now registered for the webinar. Check your email for details.",
-      });
+      if (webinar) {
+        addGeneralNotification("Webinar Registration", `You're now registered for "${webinar.title}" on ${webinar.date}.`, "info");
+        toast({
+          title: "Registration Successful!",
+          description: "You're now registered for the webinar. Check your email for details.",
+        });
+      }
     }
   };
 
@@ -324,6 +359,21 @@ The fashion industry is the second-largest polluter globally, responsible for 10
       toast({
         title: "Link Copied!",
         description: "Article link copied to clipboard.",
+      });
+    }
+  };
+
+  const handleDownloadCertificate = (courseId) => {
+    const course = courses.find(c => c.id === courseId);
+    if (course && courseProgress.get(courseId) === 100) {
+      toast({
+        title: "Certificate Downloaded!",
+        description: `Your completion certificate for "${course.title}" has been downloaded.`,
+      });
+    } else {
+      toast({
+        title: "Complete Course First",
+        description: "You need to complete the course to download the certificate.",
       });
     }
   };
@@ -356,236 +406,6 @@ The fashion industry is the second-largest polluter globally, responsible for 10
 
   return (
     <div className="space-y-6">
-      {/* Course Detail Modal */}
-      {selectedCourse && (
-        <Card className="bg-white/95 rounded-xl border border-blue-100 mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedCourse.title}</h2>
-                <p className="text-gray-600 mb-3">{selectedCourse.description}</p>
-                <div className="flex items-center space-x-2 mb-3">
-                  <Badge className={getLevelColor(selectedCourse.level)}>
-                    {selectedCourse.level}
-                  </Badge>
-                  <Badge variant="outline">{selectedCourse.duration}</Badge>
-                  <Badge variant="outline">{selectedCourse.price}</Badge>
-                </div>
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <span>By {selectedCourse.instructor}</span>
-                  <span>•</span>
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4 text-yellow-400" />
-                    <span>{selectedCourse.rating}</span>
-                  </div>
-                  <span>•</span>
-                  <span>{selectedCourse.students} students</span>
-                </div>
-              </div>
-              <Button variant="ghost" onClick={() => setSelectedCourse(null)}>
-                ✕
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <h3 className="font-semibold mb-3">Course Progress</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Progress: {Math.round(courseProgress.get(selectedCourse.id) || 0)}%</span>
-                  </div>
-                  <Progress value={courseProgress.get(selectedCourse.id) || 0} className="h-3" />
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold mb-3">Skills You'll Learn</h3>
-                <div className="flex flex-wrap gap-2">
-                  {selectedCourse.skills?.map((skill, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {selectedCourse.content && (
-              <div className="mb-6">
-                <h3 className="font-semibold mb-3">Course Content</h3>
-                <div className="space-y-2">
-                  {selectedCourse.content.map((lesson, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <CheckCircle className={`w-4 h-4 ${lesson.completed ? 'text-green-500' : 'text-gray-300'}`} />
-                        <div>
-                          <span className={lesson.completed ? 'text-gray-800' : 'text-gray-500'}>
-                            {lesson.title}
-                          </span>
-                          <div className="text-xs text-gray-500">{lesson.duration}</div>
-                        </div>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => handleWatchLesson(lesson, selectedCourse.id)}
-                        disabled={watchingVideo}
-                      >
-                        <PlayCircle className="w-4 h-4 mr-1" />
-                        {watchingVideo ? 'Playing...' : 'Play'}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-3">
-              <Button 
-                className="bg-blue-600 hover:bg-blue-700"
-                onClick={() => enrolledCourses.has(selectedCourse.id) ? null : handleEnrollCourse(selectedCourse.id)}
-              >
-                {enrolledCourses.has(selectedCourse.id) ? 'Continue Learning' : 'Enroll Now'}
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => handleBookmarkArticle(selectedCourse.id)}
-              >
-                <Bookmark className="w-4 h-4 mr-2" />
-                Bookmark
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Article Detail Modal */}
-      {selectedArticle && (
-        <Card className="bg-white/95 rounded-xl border border-blue-100 mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedArticle.title}</h2>
-                <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
-                  <span>By {selectedArticle.author}</span>
-                  <span>•</span>
-                  <span>{selectedArticle.readTime}</span>
-                  <span>•</span>
-                  <span>{selectedArticle.publishDate}</span>
-                </div>
-              </div>
-              <Button variant="ghost" onClick={() => setSelectedArticle(null)}>
-                ✕
-              </Button>
-            </div>
-
-            <img src={selectedArticle.image} alt={selectedArticle.title} className="w-full h-64 object-cover rounded-lg mb-6" />
-            
-            <div className="prose max-w-none mb-6">
-              <div className="whitespace-pre-line text-gray-700 leading-relaxed">
-                {selectedArticle.content || selectedArticle.excerpt}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between border-t pt-4">
-              <div className="flex items-center space-x-4">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => handleLikeArticle(selectedArticle.id)}
-                  className={likedArticles.has(selectedArticle.id) ? 'text-red-500' : ''}
-                >
-                  <ThumbsUp className="w-4 h-4 mr-1" />
-                  {selectedArticle.likes + (likedArticles.has(selectedArticle.id) ? 1 : 0)}
-                </Button>
-                <Button variant="ghost" size="sm">
-                  <MessageCircle className="w-4 h-4 mr-1" />
-                  {selectedArticle.comments}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => handleBookmarkArticle(selectedArticle.id)}
-                  className={bookmarkedArticles.has(selectedArticle.id) ? 'text-blue-500' : ''}
-                >
-                  <Bookmark className="w-4 h-4 mr-1" />
-                  {bookmarkedArticles.has(selectedArticle.id) ? 'Bookmarked' : 'Bookmark'}
-                </Button>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => handleShareArticle(selectedArticle)}
-              >
-                <Share2 className="w-4 h-4 mr-1" />
-                Share
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Webinar Detail Modal */}
-      {selectedWebinar && (
-        <Card className="bg-white/95 rounded-xl border border-blue-100 mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedWebinar.title}</h2>
-                <p className="text-gray-600 mb-3">{selectedWebinar.description}</p>
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                  <span>By {selectedWebinar.speaker}</span>
-                  <span>•</span>
-                  <span>{selectedWebinar.date} at {selectedWebinar.time}</span>
-                  <span>•</span>
-                  <span>{selectedWebinar.duration}</span>
-                  <span>•</span>
-                  <span>{selectedWebinar.price}</span>
-                </div>
-              </div>
-              <Button variant="ghost" onClick={() => setSelectedWebinar(null)}>
-                ✕
-              </Button>
-            </div>
-
-            <img src={selectedWebinar.thumbnail} alt={selectedWebinar.title} className="w-full h-64 object-cover rounded-lg mb-6" />
-            
-            <div className="mb-6">
-              <h3 className="font-semibold mb-3">Topics Covered</h3>
-              <div className="flex flex-wrap gap-2">
-                {selectedWebinar.topics?.map((topic, index) => (
-                  <Badge key={index} variant="outline" className="text-xs">
-                    {topic}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mb-6">
-              <div className="text-sm text-gray-600">
-                {selectedWebinar.attendees}/{selectedWebinar.maxAttendees} registered
-              </div>
-              <Badge variant={selectedWebinar.status === 'upcoming' ? 'default' : 'secondary'}>
-                {selectedWebinar.status === 'upcoming' ? 'Upcoming' : 'Recorded'}
-              </Badge>
-            </div>
-
-            <div className="flex gap-3">
-              <Button 
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => handleRegisterWebinar(selectedWebinar.id)}
-              >
-                {registeredWebinars.has(selectedWebinar.id) ? 'Registered ✓' : selectedWebinar.status === 'upcoming' ? 'Register Now' : 'Watch Recording'}
-              </Button>
-              <Button variant="outline">
-                <Calendar className="w-4 h-4 mr-2" />
-                Add to Calendar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -617,7 +437,7 @@ The fashion industry is the second-largest polluter globally, responsible for 10
                   </option>
                 ))}
               </select>
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => toast({ title: "Filter Options", description: "Advanced filtering options coming soon!" })}>
                 <Filter className="w-4 h-4" />
               </Button>
             </div>
@@ -701,6 +521,116 @@ The fashion industry is the second-largest polluter globally, responsible for 10
               </Card>
             ))}
           </div>
+
+          {/* Course Detail Modal - Positioned below courses */}
+          {selectedCourse && (
+            <Card className="bg-white/95 rounded-xl border border-blue-100 mt-6">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedCourse.title}</h2>
+                    <p className="text-gray-600 mb-3">{selectedCourse.description}</p>
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Badge className={getLevelColor(selectedCourse.level)}>
+                        {selectedCourse.level}
+                      </Badge>
+                      <Badge variant="outline">{selectedCourse.duration}</Badge>
+                      <Badge variant="outline">{selectedCourse.price}</Badge>
+                    </div>
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <span>By {selectedCourse.instructor}</span>
+                      <span>•</span>
+                      <div className="flex items-center space-x-1">
+                        <Star className="w-4 h-4 text-yellow-400" />
+                        <span>{selectedCourse.rating}</span>
+                      </div>
+                      <span>•</span>
+                      <span>{selectedCourse.students} students</span>
+                    </div>
+                  </div>
+                  <Button variant="ghost" onClick={() => setSelectedCourse(null)}>
+                    ✕
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <h3 className="font-semibold mb-3">Course Progress</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Progress: {Math.round(courseProgress.get(selectedCourse.id) || 0)}%</span>
+                      </div>
+                      <Progress value={courseProgress.get(selectedCourse.id) || 0} className="h-3" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold mb-3">Skills You'll Learn</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCourse.skills?.map((skill, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {selectedCourse.content && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold mb-3">Course Content</h3>
+                    <div className="space-y-2">
+                      {selectedCourse.content.map((lesson, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center space-x-3">
+                            <CheckCircle className={`w-4 h-4 ${lesson.completed ? 'text-green-500' : 'text-gray-300'}`} />
+                            <div>
+                              <span className={lesson.completed ? 'text-gray-800' : 'text-gray-500'}>
+                                {lesson.title}
+                              </span>
+                              <div className="text-xs text-gray-500">{lesson.duration}</div>
+                            </div>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => handleWatchLesson(lesson, selectedCourse.id)}
+                            disabled={watchingVideo}
+                          >
+                            <PlayCircle className="w-4 h-4 mr-1" />
+                            {watchingVideo ? 'Playing...' : 'Play'}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <Button 
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => enrolledCourses.has(selectedCourse.id) ? null : handleEnrollCourse(selectedCourse.id)}
+                  >
+                    {enrolledCourses.has(selectedCourse.id) ? 'Continue Learning' : 'Enroll Now'}
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => handleBookmarkArticle(selectedCourse.id)}
+                  >
+                    <Bookmark className="w-4 h-4 mr-2" />
+                    Bookmark
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => handleDownloadCertificate(selectedCourse.id)}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Certificate
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="articles" className="space-y-4">
@@ -743,10 +673,15 @@ The fashion industry is the second-largest polluter globally, responsible for 10
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <ThumbsUp className={`w-4 h-4 ${likedArticles.has(article.id) ? 'text-red-500' : ''}`} />
-                          <span>{article.likes + (likedArticles.has(article.id) ? 1 : 0)}</span>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleLikeArticle(article.id)}
+                          className={likedArticles.has(article.id) ? 'text-red-500' : ''}
+                        >
+                          <ThumbsUp className={`w-4 h-4 mr-1 ${likedArticles.has(article.id) ? 'fill-current' : ''}`} />
+                          {article.likes + (likedArticles.has(article.id) ? 1 : 0)}
+                        </Button>
                         <div className="flex items-center space-x-1">
                           <MessageCircle className="w-4 h-4" />
                           <span>{article.comments}</span>
@@ -764,6 +699,72 @@ The fashion industry is the second-largest polluter globally, responsible for 10
               </Card>
             ))}
           </div>
+
+          {/* Article Detail Modal */}
+          {selectedArticle && (
+            <Card className="bg-white/95 rounded-xl border border-blue-100 mt-6">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedArticle.title}</h2>
+                    <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
+                      <span>By {selectedArticle.author}</span>
+                      <span>•</span>
+                      <span>{selectedArticle.readTime}</span>
+                      <span>•</span>
+                      <span>{selectedArticle.publishDate}</span>
+                    </div>
+                  </div>
+                  <Button variant="ghost" onClick={() => setSelectedArticle(null)}>
+                    ✕
+                  </Button>
+                </div>
+
+                <img src={selectedArticle.image} alt={selectedArticle.title} className="w-full h-64 object-cover rounded-lg mb-6" />
+                
+                <div className="prose max-w-none mb-6">
+                  <div className="whitespace-pre-line text-gray-700 leading-relaxed">
+                    {selectedArticle.content || selectedArticle.excerpt}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t pt-4">
+                  <div className="flex items-center space-x-4">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleLikeArticle(selectedArticle.id)}
+                      className={likedArticles.has(selectedArticle.id) ? 'text-red-500' : ''}
+                    >
+                      <ThumbsUp className="w-4 h-4 mr-1" />
+                      {selectedArticle.likes + (likedArticles.has(selectedArticle.id) ? 1 : 0)}
+                    </Button>
+                    <Button variant="ghost" size="sm">
+                      <MessageCircle className="w-4 h-4 mr-1" />
+                      {selectedArticle.comments}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleBookmarkArticle(selectedArticle.id)}
+                      className={bookmarkedArticles.has(selectedArticle.id) ? 'text-blue-500' : ''}
+                    >
+                      <Bookmark className="w-4 h-4 mr-1" />
+                      {bookmarkedArticles.has(selectedArticle.id) ? 'Bookmarked' : 'Bookmark'}
+                    </Button>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleShareArticle(selectedArticle)}
+                  >
+                    <Share2 className="w-4 h-4 mr-1" />
+                    Share
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="webinars" className="space-y-4">
@@ -803,12 +804,22 @@ The fashion industry is the second-largest polluter globally, responsible for 10
                           <div className="text-sm text-gray-600 mb-2">
                             {webinar.attendees}/{webinar.maxAttendees}
                           </div>
-                          <Button 
-                            size="sm"
-                            onClick={() => setSelectedWebinar(webinar)}
-                          >
-                            {webinar.status === 'upcoming' ? 'View Details' : 'Watch Recording'}
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm"
+                              onClick={() => setSelectedWebinar(webinar)}
+                              variant="outline"
+                            >
+                              View Details
+                            </Button>
+                            <Button 
+                              size="sm"
+                              onClick={() => handleRegisterWebinar(webinar.id)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              {registeredWebinars.has(webinar.id) ? 'Registered ✓' : webinar.status === 'upcoming' ? 'Register' : 'Watch'}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -817,6 +828,67 @@ The fashion industry is the second-largest polluter globally, responsible for 10
               </Card>
             ))}
           </div>
+
+          {/* Webinar Detail Modal */}
+          {selectedWebinar && (
+            <Card className="bg-white/95 rounded-xl border border-blue-100 mt-6">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedWebinar.title}</h2>
+                    <p className="text-gray-600 mb-3">{selectedWebinar.description}</p>
+                    <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <span>By {selectedWebinar.speaker}</span>
+                      <span>•</span>
+                      <span>{selectedWebinar.date} at {selectedWebinar.time}</span>
+                      <span>•</span>
+                      <span>{selectedWebinar.duration}</span>
+                      <span>•</span>
+                      <span>{selectedWebinar.price}</span>
+                    </div>
+                  </div>
+                  <Button variant="ghost" onClick={() => setSelectedWebinar(null)}>
+                    ✕
+                  </Button>
+                </div>
+
+                <img src={selectedWebinar.thumbnail} alt={selectedWebinar.title} className="w-full h-64 object-cover rounded-lg mb-6" />
+                
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-3">Topics Covered</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedWebinar.topics?.map((topic, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {topic}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mb-6">
+                  <div className="text-sm text-gray-600">
+                    {selectedWebinar.attendees}/{selectedWebinar.maxAttendees} registered
+                  </div>
+                  <Badge variant={selectedWebinar.status === 'upcoming' ? 'default' : 'secondary'}>
+                    {selectedWebinar.status === 'upcoming' ? 'Upcoming' : 'Recorded'}
+                  </Badge>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button 
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => handleRegisterWebinar(selectedWebinar.id)}
+                  >
+                    {registeredWebinars.has(selectedWebinar.id) ? 'Registered ✓' : selectedWebinar.status === 'upcoming' ? 'Register Now' : 'Watch Recording'}
+                  </Button>
+                  <Button variant="outline" onClick={() => toast({ title: "Calendar Event", description: "Event added to your calendar!" })}>
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Add to Calendar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="achievements" className="space-y-4">

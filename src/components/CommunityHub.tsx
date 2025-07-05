@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,69 +29,85 @@ import {
   Zap
 } from 'lucide-react';
 import { useUserData } from '@/contexts/UserDataContext';
+import { useNotificationHelper } from '@/hooks/useNotificationHelper';
+import { useToast } from '@/hooks/use-toast';
 
 const CommunityHub = () => {
   const { userStats } = useUserData();
+  const { addCommunityNotification } = useNotificationHelper();
+  const { toast } = useToast();
+  
   const [activeTab, setActiveTab] = useState('feed');
   const [searchQuery, setSearchQuery] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [showCreatePost, setShowCreatePost] = useState(false);
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      author: {
-        name: 'Sarah Green',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=40&h=40&fit=crop&crop=face',
-        badge: 'Eco Champion',
-        level: 'Expert'
-      },
-      content: 'Just switched to a bamboo toothbrush and love it! Small changes make a big difference. What sustainable swaps have you made recently?',
-      image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop',
-      timestamp: '2 hours ago',
-      likes: 24,
-      comments: 8,
-      shares: 3,
-      tags: ['Zero Waste', 'Personal Care', 'Sustainability'],
-      liked: false,
-      bookmarked: false
-    },
-    {
-      id: 2,
-      author: {
-        name: 'Mike Rodriguez',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
-        badge: 'Solar Advocate',
-        level: 'Pro'
-      },
-      content: 'Our solar panel installation is complete! Excited to share our energy independence journey. AMA about residential solar!',
-      image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=300&fit=crop',
-      timestamp: '4 hours ago',
-      likes: 67,
-      comments: 15,
-      shares: 12,
-      tags: ['Solar Energy', 'Renewable Energy', 'Home Improvement'],
-      liked: true,
-      bookmarked: true
-    },
-    {
-      id: 3,
-      author: {
-        name: 'Emma Thompson',
-        avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face',
-        badge: 'Climate Activist',
-        level: 'Master'
-      },
-      content: 'Organizing a community cleanup this weekend! Join us to make our neighborhood cleaner and greener. Details in comments.',
-      timestamp: '1 day ago',
-      likes: 89,
-      comments: 23,
-      shares: 18,
-      tags: ['Community Action', 'Cleanup', 'Environment'],
-      liked: false,
-      bookmarked: false
+  const [posts, setPosts] = useState(() => {
+    const basePosts = [
+      {
+        id: 1,
+        author: {
+          name: 'Sarah Green',
+          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=40&h=40&fit=crop&crop=face',
+          badge: 'Eco Champion',
+          level: 'Expert'
+        },
+        content: 'Just switched to a bamboo toothbrush and love it! Small changes make a big difference. What sustainable swaps have you made recently?',
+        image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop',
+        timestamp: '2 hours ago',
+        likes: 24,
+        comments: 8,
+        shares: 3,
+        tags: ['Zero Waste', 'Personal Care', 'Sustainability'],
+        liked: false,
+        bookmarked: false
+      }
+    ];
+
+    if (userStats.totalScans > 5) {
+      basePosts.push({
+        id: 2,
+        author: {
+          name: 'Mike Rodriguez',
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+          badge: 'Solar Advocate',
+          level: 'Pro'
+        },
+        content: `Amazing to see so many active eco warriors! I've scanned ${userStats.totalScans} products this week. Keep it up everyone!`,
+        image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=300&fit=crop',
+        timestamp: '4 hours ago',
+        likes: 67,
+        comments: 15,
+        shares: 12,
+        tags: ['Community', 'Product Scanning', 'Motivation'],
+        liked: true,
+        bookmarked: true
+      });
     }
-  ]);
+
+    if (userStats.co2Saved > 10) {
+      basePosts.push({
+        id: 3,
+        author: {
+          name: 'Emma Thompson',
+          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face',
+          badge: 'Climate Activist',
+          level: 'Master'
+        },
+        content: `Celebrating everyone who's making a difference! Together we've saved tons of CO₂. Your ${userStats.co2Saved}kg contribution matters!`,
+        image: 'https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=400&h=300&fit=crop',
+        timestamp: '1 day ago',
+        likes: 89 + Math.floor(userStats.co2Saved),
+        comments: 23,
+        shares: 18,
+        tags: ['Climate Action', 'Carbon Reduction', 'Community Impact'],
+        liked: false,
+        bookmarked: false
+      });
+    }
+
+    return basePosts;
+  });
 
   const [groups, setGroups] = useState([
     {
@@ -228,6 +243,43 @@ const CommunityHub = () => {
         ? { ...post, liked: !post.liked, likes: post.liked ? post.likes - 1 : post.likes + 1 }
         : post
     ));
+    
+    const post = posts.find(p => p.id === postId);
+    if (post && !post.liked) {
+      addCommunityNotification(`You liked "${post.author.name}'s" post about sustainability!`);
+      toast({
+        title: "Post Liked!",
+        description: "Your engagement helps build our community.",
+      });
+    }
+  };
+
+  const handleComment = (postId) => {
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      addCommunityNotification(`You commented on "${post.author.name}'s" post. Join the conversation!`);
+      toast({
+        title: "Comment Added!",
+        description: "Your comment helps spark meaningful discussions.",
+      });
+    }
+  };
+
+  const handleShare = (postId) => {
+    const post = posts.find(p => p.id === postId);
+    if (post && navigator.share) {
+      navigator.share({
+        title: `Post by ${post.author.name}`,
+        text: post.content,
+        url: window.location.href
+      });
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link Copied!",
+        description: "Post link copied to clipboard.",
+      });
+    }
   };
 
   const handleBookmark = (postId) => {
@@ -236,6 +288,24 @@ const CommunityHub = () => {
         ? { ...post, bookmarked: !post.bookmarked }
         : post
     ));
+    
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      toast({
+        title: post.bookmarked ? "Bookmark Removed" : "Post Bookmarked!",
+        description: post.bookmarked ? "Removed from your saved posts." : "Saved to your bookmarks.",
+      });
+    }
+  };
+
+  const handleFlag = (postId) => {
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      toast({
+        title: "Post Reported",
+        description: "Thank you for helping keep our community safe.",
+      });
+    }
   };
 
   const handleJoinGroup = (groupId) => {
@@ -244,6 +314,22 @@ const CommunityHub = () => {
         ? { ...group, joined: !group.joined, members: group.joined ? group.members - 1 : group.members + 1 }
         : group
     ));
+    
+    const group = groups.find(g => g.id === groupId);
+    if (group) {
+      if (!group.joined) {
+        addCommunityNotification(`You joined the "${group.name}" group! Connect with like-minded people.`);
+        toast({
+          title: "Group Joined!",
+          description: `Welcome to ${group.name}. Start connecting with ${group.members} members.`,
+        });
+      } else {
+        toast({
+          title: "Left Group",
+          description: `You've left ${group.name}.`,
+        });
+      }
+    }
   };
 
   const handleRegisterEvent = (eventId) => {
@@ -252,6 +338,22 @@ const CommunityHub = () => {
         ? { ...event, registered: !event.registered, attendees: event.registered ? event.attendees - 1 : event.attendees + 1 }
         : event
     ));
+    
+    const event = events.find(e => e.id === eventId);
+    if (event) {
+      if (!event.registered) {
+        addCommunityNotification(`You registered for "${event.title}"! Don't forget to attend on ${event.date}.`);
+        toast({
+          title: "Event Registration Successful!",
+          description: `You're registered for ${event.title}. See you on ${event.date}!`,
+        });
+      } else {
+        toast({
+          title: "Registration Cancelled",
+          description: `You've unregistered from ${event.title}.`,
+        });
+      }
+    }
   };
 
   const handleJoinChallenge = (challengeId) => {
@@ -260,6 +362,22 @@ const CommunityHub = () => {
         ? { ...challenge, joined: !challenge.joined, participants: challenge.joined ? challenge.participants - 1 : challenge.participants + 1 }
         : challenge
     ));
+    
+    const challenge = challenges.find(c => c.id === challengeId);
+    if (challenge) {
+      if (!challenge.joined) {
+        addCommunityNotification(`You joined the "${challenge.title}" challenge! Start making a difference today.`);
+        toast({
+          title: "Challenge Joined!",
+          description: `You're now part of ${challenge.title}. Good luck making a positive impact!`,
+        });
+      } else {
+        toast({
+          title: "Challenge Left",
+          description: `You've left ${challenge.title}.`,
+        });
+      }
+    }
   };
 
   const handleCreatePost = () => {
@@ -273,6 +391,7 @@ const CommunityHub = () => {
           level: 'Beginner'
         },
         content: newPostContent,
+        image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=300&fit=crop',
         timestamp: 'Just now',
         likes: 0,
         comments: 0,
@@ -284,6 +403,12 @@ const CommunityHub = () => {
       setPosts([newPost, ...posts]);
       setNewPostContent('');
       setShowCreatePost(false);
+      
+      addCommunityNotification('Your post has been shared with the community! Engage with others to build connections.');
+      toast({
+        title: "Post Created!",
+        description: "Your post is now live in the community feed.",
+      });
     }
   };
 
@@ -323,7 +448,6 @@ const CommunityHub = () => {
                 placeholder="Search posts, groups, events..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
               />
             </div>
             <div className="flex gap-2">
@@ -331,7 +455,7 @@ const CommunityHub = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Create Post
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={() => toast({ title: "Filter Options", description: "Advanced filtering coming soon!" })}>
                 <Filter className="w-4 h-4" />
               </Button>
             </div>
@@ -425,11 +549,11 @@ const CommunityHub = () => {
                       <Heart className={`w-4 h-4 mr-1 ${post.liked ? 'fill-current' : ''}`} />
                       {post.likes}
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-600">
+                    <Button variant="ghost" size="sm" className="text-gray-600" onClick={() => handleComment(post.id)}>
                       <MessageCircle className="w-4 h-4 mr-1" />
                       {post.comments}
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-600">
+                    <Button variant="ghost" size="sm" className="text-gray-600" onClick={() => handleShare(post.id)}>
                       <Share2 className="w-4 h-4 mr-1" />
                       {post.shares}
                     </Button>
@@ -443,7 +567,7 @@ const CommunityHub = () => {
                     >
                       <BookmarkPlus className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-600">
+                    <Button variant="ghost" size="sm" className="text-gray-600" onClick={() => handleFlag(post.id)}>
                       <Flag className="w-4 h-4" />
                     </Button>
                   </div>
