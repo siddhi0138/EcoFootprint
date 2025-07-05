@@ -113,6 +113,13 @@ interface UserDataContextType {
   enrollInCourse: (courseId: number) => void;
   updateCourseProgress: (courseId: number, progress: number) => void;
 
+  likedArticles: Set<number>;
+  bookmarkedArticles: Set<number>;
+  registeredWebinars: Set<number>;
+  likeArticle: (articleId: number) => void;
+  bookmarkArticle: (articleId: number) => void;
+  registerWebinar: (webinarId: number) => void;
+
   addCarbonEntry: (entry: Omit<CarbonEntry, 'id' | 'date'>) => void;
   addScannedProduct: (product: ScannedProduct) => void;
   addPoints: (points: number) => void;
@@ -163,16 +170,27 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
   const [enrolledCourses, setEnrolledCourses] = useState<Set<number>>(new Set());
   const [courseProgress, setCourseProgress] = useState<Map<number, number>>(new Map());
 
+  // New states for likedArticles, bookmarkedArticles, registeredWebinars
+  const [likedArticles, setLikedArticles] = useState<Set<number>>(new Set());
+  const [bookmarkedArticles, setBookmarkedArticles] = useState<Set<number>>(new Set());
+  const [registeredWebinars, setRegisteredWebinars] = useState<Set<number>>(new Set());
+
   React.useEffect(() => {
     if (!currentUser) {
       setEnrolledCourses(new Set());
       setCourseProgress(new Map());
+      setLikedArticles(new Set());
+      setBookmarkedArticles(new Set());
+      setRegisteredWebinars(new Set());
       return;
     }
 
     const userDocRef = doc(db, 'users', currentUser.uid);
     const enrolledCoursesRef = collection(userDocRef, 'enrolledCourses');
     const courseProgressRef = collection(userDocRef, 'courseProgress');
+    const likedArticlesRef = collection(userDocRef, 'likedArticles');
+    const bookmarkedArticlesRef = collection(userDocRef, 'bookmarkedArticles');
+    const registeredWebinarsRef = collection(userDocRef, 'registeredWebinars');
 
     // Load enrolled courses
     getDocs(enrolledCoursesRef).then(snapshot => {
@@ -201,7 +219,50 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     }).catch(error => {
       console.error('Error loading course progress:', error);
     });
+
+    // Load liked articles
+    getDocs(likedArticlesRef).then(snapshot => {
+      const liked = new Set<number>();
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.articleId) {
+          liked.add(data.articleId);
+        }
+      });
+      setLikedArticles(liked);
+    }).catch(error => {
+      console.error('Error loading liked articles:', error);
+    });
+
+    // Load bookmarked articles
+    getDocs(bookmarkedArticlesRef).then(snapshot => {
+      const bookmarked = new Set<number>();
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.articleId) {
+          bookmarked.add(data.articleId);
+        }
+      });
+      setBookmarkedArticles(bookmarked);
+    }).catch(error => {
+      console.error('Error loading bookmarked articles:', error);
+    });
+
+    // Load registered webinars
+    getDocs(registeredWebinarsRef).then(snapshot => {
+      const registered = new Set<number>();
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.webinarId) {
+          registered.add(data.webinarId);
+        }
+      });
+      setRegisteredWebinars(registered);
+    }).catch(error => {
+      console.error('Error loading registered webinars:', error);
+    });
   }, [currentUser]);
+
 
   // Function to update enrolled courses in Firestore
   const updateEnrolledCoursesInFirestore = async (enrolled: Set<number>) => {
@@ -223,6 +284,75 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       await batch.commit();
     } catch (error) {
       console.error('Error updating enrolled courses in Firestore:', error);
+    }
+  };
+
+  // Function to update liked articles in Firestore
+  const updateLikedArticlesInFirestore = async (liked: Set<number>) => {
+    if (!currentUser) return;
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const likedArticlesRef = collection(userDocRef, 'likedArticles');
+
+    try {
+      const existingDocs = await getDocs(likedArticlesRef);
+      const batch = writeBatch(db);
+      existingDocs.forEach(docSnap => {
+        batch.delete(docSnap.ref);
+      });
+      liked.forEach(articleId => {
+        const newDocRef = doc(likedArticlesRef);
+        batch.set(newDocRef, { articleId });
+      });
+      await batch.commit();
+      console.log('Successfully updated liked articles in Firestore');
+    } catch (error) {
+      console.error('Error updating liked articles in Firestore:', error);
+    }
+  };
+
+  // Function to update bookmarked articles in Firestore
+  const updateBookmarkedArticlesInFirestore = async (bookmarked: Set<number>) => {
+    if (!currentUser) return;
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const bookmarkedArticlesRef = collection(userDocRef, 'bookmarkedArticles');
+
+    try {
+      const existingDocs = await getDocs(bookmarkedArticlesRef);
+      const batch = writeBatch(db);
+      existingDocs.forEach(docSnap => {
+        batch.delete(docSnap.ref);
+      });
+      bookmarked.forEach(articleId => {
+        const newDocRef = doc(bookmarkedArticlesRef);
+        batch.set(newDocRef, { articleId });
+      });
+      await batch.commit();
+      console.log('Successfully updated bookmarked articles in Firestore');
+    } catch (error) {
+      console.error('Error updating bookmarked articles in Firestore:', error);
+    }
+  };
+
+  // Function to update registered webinars in Firestore
+  const updateRegisteredWebinarsInFirestore = async (registered: Set<number>) => {
+    if (!currentUser) return;
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const registeredWebinarsRef = collection(userDocRef, 'registeredWebinars');
+
+    try {
+      const existingDocs = await getDocs(registeredWebinarsRef);
+      const batch = writeBatch(db);
+      existingDocs.forEach(docSnap => {
+        batch.delete(docSnap.ref);
+      });
+      registered.forEach(webinarId => {
+        const newDocRef = doc(registeredWebinarsRef);
+        batch.set(newDocRef, { webinarId });
+      });
+      await batch.commit();
+      console.log('Successfully updated registered webinars in Firestore');
+    } catch (error) {
+      console.error('Error updating registered webinars in Firestore:', error);
     }
   };
 
@@ -249,6 +379,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+
   // Function to enroll in a course
   const enrollInCourse = (courseId: number) => {
     setEnrolledCourses(prev => {
@@ -258,6 +389,47 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       return newSet;
     });
   };
+
+  // Function to like an article
+  const likeArticle = (articleId: number) => {
+    setLikedArticles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(articleId)) {
+        newSet.delete(articleId);
+      } else {
+        newSet.add(articleId);
+      }
+      updateLikedArticlesInFirestore(newSet);
+      return newSet;
+    });
+  };
+
+  // Function to bookmark an article
+  const bookmarkArticle = (articleId: number) => {
+    setBookmarkedArticles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(articleId)) {
+        newSet.delete(articleId);
+      } else {
+        newSet.add(articleId);
+      }
+      updateBookmarkedArticlesInFirestore(newSet);
+      return newSet;
+    });
+  };
+
+  // Function to register for a webinar
+  const registerWebinar = (webinarId: number) => {
+    setRegisteredWebinars(prev => {
+      const newSet = new Set(prev);
+      if (!newSet.has(webinarId)) {
+        newSet.add(webinarId);
+        updateRegisteredWebinarsInFirestore(newSet);
+      }
+      return newSet;
+    });
+  };
+
 
   // Function to update progress for a course
   const updateCourseProgress = (courseId: number, progress: number) => {
@@ -791,6 +963,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
 
 
 
+  
   return (
     <UserDataContext.Provider value={{
       carbonEntries,
@@ -815,6 +988,13 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       courseProgress,
       enrollInCourse,
       updateCourseProgress,
+
+      likedArticles,
+      bookmarkedArticles,
+      registeredWebinars,
+      likeArticle,
+      bookmarkArticle,
+      registerWebinar,
 
       addCarbonEntry,
       addScannedProduct,
