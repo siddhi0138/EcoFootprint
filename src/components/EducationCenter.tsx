@@ -39,29 +39,23 @@ const EducationCenter = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [selectedWebinar, setSelectedWebinar] = useState(null);
-  const [watchingVideo, setWatchingVideo] = useState(false);
-  const { userStats, incrementCourseCompleted } = useUserData();
+  const {
+    enrolledCourses,
+    courseProgress,
+    enrollInCourse,
+    updateCourseProgress,
+    userStats,
+    incrementCourseCompleted,
+  } = useUserData();
   const { addCourseCompletionNotification, addRecipeViewNotification, addGeneralNotification } = useNotificationHelper();
-  
-  const [enrolledCourses, setEnrolledCourses] = useState(() => {
-    const enrolled = new Set();
-    if (userStats.totalScans >= 10) enrolled.add(1);
-    if (userStats.co2Saved >= 5) enrolled.add(2);
-    return enrolled;
-  });
-  
-  const [courseProgress, setCourseProgress] = useState(() => {
-    const progress = new Map();
-    if (userStats.coursesCompleted >= 1) progress.set(1, 100);
-    if (userStats.coursesCompleted >= 2) progress.set(2, 100);
-    if (userStats.totalScans >= 5 && userStats.coursesCompleted < 1) progress.set(1, 30);
-    return progress;
-  });
-  
   const [likedArticles, setLikedArticles] = useState(new Set());
   const [bookmarkedArticles, setBookmarkedArticles] = useState(new Set());
   const [registeredWebinars, setRegisteredWebinars] = useState(new Set());
   const { toast } = useToast();
+  const [watchingVideo, setWatchingVideo] = useState(false);
+
+  // Remove usage of setEnrolledCourses and setCourseProgress since they do not exist
+  // Use enrolledCourses and courseProgress directly from context
 
   const courses = [
     {
@@ -235,8 +229,7 @@ The fashion industry is the second-largest polluter globally, responsible for 10
   ];
 
   const handleEnrollCourse = (courseId) => {
-    setEnrolledCourses(prev => new Set([...prev, courseId]));
-    setCourseProgress(prev => new Map([...prev, [courseId, 0]]));
+    enrollInCourse(courseId);
     
     const course = courses.find(c => c.id === courseId);
     if (course) {
@@ -262,7 +255,7 @@ The fashion industry is the second-largest polluter globally, responsible for 10
       const currentProgress = courseProgress.get(courseId) || 0;
       const course = courses.find(c => c.id === courseId);
       const newProgress = Math.min(currentProgress + (100 / (course?.lessons || 8)), 100);
-      setCourseProgress(prev => new Map([...prev, [courseId, newProgress]]));
+      updateCourseProgress(courseId, newProgress);
       
       if (newProgress === 100) {
         incrementCourseCompleted();

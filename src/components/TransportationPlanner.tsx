@@ -1,11 +1,9 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2, Save } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 import { 
   MapPin, 
   Car, 
@@ -17,131 +15,227 @@ import {
   Clock,
   DollarSign,
   Navigation,
-  Bookmark,
   Zap,
-  TreePine
+  TreePine,
+  Loader2
 } from 'lucide-react';
-import { db } from '../firebase';
-import { useAuth } from '../contexts/AuthContext';
-import { doc, onSnapshot, collection, addDoc, deleteDoc } from 'firebase/firestore';
 
 const TransportationPlanner = () => {
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
   const [routes, setRoutes] = useState([]);
-
-  const mockRoutes = [
-    {
-      mode: 'walking',
-      icon: Footprints,
-      name: 'Walking',
-      duration: '23 min',
-      distance: '1.8 km',
-      cost: '$0',
-      emissions: 0,
-      calories: 120,
-      color: 'bg-green-500',
-      sustainability: 100,
-      benefits: ['Zero emissions', 'Great exercise', 'No cost']
-    },
-    {
-      mode: 'cycling',
-      icon: Bike,
-      name: 'Cycling',
-      duration: '8 min',
-      distance: '1.8 km',
-      cost: '$0',
-      emissions: 0,
-      calories: 45,
-      color: 'bg-emerald-500',
-      sustainability: 98,
-      benefits: ['Zero emissions', 'Fast & healthy', 'Bike-friendly route']
-    },
-    {
-      mode: 'transit',
-      icon: Bus,
-      name: 'Public Transit',
-      duration: '15 min',
-      distance: '2.1 km',
-      cost: '$2.50',
-      emissions: 0.12,
-      calories: 15,
-      color: 'bg-blue-500',
-      sustainability: 85,
-      benefits: ['Low emissions', 'Cost effective', '2 bus transfers']
-    },
-    {
-      mode: 'train',
-      icon: Train,
-      name: 'Metro Rail',
-      duration: '12 min',
-      distance: '2.3 km',
-      cost: '$3.00',
-      emissions: 0.08,
-      calories: 10,
-      color: 'bg-indigo-500',
-      sustainability: 90,
-      benefits: ['Very low emissions', 'Reliable timing', 'Direct route']
-    },
-    {
-      mode: 'rideshare',
-      icon: Car,
-      name: 'Rideshare (Shared)',
-      duration: '7 min',
-      distance: '1.9 km',
-      cost: '$8.50',
-      emissions: 0.35,
-      calories: 0,
-      color: 'bg-yellow-500',
-      sustainability: 60,
-      benefits: ['Door to door', 'Shared ride', 'No parking needed']
-    },
-    {
-      mode: 'car',
-      icon: Car,
-      name: 'Private Car',
-      duration: '6 min',
-      distance: '1.9 km',
-      cost: '$4.20',
-      emissions: 0.85,
-      calories: 0,
-      color: 'bg-red-500',
-      sustainability: 25,
-      benefits: ['Fastest option', 'Private', 'Direct route']
-    }
-  ];
-
-  const { currentUser } = useAuth();
-  const [savedRoutes, setSavedRoutes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [apiKey, setApiKey] = useState('');
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (currentUser) {
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      const savedRoutesCollectionRef = collection(userDocRef, 'savedRoutes');
-      const unsubscribe = onSnapshot(savedRoutesCollectionRef, (snapshot) => {
-        const routesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data() as any,
-        }));
-        setSavedRoutes(routesData);
-      }, (error) => {
-        console.error("Error fetching saved routes: ", error);
+  // Geocoding function using Nominatim (free)
+  const geocodeLocation = async (location) => {
+    try {
+      const response = await fetch(
+        https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1
+      );
+      const data = await response.json();
+      if (data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lon: parseFloat(data[0].lon),
+          display_name: data[0].display_name
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      return null;
+    }
+  };
+
+  // Route calculation using OpenRouteService API
+  const calculateRoute = async (fromCoords, toCoords, profile) => {
+    if (!apiKey) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter your OpenRouteService API key to calculate real routes.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    try {
+      const response = await fetch(
+        https://api.openrouteservice.org/v2/directions/${profile}?api_key=${apiKey}&start=${fromCoords.lon},${fromCoords.lat}&end=${toCoords.lon},${toCoords.lat}
+      );
+      
+      if (!response.ok) {
+        throw new Error(API Error: ${response.status});
+      }
+      
+      const data = await response.json();
+      return data.features[0].properties.segments[0];
+    } catch (error) {
+      console.error('Route calculation error:', error);
+      return null;
+    }
+  };
+
+  // Calculate emissions based on distance and transport mode
+  const calculateEmissions = (distance, mode) => {
+    const emissionFactors = {
+      'foot-walking': 0,
+      'cycling-regular': 0,
+      'driving-car': 0.21, // kg CO2 per km
+      'bus': 0.089, // kg CO2 per km per person
+      'train': 0.041 // kg CO2 per km per person
+    };
+    return ((distance / 1000) * (emissionFactors[mode] || 0)).toFixed(2);
+  };
+
+  // Calculate cost based on distance and transport mode
+  const calculateCost = (distance, mode) => {
+    const costFactors = {
+      'foot-walking': 0,
+      'cycling-regular': 0,
+      'driving-car': 0.15, // $ per km (fuel + maintenance)
+      'bus': 0.12, // $ per km
+      'train': 0.08 // $ per km
+    };
+    return ((distance / 1000) * (costFactors[mode] || 0)).toFixed(2);
+  };
+
+  // Calculate calories burned
+  const calculateCalories = (distance, mode) => {
+    const calorieFactors = {
+      'foot-walking': 50, // calories per km
+      'cycling-regular': 30, // calories per km
+      'driving-car': 0,
+      'bus': 0,
+      'train': 0
+    };
+    return Math.round((distance / 1000) * (calorieFactors[mode] || 0));
+  };
+
+  // Get sustainability score
+  const getSustainabilityScore = (mode) => {
+    const scores = {
+      'foot-walking': 100,
+      'cycling-regular': 98,
+      'bus': 85,
+      'train': 90,
+      'driving-car': 25
+    };
+    return scores[mode] || 50;
+  };
+
+  // Get transport mode details
+  const getTransportModeDetails = (profile) => {
+    const modeDetails = {
+      'foot-walking': {
+        icon: Footprints,
+        name: 'Walking',
+        color: 'bg-green-500',
+        benefits: ['Zero emissions', 'Great exercise', 'No cost']
+      },
+      'cycling-regular': {
+        icon: Bike,
+        name: 'Cycling',
+        color: 'bg-emerald-500',
+        benefits: ['Zero emissions', 'Fast & healthy', 'Bike-friendly route']
+      },
+      'driving-car': {
+        icon: Car,
+        name: 'Driving',
+        color: 'bg-red-500',
+        benefits: ['Door to door', 'Weather independent', 'Fastest option']
+      }
+    };
+    return modeDetails[profile] || {
+      icon: Navigation,
+      name: profile,
+      color: 'bg-gray-500',
+      benefits: ['Transportation option']
+    };
+  };
+
+  const planRoute = async () => {
+    if (!fromLocation || !toLocation) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both starting and destination locations.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    setRoutes([]);
+
+    try {
+      // Geocode both locations
+      const fromCoords = await geocodeLocation(fromLocation);
+      const toCoords = await geocodeLocation(toLocation);
+
+      if (!fromCoords || !toCoords) {
         toast({
-          title: "Error",
-          description: "Failed to load saved routes.",
+          title: "Location Not Found",
+          description: "Could not find one or both locations. Please check your input.",
           variant: "destructive",
         });
-      });
-      return () => unsubscribe();
-    } else {
-      setSavedRoutes([]);
-    }
-  }, [currentUser, toast]);
+        setLoading(false);
+        return;
+      }
 
-  const planRoute = () => {
-    if (fromLocation && toLocation) {
-      setRoutes(mockRoutes);
+      // Calculate routes for different transport modes
+      const transportModes = ['foot-walking', 'cycling-regular', 'driving-car'];
+      const calculatedRoutes = [];
+
+      for (const mode of transportModes) {
+        const routeData = await calculateRoute(fromCoords, toCoords, mode);
+        if (routeData) {
+          const modeDetails = getTransportModeDetails(mode);
+          const distance = routeData.distance;
+          const duration = routeData.duration;
+          const emissions = calculateEmissions(distance, mode);
+          const cost = calculateCost(distance, mode);
+          const calories = calculateCalories(distance, mode);
+          const sustainability = getSustainabilityScore(mode);
+
+          calculatedRoutes.push({
+            mode,
+            icon: modeDetails.icon,
+            name: modeDetails.name,
+            duration: ${Math.round(duration / 60)} min,
+            distance: ${(distance / 1000).toFixed(1)} km,
+            cost: $${cost},
+            emissions: parseFloat(emissions),
+            calories,
+            color: modeDetails.color,
+            sustainability,
+            benefits: modeDetails.benefits
+          });
+        }
+      }
+
+      if (calculatedRoutes.length === 0) {
+        toast({
+          title: "No Routes Found",
+          description: "Could not calculate routes between these locations.",
+          variant: "destructive",
+        });
+      } else {
+        setRoutes(calculatedRoutes);
+        toast({
+          title: "Routes Calculated",
+          description: Found ${calculatedRoutes.length} route options.,
+        });
+      }
+    } catch (error) {
+      console.error('Error planning route:', error);
+      toast({
+        title: "Error",
+        description: "Failed to calculate routes. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -152,62 +246,45 @@ const TransportationPlanner = () => {
     return { color: 'bg-red-500', label: 'Poor' };
   };
 
-  const handleSaveRoute = async (routeToSave) => {
-    if (!currentUser) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to save routes.",
- variant: "default",
-      });
-      return;
-    }
-
-    try {
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      const savedRoutesCollectionRef = collection(userDocRef, 'savedRoutes');
-      await addDoc(savedRoutesCollectionRef, {
-        fromLocation,
-        toLocation,
-        route: routeToSave,
-        savedAt: new Date(),
-      });
-      toast({
-        title: "Route Saved",
-        description: `${routeToSave.name} route from ${fromLocation} to ${toLocation} saved successfully.`,
-      });
-    } catch (error) {
-      console.error("Error saving route: ", error);
-      toast({
-        title: "Error",
-        description: "Failed to save route.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteRoute = async (routeId) => {
-    try {
-      await deleteDoc(doc(db, 'users', currentUser.uid, 'savedRoutes', routeId));
-      toast({ title: "Route Deleted", description: "Route removed from saved list." });
-    } catch (error) {
-      console.error("Error deleting route: ", error);
-    }
-  }
-
   return (
     <div className="space-y-6">
       <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-green-700">
             <Navigation className="w-6 h-6" />
-            <span>Green Transportation Planner</span>
+            <span>Real-Time Transportation Planner</span>
             <Badge variant="secondary" className="ml-auto bg-green-100 text-green-700">
               <Leaf className="w-4 h-4 mr-1" />
-              Eco-Friendly
+              Live Data
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* API Key Input */}
+          {!apiKey && (
+            <div className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
+              <h3 className="font-semibold text-blue-800 mb-2">API Key Required</h3>
+              <p className="text-sm text-blue-700 mb-3">
+                To calculate real routes, please get a free API key from OpenRouteService and enter it below:
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter your OpenRouteService API key"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={() => window.open('https://openrouteservice.org/dev/#/signup', '_blank')}
+                  variant="outline"
+                  size="sm"
+                >
+                  Get Free API Key
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Route Input */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="space-y-2">
@@ -215,7 +292,7 @@ const TransportationPlanner = () => {
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Enter starting location"
+                  placeholder="Enter starting location (e.g., New York, NY)"
                   value={fromLocation}
                   onChange={(e) => setFromLocation(e.target.value)}
                   className="pl-10 border-green-200 focus:border-green-400"
@@ -227,7 +304,7 @@ const TransportationPlanner = () => {
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Enter destination"
+                  placeholder="Enter destination (e.g., Boston, MA)"
                   value={toLocation}
                   onChange={(e) => setToLocation(e.target.value)}
                   className="pl-10 border-green-200 focus:border-green-400"
@@ -237,10 +314,20 @@ const TransportationPlanner = () => {
             <div className="flex items-end">
               <Button 
                 onClick={planRoute}
+                disabled={loading}
                 className="w-full bg-green-600 hover:bg-green-700"
               >
-                <Navigation className="w-4 h-4 mr-2" />
-                Plan Route
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Calculating...
+                  </>
+                ) : (
+                  <>
+                    <Navigation className="w-4 h-4 mr-2" />
+                    Plan Route
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -254,19 +341,27 @@ const TransportationPlanner = () => {
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">0kg</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {Math.min(...routes.map(r => r.emissions))}kg
+                  </div>
                   <div className="text-sm text-gray-600">Best Option CO₂</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">0.85kg</div>
+                  <div className="text-2xl font-bold text-red-600">
+                    {Math.max(...routes.map(r => r.emissions))}kg
+                  </div>
                   <div className="text-sm text-gray-600">Worst Option CO₂</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">0.85kg</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {(Math.max(...routes.map(r => r.emissions)) - Math.min(...routes.map(r => r.emissions))).toFixed(2)}kg
+                  </div>
                   <div className="text-sm text-gray-600">CO₂ Saved</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-emerald-600">4</div>
+                  <div className="text-2xl font-bold text-emerald-600">
+                    {Math.round((Math.max(...routes.map(r => r.emissions)) - Math.min(...routes.map(r => r.emissions))) * 0.02)}
+                  </div>
                   <div className="text-sm text-gray-600">Trees Equivalent</div>
                 </div>
               </div>
@@ -283,28 +378,22 @@ const TransportationPlanner = () => {
                   <div key={index} className="bg-white/80 rounded-xl p-6 border border-gray-100">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-12 h-12 ${route.color} rounded-xl flex items-center justify-center`}>
+                        <div className={w-12 h-12 ${route.color} rounded-xl flex items-center justify-center}>
                           <route.icon className="w-6 h-6 text-white" />
                         </div>
                         <div>
                           <h4 className="font-semibold text-gray-800">{route.name}</h4>
                           <div className="flex items-center space-x-2 mt-1">
-                            <Badge className={`text-white text-xs ${sustainabilityBadge.color}`}>
+                            <Badge className={text-white text-xs ${sustainabilityBadge.color}}>
                               {sustainabilityBadge.label}
                             </Badge>
                             <span className="text-sm text-gray-600">{route.sustainability}/100</span>
                           </div>
                         </div>
                       </div>
-                      {currentUser && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleSaveRoute(route)}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <Save className="w-4 h-4 mr-2" /> Save Route
-                        </Button>
-                      )}
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                        Select Route
+                      </Button>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
@@ -346,40 +435,6 @@ const TransportationPlanner = () => {
             </div>
           )}
 
-          {/* Saved Routes */}
-          {currentUser && savedRoutes.length > 0 && (
-            <div className="mt-6 space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
-                <Bookmark className="w-5 h-5 text-purple-600" />
-                <span>Saved Routes</span>
-              </h3>
-              {savedRoutes.map((savedRoute) => {
-                const route = savedRoute.route;
-                const sustainabilityBadge = getSustainabilityBadge(route.sustainability);
-                return (
-                  <div key={savedRoute.id} className="bg-white/80 rounded-xl p-4 border border-gray-100 flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-10 h-10 ${route.color} rounded-lg flex items-center justify-center`}>
-                        <route.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-800">{route.name} from {savedRoute.fromLocation} to {savedRoute.toLocation}</div>
-                        <div className="text-sm text-gray-600 flex items-center space-x-3 mt-1">
-                          <span>{route.duration}</span>
-                          <span>{route.distance}</span>
-                          <Badge className={`text-white text-xs ${sustainabilityBadge.color}`}>{sustainabilityBadge.label}</Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <Button variant="destructive" size="sm" onClick={() => handleDeleteRoute(savedRoute.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
           {/* Quick Tips */}
           <div className="mt-6 bg-emerald-50 rounded-xl p-4 border border-emerald-100">
             <h3 className="font-semibold text-emerald-800 mb-2 flex items-center">
@@ -388,9 +443,9 @@ const TransportationPlanner = () => {
             </h3>
             <ul className="text-sm text-emerald-700 space-y-1">
               <li>• Walking and cycling produce zero emissions and improve health</li>
-              <li>• Public transit can reduce your carbon footprint by up to 85%</li>
-              <li>• Shared rides are more sustainable than private car trips</li>
-              <li>• Plan trips during off-peak hours for better transit efficiency</li>
+              <li>• Combine multiple trips to reduce overall transportation needs</li>
+              <li>• Choose direct routes to minimize fuel consumption</li>
+              <li>• Consider weather and traffic conditions when planning</li>
             </ul>
           </div>
         </CardContent>

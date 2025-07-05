@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { db } from '../firebase';
+import { writeBatch } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 import { collection, doc, onSnapshot, addDoc, updateDoc, query, orderBy, limit, getDocs } from 'firebase/firestore';
+
 
 interface Notification {
   id: string;
@@ -46,33 +48,54 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   useEffect(() => {
     if (!currentUser) {
+      console.warn('No currentUser found in NotificationsContextNew, clearing notifications.');
       setNotifications([]);
       setUnreadCount(0);
       return;
     }
 
-    const userDocRef = doc(db, 'users', currentUser.uid);
-    const notificationsCollectionRef = collection(userDocRef, 'notifications');
+    console.log('Setting up notifications listener for user:', currentUser.uid);
 
-    const q = query(notificationsCollectionRef, orderBy('timestamp', 'desc'), limit(50));
+    let unsubscribe: (() => void) | undefined;
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notifs: Notification[] = [];
-      let unread = 0;
-      snapshot.forEach(doc => {
-        const data = doc.data() as Notification;
-        notifs.push({ id: doc.id, ...data });
-        if (!data.read) unread++;
+    try {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const notificationsCollectionRef = collection(userDocRef, 'notifications');
+
+      const q = query(notificationsCollectionRef, orderBy('timestamp', 'desc'), limit(50));
+
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        const notifs: Notification[] = [];
+        let unread = 0;
+        snapshot.forEach(doc => {
+          const data = doc.data() as Notification;
+          notifs.push({ id: doc.id, ...data });
+          if (!data.read) unread++;
+        });
+        setNotifications(notifs);
+        setUnreadCount(unread);
+      }, (error) => {
+        if (error.code === 'permission-denied') {
+          console.warn('Firestore permission denied for notifications:', error.message);
+          // Optionally clear notifications on permission error
+          setNotifications([]);
+          setUnreadCount(0);
+          // Additional user feedback or retry logic could be added here
+        } else {
+          console.error('Error fetching notifications from Firestore:', error);
+        }
       });
-      setNotifications(notifs);
-      setUnreadCount(unread);
-    }, (error) => {
-      console.error('Error fetching notifications from Firestore:', error);
+    } catch (error) {
+      console.error('Unexpected error setting up notifications listener:', error);
       setNotifications([]);
       setUnreadCount(0);
-    });
+    }
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [currentUser]);
 
   const addNotification = async (notification: Omit<Notification, 'id' | 'timestamp'>) => {
@@ -81,9 +104,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     const userDocRef = doc(db, 'users', currentUser.uid);
     const notificationsCollectionRef = collection(userDocRef, 'notifications');
 
+    // Sanitize notification object to exclude unsupported fields like icon
+    const { icon, ...sanitizedNotification } = notification;
+
     try {
       await addDoc(notificationsCollectionRef, {
-        ...notification,
+        ...sanitizedNotification,
         timestamp: new Date(),
         read: false,
       });
@@ -128,8 +154,13 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     try {
       const snapshot = await getDocs(notificationsCollectionRef);
-      const batchPromises = snapshot.docs.map(doc => doc.ref.delete());
-      await Promise.all(batchPromises);
+      // Import writeBatch from firebase/firestore and use it here
+    
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
     } catch (error) {
       console.error('Error clearing all notifications in Firestore:', error);
     }

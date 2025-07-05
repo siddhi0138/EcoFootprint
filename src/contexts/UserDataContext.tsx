@@ -1,7 +1,7 @@
 
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { collection, doc, onSnapshot, addDoc, updateDoc, getDoc, setDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, onSnapshot, addDoc, updateDoc, getDoc, setDoc, getDocs, query, where, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 import { db } from '../firebase';
 import { Timestamp } from 'firebase/firestore';
@@ -107,6 +107,12 @@ interface UserDataContextType {
   setSelectedPriority: React.Dispatch<React.SetStateAction<string>>;
   selectedTab?: string;
   setSelectedTab?: React.Dispatch<React.SetStateAction<string>>;
+
+  enrolledCourses: Set<number>;
+  courseProgress: Map<number, number>;
+  enrollInCourse: (courseId: number) => void;
+  updateCourseProgress: (courseId: number, progress: number) => void;
+
   addCarbonEntry: (entry: Omit<CarbonEntry, 'id' | 'date'>) => void;
   addScannedProduct: (product: ScannedProduct) => void;
   addPoints: (points: number) => void;
@@ -152,6 +158,116 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     sustainabilityScore: 0, // Assuming a current score separate from max
     achievements: [],
   });
+
+  // New state for course progress and enrolled courses
+  const [enrolledCourses, setEnrolledCourses] = useState<Set<number>>(new Set());
+  const [courseProgress, setCourseProgress] = useState<Map<number, number>>(new Map());
+
+  React.useEffect(() => {
+    if (!currentUser) {
+      setEnrolledCourses(new Set());
+      setCourseProgress(new Map());
+      return;
+    }
+
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const enrolledCoursesRef = collection(userDocRef, 'enrolledCourses');
+    const courseProgressRef = collection(userDocRef, 'courseProgress');
+
+    // Load enrolled courses
+    getDocs(enrolledCoursesRef).then(snapshot => {
+      const enrolled = new Set<number>();
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.courseId) {
+          enrolled.add(data.courseId);
+        }
+      });
+      setEnrolledCourses(enrolled);
+    }).catch(error => {
+      console.error('Error loading enrolled courses:', error);
+    });
+
+    // Load course progress
+    getDocs(courseProgressRef).then(snapshot => {
+      const progressMap = new Map<number, number>();
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.courseId && typeof data.progress === 'number') {
+          progressMap.set(data.courseId, data.progress);
+        }
+      });
+      setCourseProgress(progressMap);
+    }).catch(error => {
+      console.error('Error loading course progress:', error);
+    });
+  }, [currentUser]);
+
+  // Function to update enrolled courses in Firestore
+  const updateEnrolledCoursesInFirestore = async (enrolled: Set<number>) => {
+    if (!currentUser) return;
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const enrolledCoursesRef = collection(userDocRef, 'enrolledCourses');
+
+    try {
+      // Clear existing enrolled courses
+      const existingDocs = await getDocs(enrolledCoursesRef);
+      const batch = writeBatch(db);
+      existingDocs.forEach(docSnap => {
+        batch.delete(docSnap.ref);
+      });
+      enrolled.forEach(courseId => {
+        const newDocRef = doc(enrolledCoursesRef);
+        batch.set(newDocRef, { courseId });
+      });
+      await batch.commit();
+    } catch (error) {
+      console.error('Error updating enrolled courses in Firestore:', error);
+    }
+  };
+
+  // Function to update course progress in Firestore
+  const updateCourseProgressInFirestore = async (progressMap: Map<number, number>) => {
+    if (!currentUser) return;
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const courseProgressRef = collection(userDocRef, 'courseProgress');
+
+    try {
+      // Clear existing progress
+      const existingDocs = await getDocs(courseProgressRef);
+      const batch = writeBatch(db);
+      existingDocs.forEach(docSnap => {
+        batch.delete(docSnap.ref);
+      });
+      progressMap.forEach((progress, courseId) => {
+        const newDocRef = doc(courseProgressRef);
+        batch.set(newDocRef, { courseId, progress });
+      });
+      await batch.commit();
+    } catch (error) {
+      console.error('Error updating course progress in Firestore:', error);
+    }
+  };
+
+  // Function to enroll in a course
+  const enrollInCourse = (courseId: number) => {
+    setEnrolledCourses(prev => {
+      const newSet = new Set(prev);
+      newSet.add(courseId);
+      updateEnrolledCoursesInFirestore(newSet);
+      return newSet;
+    });
+  };
+
+  // Function to update progress for a course
+  const updateCourseProgress = (courseId: number, progress: number) => {
+    setCourseProgress(prev => {
+      const newMap = new Map(prev);
+      newMap.set(courseId, progress);
+      updateCourseProgressInFirestore(newMap);
+      return newMap;
+    });
+  };
 
   // Recalculate userStats based on scannedProducts and carbonEntries
   React.useEffect(() => {
@@ -694,6 +810,12 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       setSelectedPriority, // Add these to context value
       selectedTab, // Add selectedTab to context value
       setSelectedTab, // Add setSelectedTab to context value
+
+      enrolledCourses,
+      courseProgress,
+      enrollInCourse,
+      updateCourseProgress,
+
       addCarbonEntry,
       addScannedProduct,
       addPoints,
