@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { doc, collection, addDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -20,19 +21,21 @@ import {
   Loader2
 } from 'lucide-react';
 
+import { OPEN_ROUTE_SERVICE_API_KEY } from '../config/openRouteConfig';
+import { db, auth } from '../firebase';
 const TransportationPlanner = () => {
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const apiKey = OPEN_ROUTE_SERVICE_API_KEY;
   const { toast } = useToast();
 
   // Geocoding function using Nominatim (free)
-  const geocodeLocation = async (location) => {
+  const geocodeLocation = async (location: string) => {
     try {
       const response = await fetch(
-        https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`
       );
       const data = await response.json();
       if (data.length > 0) {
@@ -50,7 +53,7 @@ const TransportationPlanner = () => {
   };
 
   // Route calculation using OpenRouteService API
-  const calculateRoute = async (fromCoords, toCoords, profile) => {
+  const calculateRoute = async (fromCoords: { lat: number; lon: number }, toCoords: { lat: number; lon: number }, profile: string) => {
     if (!apiKey) {
       toast({
         title: "API Key Required",
@@ -62,11 +65,11 @@ const TransportationPlanner = () => {
 
     try {
       const response = await fetch(
-        https://api.openrouteservice.org/v2/directions/${profile}?api_key=${apiKey}&start=${fromCoords.lon},${fromCoords.lat}&end=${toCoords.lon},${toCoords.lat}
+        `https://api.openrouteservice.org/v2/directions/${profile}?api_key=${apiKey}&start=${fromCoords.lon},${fromCoords.lat}&end=${toCoords.lon},${toCoords.lat}`
       );
       
       if (!response.ok) {
-        throw new Error(API Error: ${response.status});
+        throw new Error(`API Error: ${response.status}`);
       }
       
       const data = await response.json();
@@ -183,6 +186,20 @@ const TransportationPlanner = () => {
         return;
       }
 
+      // Validate coordinates
+      if (
+        typeof fromCoords.lat !== 'number' || typeof fromCoords.lon !== 'number' ||
+        typeof toCoords.lat !== 'number' || typeof toCoords.lon !== 'number'
+      ) {
+        toast({
+          title: "Invalid Coordinates",
+          description: "Geocoding returned invalid coordinates.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       // Calculate routes for different transport modes
       const transportModes = ['foot-walking', 'cycling-regular', 'driving-car'];
       const calculatedRoutes = [];
@@ -202,17 +219,17 @@ const TransportationPlanner = () => {
             mode,
             icon: modeDetails.icon,
             name: modeDetails.name,
-            duration: ${Math.round(duration / 60)} min,
-            distance: ${(distance / 1000).toFixed(1)} km,
-            cost: $${cost},
-            emissions: parseFloat(emissions),
-            calories,
-            color: modeDetails.color,
-            sustainability,
-            benefits: modeDetails.benefits
-          });
-        }
+          duration: `${Math.round(duration / 60)} min`,
+          distance: `${(distance / 1000).toFixed(1)} km`,
+          cost: `$${cost}`,
+          emissions: parseFloat(emissions),
+          calories,
+          color: modeDetails.color,
+          sustainability,
+          benefits: modeDetails.benefits
+        });
       }
+    }
 
       if (calculatedRoutes.length === 0) {
         toast({
@@ -224,7 +241,7 @@ const TransportationPlanner = () => {
         setRoutes(calculatedRoutes);
         toast({
           title: "Routes Calculated",
-          description: Found ${calculatedRoutes.length} route options.,
+          description: `Found ${calculatedRoutes.length} route options.`,
         });
       }
     } catch (error) {
@@ -261,7 +278,8 @@ const TransportationPlanner = () => {
         </CardHeader>
         <CardContent>
           {/* API Key Input */}
-          {!apiKey && (
+          {/* Removed API key input UI as API key is now imported from config and hidden from UI */}
+          {/* {!apiKey && (
             <div className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
               <h3 className="font-semibold text-blue-800 mb-2">API Key Required</h3>
               <p className="text-sm text-blue-700 mb-3">
@@ -283,7 +301,8 @@ const TransportationPlanner = () => {
                 </Button>
               </div>
             </div>
-          )}
+          )} 
+          */}
 
           {/* Route Input */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -372,29 +391,75 @@ const TransportationPlanner = () => {
           {routes.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-800">Route Options</h3>
-              {routes.map((route, index) => {
-                const sustainabilityBadge = getSustainabilityBadge(route.sustainability);
-                return (
-                  <div key={index} className="bg-white/80 rounded-xl p-6 border border-gray-100">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className={w-12 h-12 ${route.color} rounded-xl flex items-center justify-center}>
-                          <route.icon className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-800">{route.name}</h4>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge className={text-white text-xs ${sustainabilityBadge.color}}>
-                              {sustainabilityBadge.label}
-                            </Badge>
-                            <span className="text-sm text-gray-600">{route.sustainability}/100</span>
-                          </div>
-                        </div>
-                      </div>
-                      <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                        Select Route
-                      </Button>
+          {routes.map((route, index) => {
+            const sustainabilityBadge = getSustainabilityBadge(route.sustainability);
+
+const saveRouteToFirestore = async (routeToSave) => {
+  try {
+    if (!auth.currentUser) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to save routes.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const userRoutesCollection = collection(db, 'users', auth.currentUser.uid, 'savedRoutes');
+    await addDoc(userRoutesCollection, {
+      mode: routeToSave.mode,
+      name: routeToSave.name,
+      duration: routeToSave.duration,
+      distance: routeToSave.distance,
+      cost: routeToSave.cost,
+      emissions: routeToSave.emissions,
+      calories: routeToSave.calories,
+      sustainability: routeToSave.sustainability,
+      timestamp: new Date()
+    });
+    toast({
+      title: 'Route Saved',
+      description: 'Your route has been saved successfully.',
+      variant: 'default',
+    });
+  } catch (error) {
+    console.error('Error saving route:', error);
+    if (error.code === 'permission-denied') {
+      toast({
+        title: 'Permission Denied',
+        description: 'You do not have permission to save routes. Please check your account permissions.',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Save Failed',
+        description: 'Failed to save the route. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  }
+};
+
+            return (
+              <div key={index} className="bg-white/80 rounded-xl p-6 border border-gray-100">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-12 h-12 ${route.color} rounded-xl flex items-center justify-center`}>
+                      <route.icon className="w-6 h-6 text-white" />
                     </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-800">{route.name}</h4>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Badge className={`text-white text-xs ${sustainabilityBadge.color}`}>
+                          {sustainabilityBadge.label}
+                        </Badge>
+                        <span className="text-sm text-gray-600">{route.sustainability}/100</span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => saveRouteToFirestore(route)}>
+                    Save
+                  </Button>
+                </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                       <div className="flex items-center space-x-2">
