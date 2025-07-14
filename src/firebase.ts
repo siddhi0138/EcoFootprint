@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth'; // Import getAuth
 import { getDatabase } from 'firebase/database'; // Import getDatabase
 
@@ -26,4 +26,4 @@ const auth = getAuth(app); // Initialize auth
 // Initialize Realtime Database
 const database = getDatabase(app); // Initialize database
 
-export { app, db, auth, database }; // Export auth and database
+export { app, db, auth, database, doc, updateDoc, collection, addDoc }; // Export auth, database, and Firestore functions

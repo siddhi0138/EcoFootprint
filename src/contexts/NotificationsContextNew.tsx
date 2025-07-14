@@ -46,9 +46,15 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const { isLoading } = useAuth();
+
   useEffect(() => {
+    if (isLoading) {
+      // Auth state is still loading, do not clear notifications yet
+      return;
+    }
     if (!currentUser) {
-      console.warn('No currentUser found in NotificationsContextNew, clearing notifications.');
+      console.info('No currentUser found in NotificationsContextNew, clearing notifications.');
       setNotifications([]);
       setUnreadCount(0);
       return;

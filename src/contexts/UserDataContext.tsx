@@ -72,6 +72,7 @@ export interface UserStats {
   }[];
   esgReports: number;
   investmentsMade: number;
+  communityHelpCount: number;
 }
 
 // Extend UserStats interface with properties for AI Recommendations
@@ -86,6 +87,7 @@ export interface UserStats {
   achievements: { id: number; name: string; description: string; icon: any; color: string; }[];
  monthlyTrend: number;
  sustainabilityScore: number;
+  communityHelpCount: number;
 }
 
 interface UserDataContextType {
@@ -131,7 +133,7 @@ interface UserDataContextType {
   loading: boolean;
 }
 
-const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
+export const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
 
 export const UserDataProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser } = useAuth();
@@ -164,6 +166,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     monthlyTrend: 0,
     sustainabilityScore: 0, // Assuming a current score separate from max
     achievements: [],
+    communityHelpCount: 0,
   });
 
   // New state for course progress and enrolled courses
@@ -538,6 +541,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         achievements: [],
         sustainabilityScore: 0,
         goals: [],
+        communityHelpCount: 0,
       });
       setCarbonEntries([]);
       setScannedProducts([]);
@@ -618,7 +622,8 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
             achievements: [],
             monthlyTrend: 0,
             sustainabilityScore: 0,
-            totalCarbonFootprint: 0
+            totalCarbonFootprint: 0,
+            communityHelpCount: 0,
           };
           setDoc(userDocRef, initialStatsForNewUser)
             .then(() => setUserStats(initialStatsForNewUser)) // Update local state after setting in Firestore
@@ -730,10 +735,31 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       return sanitized;
     };
 
+    // Helper function to replace undefined values with null recursively
+    const replaceUndefinedWithNull = (obj: any): any => {
+      if (obj === undefined) {
+        return null;
+      }
+      if (obj === null || typeof obj !== 'object') {
+        return obj;
+      }
+      if (Array.isArray(obj)) {
+        return obj.map(item => replaceUndefinedWithNull(item));
+      }
+      const newObj: any = {};
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          newObj[key] = replaceUndefinedWithNull(obj[key]);
+        }
+      }
+      return newObj;
+    };
+
     if (currentUser) {
       const userDocRef = doc(db, 'users', currentUser.uid);
       const sanitizedActionProgress = sanitizeActionProgress(actionProgress);
-      console.log('Saving AI Recommendations state to Firestore:', {
+      // Replace undefined values with null in all fields before updateDoc
+      const sanitizedData = replaceUndefinedWithNull({
         completedActions,
         actionProgress: sanitizedActionProgress,
         selectedAICategory,
@@ -742,15 +768,8 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         selectedPriority,
         selectedTab
       });
-      updateDoc(userDocRef, {
-        completedActions,
-        actionProgress: sanitizedActionProgress,
-        selectedAICategory,
-        selectedAIPriority,
-        selectedCategory,
-        selectedPriority,
-        selectedTab
-      }).then(() => {
+      console.log('Saving AI Recommendations state to Firestore:', sanitizedData);
+      updateDoc(userDocRef, sanitizedData).then(() => {
         console.log('Successfully saved AI Recommendations state to Firestore');
       }).catch(error => {
         console.error('Error saving AI Recommendations state to Firestore:', error);
@@ -808,10 +827,17 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       const userDocRef = doc(db, 'users', currentUser.uid);
       try {
         // Sanitize stats to remove non-serializable fields like React components (icon)
+        // Also replace undefined fields with null to avoid Firestore errors
         const sanitizedStats = {
           ...stats,
           achievements: stats.achievements?.map(({ icon, ...rest }) => rest) || [],
         };
+        // Replace undefined values with null
+        Object.keys(sanitizedStats).forEach(key => {
+          if (sanitizedStats[key] === undefined) {
+            sanitizedStats[key] = null;
+          }
+        });
         await updateDoc(userDocRef, { ...sanitizedStats });
       } catch (error) {
         console.error("Error updating user stats:", error);
@@ -862,22 +888,29 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         if (!existingScanQuery.empty) {
           // If a scan for this product exists, update the existing document
           const existingDocRef = existingScanQuery.docs[0].ref;
-      await updateDoc(existingDocRef, {
-        ...product, // Update with the latest product data
-        alternatives: product.alternatives || [], // Ensure alternatives are saved
-        source: product.source || 'ProductScanner', // Save source field
-        timestamp: serverTimestamp(), // Update timestamp
-      });
+          // Sanitize product to remove undefined fields
+          const sanitizedProduct = { ...product };
+          Object.keys(sanitizedProduct).forEach(key => {
+            if (sanitizedProduct[key] === undefined) {
+              sanitizedProduct[key] = null;
+            }
+          });
+          await updateDoc(existingDocRef, {
+            ...sanitizedProduct,
+            alternatives: product.alternatives || [], // Ensure alternatives are saved
+            source: product.source || 'ProductScanner', // Save source field
+            timestamp: serverTimestamp(), // Update timestamp
+          });
           // The onSnapshot listener will handle updating the local state
         } else {
           // If no scan for this product exists, add a new document
-        await addDoc(scannedCollectionRef, {
-          ...product,
-          alternatives: product.alternatives || [], // Ensure alternatives are saved
-          source: product.source || 'ProductScanner', // Save source field
-          date: new Date().toISOString(), // Add a local date for display consistency before Firestore sync
-          timestamp: serverTimestamp(), // Add timestamp
-        });
+          await addDoc(scannedCollectionRef, {
+            ...product,
+            alternatives: product.alternatives || [], // Ensure alternatives are saved
+            source: product.source || 'ProductScanner', // Save source field
+            date: new Date().toISOString(), // Add a local date for display consistency before Firestore sync
+            timestamp: serverTimestamp(), // Add timestamp
+          });
         }
         // Update user stats
         const updatedStats = {
@@ -906,9 +939,19 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
           const currentCart = (userData?.cart || []) as ScannedProduct[];
           // Add the product to the cart array
           const updatedCart = [...currentCart, product];
+          // Sanitize updatedCart to remove undefined fields
+          const sanitizedCart = updatedCart.map(item => {
+            const sanitizedItem = { ...item };
+            Object.keys(sanitizedItem).forEach(key => {
+              if (sanitizedItem[key] === undefined) {
+                sanitizedItem[key] = null;
+              }
+            });
+            return sanitizedItem;
+          });
 
           await updateDoc(userDocRef, {
-            cart: updatedCart,
+            cart: sanitizedCart,
           });
         }
       } catch (error) {

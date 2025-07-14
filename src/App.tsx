@@ -17,6 +17,7 @@ import ProductComparison from "./components/ProductComparison";
 import Footer from "./components/Footer";
 import Layout from "./components/Layout";
 import { ProductComparisonProvider } from "./contexts/ProductComparisonContext";
+import CommunityHub from "./components/CommunityHub";
 
 const queryClient = new QueryClient();
 
@@ -26,8 +27,9 @@ const App = () => (
       <AuthProvider>
         <UserDataProvider>
           <ProductComparisonProvider>
-            <CartProvider>
-              <NotificationProvider>
+            <NotificationProvider>
+              <CartProvider>
+
                 <TooltipProvider>
                   <Toaster />
                   <Sonner />
@@ -40,13 +42,14 @@ const App = () => (
                       <Route path="/goals" element={<Layout><Goals /></Layout>} />
                       <Route path="/product-lifecycle" element={<Layout><ProductLifecycle /></Layout>} />
                       <Route path="/product-comparison" element={<Layout><ProductComparison /></Layout>} />
+                      <Route path="/community" element={<Layout><CommunityHub /></Layout>} />
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </BrowserRouter>
                 </TooltipProvider>
-              </NotificationProvider>
-            </CartProvider>
+              </CartProvider>
+            </NotificationProvider>
           </ProductComparisonProvider>
         </UserDataProvider>
       </AuthProvider>
