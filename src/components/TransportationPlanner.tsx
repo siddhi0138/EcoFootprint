@@ -65,11 +65,19 @@ const TransportationPlanner = () => {
 
     try {
       const response = await fetch(
-        `https://api.openrouteservice.org/v2/directions/${profile}?api_key=${apiKey}&start=${fromCoords.lon},${fromCoords.lat}&end=${toCoords.lon},${toCoords.lat}`
+        `https://api.openrouteservice.org/v2/directions/${profile}?start=${fromCoords.lon},${fromCoords.lat}&end=${toCoords.lon},${toCoords.lat}`,
+        {
+          headers: {
+            'Authorization': apiKey,
+            'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8'
+          }
+        }
       );
       
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+        const errorBody = await response.text();
+        console.error(`API Error: ${response.status} - ${errorBody}`);
+        throw new Error(`API Error: ${response.status} - ${errorBody}`);
       }
       
       const data = await response.json();
@@ -158,6 +166,24 @@ const TransportationPlanner = () => {
     };
   };
 
+  // Function to calculate haversine distance between two coordinates in meters
+  const haversineDistance = (coords1: { lat: number; lon: number }, coords2: { lat: number; lon: number }) => {
+    const toRad = (x: number) => (x * Math.PI) / 180;
+
+    const R = 6371000; // Earth radius in meters
+    const dLat = toRad(coords2.lat - coords1.lat);
+    const dLon = toRad(coords2.lon - coords1.lon);
+    const lat1 = toRad(coords1.lat);
+    const lat2 = toRad(coords2.lat);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
+
   const planRoute = async () => {
     if (!fromLocation || !toLocation) {
       toast({
@@ -200,6 +226,18 @@ const TransportationPlanner = () => {
         return;
       }
 
+      // Check if distance exceeds OpenRouteService limit (6,000,000 meters)
+      const distanceBetweenPoints = haversineDistance(fromCoords, toCoords);
+      if (distanceBetweenPoints > 6000000) {
+        toast({
+          title: "Route Too Long",
+          description: "The requested route distance exceeds the 6,000 km limit of the routing service. Please choose closer locations.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       // Calculate routes for different transport modes
       const transportModes = ['foot-walking', 'cycling-regular', 'driving-car'];
       const calculatedRoutes = [];
@@ -227,6 +265,12 @@ const TransportationPlanner = () => {
           color: modeDetails.color,
           sustainability,
           benefits: modeDetails.benefits
+        });
+      } else {
+        toast({
+          title: `Route Calculation Failed`,
+          description: `Failed to calculate route for mode: ${mode}. Please try a different location or mode.`,
+          variant: "destructive",
         });
       }
     }
