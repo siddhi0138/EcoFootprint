@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Input } from '../components/ui/input';
-import { Textarea } from '../components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Users,
   MessageCircle,
@@ -19,32 +19,17 @@ import {
   ThumbsUp,
   ThumbsDown,
   BookmarkPlus,
-  Flag,
   Calendar,
   MapPin,
   Clock,
   Award,
-  Zap
+  Zap,
+  Leaf,
+  Target,
+  TrendingUp
 } from 'lucide-react';
-import { useUserData } from '../contexts/UserDataContext';
-import { useNotificationHelper } from '../hooks/useNotificationHelper';
-import { useToast } from '../hooks/use-toast';
-import { useAuth } from '../contexts/AuthContext';
-import { db } from '../firebase';
-import {
-  collection,
-  doc,
-  onSnapshot,
-  updateDoc,
-  addDoc,
-} from 'firebase/firestore';
 
 const CommunityHub = () => {
-  const { userStats, loading } = useUserData();
-  const { addCommunityNotification } = useNotificationHelper();
-  const { toast } = useToast();
-  const { currentUser } = useAuth();
-
   const [activeTab, setActiveTab] = useState('feed');
   const [searchQuery, setSearchQuery] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
@@ -55,18 +40,263 @@ const CommunityHub = () => {
   const [groups, setGroups] = useState([]);
   const [events, setEvents] = useState([]);
   const [challenges, setChallenges] = useState([]);
+  const [commentInputs, setCommentInputs] = useState({});
 
-  const userId = currentUser?.uid || null;
+  // Mock current user data
+  const currentUser = {
+    name: 'You',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+    points: 1845,
+    level: 'Intermediate',
+    totalScans: 127,
+    co2Saved: 23.5,
+    challengesCompleted: 8,
+    postsLiked: 89,
+    groupsJoined: 5,
+    eventsAttended: 12
+  };
 
-  // Firestore collection references
-  const userDocRef = userId ? doc(db, 'users', userId) : null;
-
-  // Initialize default data
   useEffect(() => {
-    if (!userId) return;
+    setCommentInputs(posts.reduce((acc, post) => ({ ...acc, [post.id]: '' }), {}));
+  }, [posts]);
 
-    // Initialize default groups
-    const defaultGroups = [
+  // Initialize with enhanced sample data
+  useEffect(() => {
+    setPosts([
+      {
+        id: 'post1',
+        author: {
+          name: 'Sarah Green',
+          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=40&h=40&fit=crop&crop=face',
+          badge: 'Eco Champion',
+          level: 'Expert'
+        },
+        content: 'Just switched to a bamboo toothbrush and love it! Small changes make a big difference. What sustainable swaps have you made recently?',
+        image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop',
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        likes: 24,
+        comments: 8,
+        commentList: [
+          {
+            author: { name: 'GreenGuru', avatar: 'https://randomuser.me/api/portraits/men/32.jpg' },
+            content: 'Totally agree! Bamboo is a game-changer.'
+          },
+          {
+            author: { name: 'EcoWarrior77', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
+            content: 'I switched to a reusable water bottle. Best decision!'
+          }
+
+        ],
+        shares: 3,
+        tags: ['Zero Waste', 'Personal Care', 'Sustainability'],
+        liked: false,
+        bookmarked: false
+      },
+      {
+        id: 'post2',
+        author: {
+          name: 'Mike Rodriguez',
+          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+          badge: 'Solar Advocate',
+          level: 'Pro'
+        },
+        content: 'Amazing to see so many active eco warriors! Keep up the great work everyone! 🌱',
+        image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=300&fit=crop',
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        likes: 67,
+        comments: 15,
+        commentList: [
+          {
+            author: { name: 'SustainableSam', avatar: 'https://randomuser.me/api/portraits/men/55.jpg' },
+            content: 'Inspired by this community!'
+          },
+          {
+            author: { name: 'NatureLover', avatar: 'https://randomuser.me/api/portraits/women/66.jpg' },
+            content: 'Keep up the good vibes!'
+          }
+        ],
+        shares: 12,
+        tags: ['Community', 'Motivation'],
+        liked: true,
+        bookmarked: true
+      },
+      {
+        id: 'post3',
+        author: {
+          name: 'Emma Thompson',
+          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face',
+          badge: 'Climate Activist',
+          level: 'Master'
+        },
+        content: 'Celebrating 6 months of being car-free! Public transport + biking has saved me $2000 and reduced my carbon footprint significantly.',
+        image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=300&fit=crop',
+        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+        likes: 156,
+        comments: 34,
+        commentList: [
+          {
+            author: { name: 'UrbanCyclist', avatar: 'https://randomuser.me/api/portraits/men/77.jpg' },
+            content: 'That\'s amazing! I\'m trying to bike more too.'
+          },
+          {
+            author: { name: 'TransitQueen', avatar: 'https://randomuser.me/api/portraits/women/88.jpg' },
+            content: 'Public transport FTW!'
+          }
+
+        ],
+        shares: 28,
+        tags: ['Transportation', 'Carbon Reduction', 'Money Saving'],
+        liked: false,
+        bookmarked: false
+      },
+      {
+        id: 'post4',
+        author: {
+          name: 'Alex Chen',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face',
+          badge: 'Green Builder',
+          level: 'Pro'
+        },
+        content: 'Installed solar panels last month and they\'re already generating 40% of our home\'s energy! The installation process was smoother than expected.',
+        image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=300&fit=crop',
+        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+        likes: 89,
+        comments: 22,
+        commentList: [
+          {
+            author: { name: 'SolarUser', avatar: 'https://randomuser.me/api/portraits/men/99.jpg' },
+            content: 'Considering solar for my home. Any tips?'
+          },
+          {
+            author: { name: 'GreenHome', avatar: 'https://randomuser.me/api/portraits/women/11.jpg' },
+            content: 'Great to hear about your success!'
+          }
+
+        ],
+        shares: 18,
+        tags: ['Solar Energy', 'Home Improvement', 'Renewable Energy'],
+        liked: true,
+        bookmarked: true
+      },
+      {
+        id: 'post5',
+        author: {
+          name: 'Lisa Johnson',
+          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=40&h=40&fit=crop&crop=face',
+          badge: 'Urban Farmer',
+          level: 'Expert'
+        },
+        content: 'My rooftop garden is thriving! Growing 70% of my vegetables at home. Nothing beats the taste of homegrown tomatoes! 🍅',
+        image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=300&fit=crop',
+        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+        likes: 78,
+        comments: 19,
+        commentList: [
+          {
+            author: { name: 'GardenLife', avatar: 'https://randomuser.me/api/portraits/men/22.jpg' },
+            content: 'My tomatoes are struggling. Any advice?'
+          },
+          {
+            author: { name: 'HomeGrown', avatar: 'https://randomuser.me/api/portraits/women/33.jpg' },
+            content: 'Nothing better than fresh produce from your own garden!'
+          }
+
+        ],
+        shares: 14,
+        tags: ['Urban Gardening', 'Food Security', 'Healthy Living'],
+        liked: false,
+        bookmarked: false
+      },
+      {
+        id: 'post6',
+        author: {
+          name: 'David Park',
+          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=40&h=40&fit=crop&crop=face',
+          badge: 'Waste Warrior',
+          level: 'Intermediate'
+        },
+        content: 'Completed my first month of zero waste living! It\'s challenging but incredibly rewarding. My trash can was literally empty this week.',
+        image: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=400&h=300&fit=crop',
+        timestamp: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(),
+        likes: 134,
+        comments: 41,
+        commentList: [
+          {
+            author: { name: 'ZeroWasteBeginner', avatar: 'https://randomuser.me/api/portraits/men/44.jpg' },
+            content: 'This is my goal! So inspiring.'
+          },
+          {
+            author: { name: 'ReduceReuseRecycle', avatar: 'https://randomuser.me/api/portraits/women/55.jpg' },
+            content: 'Tell us your secrets!'
+          }
+
+        ],
+        shares: 25,
+        tags: ['Zero Waste', 'Lifestyle Change', 'Minimalism'],
+        liked: true,
+        bookmarked: false
+      },
+      {
+        id: 'post7',
+        author: {
+          name: 'Maria Garcia',
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=40&h=40&fit=crop&crop=face',
+          badge: 'Eco Educator',
+          level: 'Master'
+        },
+        content: 'Taught 50 kids about renewable energy today at the local school! Their enthusiasm for protecting the planet gives me so much hope. 🌍',
+        image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=300&fit=crop',
+        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        likes: 201,
+        comments: 56,
+        commentList: [
+          {
+            author: { name: 'TeacherTina', avatar: 'https://randomuser.me/api/portraits/women/66.jpg' },
+            content: 'Education is key! Thank you for doing this.'
+          },
+          {
+            author: { name: 'FutureGen', avatar: 'https://randomuser.me/api/portraits/men/77.jpg' },
+            content: 'The kids are our future!'
+          }
+
+        ],
+        shares: 38,
+        tags: ['Education', 'Youth Engagement', 'Community Outreach'],
+        liked: false,
+        bookmarked: true
+      },
+      {
+        id: 'post8',
+        author: {
+          name: 'James Wilson',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face',
+          badge: 'Tech Innovator',
+          level: 'Pro'
+        },
+        content: 'Just launched a new app that tracks your carbon footprint in real-time! Beta testing shows 23% reduction in emissions. Link in bio!',
+        image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop',
+        timestamp: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
+        likes: 167,
+        comments: 43,
+        commentList: [
+          {
+            author: { name: 'AppTester', avatar: 'https://randomuser.me/api/portraits/men/88.jpg' },
+            content: 'Downloaded the app! Looks promising.'
+          },
+          {
+            author: { name: 'DataGeek', avatar: 'https://randomuser.me/api/portraits/women/99.jpg' },
+            content: 'Real-time tracking is a great feature.'
+          }
+
+        ],
+        shares: 52,
+        tags: ['Technology', 'Innovation', 'Carbon Tracking'],
+        liked: true,
+        bookmarked: true
+      }
+    ]);
+
+    setGroups([
       {
         id: 'group1',
         name: 'Zero Waste Living',
@@ -110,10 +340,54 @@ const CommunityHub = () => {
         joined: false,
         posts: 1876,
         activity: 'Moderate'
+      },
+      {
+        id: 'group5',
+        name: 'Green Transportation',
+        description: 'Electric vehicles, public transport, and cycling advocacy',
+        members: 7432,
+        category: 'Transportation',
+        image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=200&fit=crop',
+        joined: true,
+        posts: 987,
+        activity: 'Active'
+      },
+      {
+        id: 'group6',
+        name: 'Climate Action Network',
+        description: 'Organizing for climate policy and environmental justice',
+        members: 11234,
+        category: 'Activism',
+        image: 'https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=400&h=200&fit=crop',
+        joined: false,
+        posts: 2876,
+        activity: 'Very Active'
+      },
+      {
+        id: 'group7',
+        name: 'Eco-Friendly Business',
+        description: 'Sustainable business practices and green entrepreneurship',
+        members: 5678,
+        category: 'Business',
+        image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=200&fit=crop',
+        joined: true,
+        posts: 1567,
+        activity: 'Active'
+      },
+      {
+        id: 'group8',
+        name: 'Plastic-Free Community',
+        description: 'Eliminating single-use plastics from our daily lives',
+        members: 13456,
+        category: 'Zero Waste',
+        image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=200&fit=crop',
+        joined: false,
+        posts: 2234,
+        activity: 'Very Active'
       }
-    ];
+    ]);
 
-    const defaultEvents = [
+    setEvents([
       {
         id: 'event1',
         title: 'Community Solar Workshop',
@@ -152,10 +426,75 @@ const CommunityHub = () => {
         image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=200&fit=crop',
         organizer: 'Urban Gardening Network',
         registered: false
+      },
+      {
+        id: 'event4',
+        title: 'Climate Action Rally',
+        description: 'Join us for a peaceful rally demanding climate action',
+        date: '2024-07-30',
+        time: '12:00 PM',
+        location: 'City Hall',
+        attendees: 234,
+        maxAttendees: 500,
+        image: 'https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=400&h=200&fit=crop',
+        organizer: 'Climate Action Network',
+        registered: true
+      },
+      {
+        id: 'event5',
+        title: 'Sustainable Fashion Show',
+        description: 'Showcase of eco-friendly and ethically made clothing',
+        date: '2024-08-05',
+        time: '7:00 PM',
+        location: 'Fashion District',
+        attendees: 156,
+        maxAttendees: 200,
+        image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=200&fit=crop',
+        organizer: 'Sustainable Fashion Collective',
+        registered: false
+      },
+      {
+        id: 'event6',
+        title: 'Electric Vehicle Expo',
+        description: 'Test drive the latest electric vehicles and learn about incentives',
+        date: '2024-08-10',
+        time: '9:00 AM',
+        location: 'Convention Center',
+        attendees: 89,
+        maxAttendees: 150,
+        image: 'https://images.unsplash.com/photo-1593941707882-a5bac6861d75?w=400&h=200&fit=crop',
+        organizer: 'Green Transportation Alliance',
+        registered: true
+      },
+      {
+        id: 'event7',
+        title: 'Plastic-Free Challenge Kickoff',
+        description: 'Start your journey to eliminate single-use plastics',
+        date: '2024-08-15',
+        time: '3:00 PM',
+        location: 'Environmental Center',
+        attendees: 78,
+        maxAttendees: 120,
+        image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=200&fit=crop',
+        organizer: 'Plastic-Free Community',
+        registered: false
+      },
+      {
+        id: 'event8',
+        title: 'Green Building Workshop',
+        description: 'Learn about sustainable construction and renovation',
+        date: '2024-08-20',
+        time: '1:00 PM',
+        location: 'Eco Building Center',
+        attendees: 43,
+        maxAttendees: 60,
+        image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=400&h=200&fit=crop',
+        organizer: 'Green Building Council',
+        registered: true
       }
-    ];
+    ]);
 
-    const defaultChallenges = [
+    setChallenges([
       {
         id: 'challenge1',
         title: '30-Day Plastic Free Challenge',
@@ -191,358 +530,180 @@ const CommunityHub = () => {
         progress: 23,
         joined: true,
         category: 'Transportation'
+      },
+      {
+        id: 'challenge4',
+        title: 'Meatless Monday Movement',
+        description: 'Go vegetarian every Monday for 3 months',
+        participants: 2156,
+        duration: '12 weeks',
+        difficulty: 'Easy',
+        reward: '300 Green Points',
+        progress: 45,
+        joined: true,
+        category: 'Food'
+      },
+      {
+        id: 'challenge5',
+        title: 'Solar Panel Installation',
+        description: 'Install solar panels on your home or business',
+        participants: 234,
+        duration: '6 months',
+        difficulty: 'Hard',
+        reward: '2000 Green Points',
+        progress: 0,
+        joined: false,
+        category: 'Energy'
+      },
+      {
+        id: 'challenge6',
+        title: 'Community Garden Volunteer',
+        description: 'Volunteer at local community gardens for 3 months',
+        participants: 789,
+        duration: '12 weeks',
+        difficulty: 'Medium',
+        reward: '600 Green Points',
+        progress: 78,
+        joined: true,
+        category: 'Gardening'
+      },
+      {
+        id: 'challenge7',
+        title: 'Water Conservation Hero',
+        description: 'Reduce water usage by 30% for 60 days',
+        participants: 1567,
+        duration: '60 days',
+        difficulty: 'Medium',
+        reward: '400 Green Points',
+        progress: 0,
+        joined: false,
+        category: 'Water'
+      },
+      {
+        id: 'challenge8',
+        title: 'Thrift Shopping Only',
+        description: 'Buy only secondhand items for 90 days',
+        participants: 934,
+        duration: '90 days',
+        difficulty: 'Medium',
+        reward: '700 Green Points',
+        progress: 12,
+        joined: true,
+        category: 'Fashion'
       }
+    ]);
+  }, []);
+
+  // Generate dynamic leaderboard data
+  const generateLeaderboard = () => {
+    const baseUsers = [
+      { name: 'Sarah Green', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=40&h=40&fit=crop&crop=face', basePoints: 2500 },
+      { name: 'Mike Rodriguez', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face', basePoints: 2300 },
+      { name: 'Emma Thompson', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face', basePoints: 2100 },
+      { name: 'Alex Chen', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face', basePoints: 1900 },
+      { name: 'Lisa Johnson', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=40&h=40&fit=crop&crop=face', basePoints: 1800 }
     ];
 
-    // Initialize default posts based on user stats
-    const getDefaultPosts = () => {
-      const basePosts = [
-        {
-          id: 'post1',
-          author: {
-            name: 'Sarah Green',
-            avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=40&h=40&fit=crop&crop=face',
-            badge: 'Eco Champion',
-            level: 'Expert'
-          },
-          content: 'Just switched to a bamboo toothbrush and love it! Small changes make a big difference. What sustainable swaps have you made recently?',
-          image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          likes: 24,
-          comments: 8,
-          shares: 3,
-          tags: ['Zero Waste', 'Personal Care', 'Sustainability'],
-          liked: false,
-          bookmarked: false
-        }
-      ];
+    // Add current user to the list
+    const allUsers = [...baseUsers, { 
+      name: currentUser.name, 
+      avatar: currentUser.avatar, 
+      basePoints: currentUser.points 
+    }];
 
-      if (userStats.totalScans > 5) {
-        basePosts.push({
-          id: 'post2',
-          author: {
-            name: 'Mike Rodriguez',
-            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
-            badge: 'Solar Advocate',
-            level: 'Pro'
-          },
-          content: `Amazing to see so many active eco warriors! I've scanned ${userStats.totalScans} products this week. Keep it up everyone!`,
-          image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=300&fit=crop',
-          timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-          likes: 67,
-          comments: 15,
-          shares: 12,
-          tags: ['Community', 'Product Scanning', 'Motivation'],
-          liked: true,
-          bookmarked: true
-        });
-      }
+    // Sort by points and add ranking
+    return allUsers
+      .sort((a, b) => b.basePoints - a.basePoints)
+      .map((user, index) => ({
+        ...user,
+        rank: index + 1,
+        points: user.basePoints
+      }));
+  };
 
-      if (userStats.co2Saved > 10) {
-        basePosts.push({
-          id: 'post3',
-          author: {
-            name: 'Emma Thompson',
-            avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face',
-            badge: 'Climate Activist',
-            level: 'Master'
-          },
-          content: `Celebrating everyone who's making a difference! Together we've saved tons of CO₂. Your ${userStats.co2Saved}kg contribution matters!`,
-          image: 'https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=400&h=300&fit=crop',
-          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          likes: 89 + Math.floor(userStats.co2Saved || 0),
-          comments: 23,
-          shares: 18,
-          tags: ['Climate Action', 'Carbon Reduction', 'Community Impact'],
-          liked: false,
-          bookmarked: false
-        });
-      }
+  const leaderboardData = generateLeaderboard();
 
-      return basePosts;
-    };
-
-    // Set default data
-    setGroups(defaultGroups);
-    setEvents(defaultEvents);
-    setChallenges(defaultChallenges);
-    setPosts(getDefaultPosts());
-  }, [userStats]);
-
-  useEffect(() => {
-    if (!userId) return;
-
-    const postsRef = collection(userDocRef, 'posts');
-    const unsubscribePosts = onSnapshot(postsRef, (snapshot) => {
-      const postsData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setPosts(prevPosts => [...prevPosts, ...postsData]);
-    });
-
-    const groupsRef = collection(userDocRef, 'groups');
-    const unsubscribeGroups = onSnapshot(groupsRef, (snapshot) => {
-      const groupsData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      if (groupsData.length > 0) {
-        setGroups(groupsData);
-      }
-    });
-
-    const eventsRef = collection(userDocRef, 'events');
-    const unsubscribeEvents = onSnapshot(eventsRef, (snapshot) => {
-      const eventsData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      if (eventsData.length > 0) {
-        setEvents(eventsData);
-      }
-    });
-
-    const challengesRef = collection(userDocRef, 'challenges');
-    const unsubscribeChallenges = onSnapshot(challengesRef, (snapshot) => {
-      const challengesData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      if (challengesData.length > 0) {
-        setChallenges(challengesData);
-      }
-    });
-
-    return () => {
-      unsubscribePosts();
-      unsubscribeGroups();
-      unsubscribeEvents();
-      unsubscribeChallenges();
-    };
-  }, [userId]);
-
-  const handleLike = async (postId) => {
-    const post = posts.find((p) => p.id === postId);
-    if (!post) return;
-
-    // Update local state immediately
+  const handleLike = (postId) => {
     setPosts(posts.map(p =>
       p.id === postId
         ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 }
         : p
     ));
-
-    // If it's a Firebase post, update Firebase
-    if (userDocRef && post.id.startsWith('post') === false) {
-      const postRef = doc(userDocRef, 'posts', postId);
-      const updatedLikes = post.liked ? post.likes - 1 : post.likes + 1;
-      try {
-        await updateDoc(postRef, {
-          liked: !post.liked,
-          likes: updatedLikes,
-        });
-      } catch (error) {
-        console.error('Error updating like:', error);
-      }
-    }
-
-    if (!post.liked) {
-      addCommunityNotification(`You liked "${post.author.name}'s" post about sustainability!`);
-      toast({
-        title: 'Post Liked!',
-        description: 'Your engagement helps build our community.',
-      });
-    }
   };
 
-  const handleComment = (postId) => {
-    const post = posts.find(p => p.id === postId);
-    if (post) {
-      addCommunityNotification(`You commented on "${post.author.name}'s" post. Join the conversation!`);
-      toast({
-        title: 'Comment Added!',
-        description: 'Your comment helps spark meaningful discussions.',
-      });
-    }
+  const handleAddComment = (postId) => {
+    const commentContent = commentInputs[postId];
+    if (!commentContent.trim()) return;
+
+    setPosts(posts.map(p =>
+      p.id === postId
+        ? {
+            ...p,
+            comments: p.comments + 1,
+            commentList: [...(p.commentList || []), { author: currentUser, content: commentContent }]
+          }
+        : p
+    ));
+    setCommentInputs({ ...commentInputs, [postId]: '' });
   };
 
   const handleShare = (postId) => {
-    const post = posts.find(p => p.id === postId);
-    if (post && navigator.share) {
+    if (navigator.share) {
       navigator.share({
-        title: `Post by ${post.author.name}`,
-        text: post.content,
+        title: 'Community Post',
+        text: 'Check out this post from our sustainability community!',
         url: window.location.href
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: 'Link Copied!',
-        description: 'Post link copied to clipboard.',
-      });
     }
   };
 
-  const handleBookmark = async (postId) => {
-    const post = posts.find((p) => p.id === postId);
-    if (!post) return;
-
-    // Update local state
+  const handleBookmark = (postId) => {
     setPosts(posts.map(p =>
       p.id === postId
         ? { ...p, bookmarked: !p.bookmarked }
         : p
     ));
-
-    // If it's a Firebase post, update Firebase
-    if (userDocRef && post.id.startsWith('post') === false) {
-      const postRef = doc(userDocRef, 'posts', postId);
-      try {
-        await updateDoc(postRef, {
-          bookmarked: !post.bookmarked,
-        });
-      } catch (error) {
-        console.error('Error updating bookmark:', error);
-      }
-    }
-
-    toast({
-      title: post.bookmarked ? 'Bookmark Removed' : 'Post Bookmarked!',
-      description: post.bookmarked ? 'Removed from your saved posts.' : 'Saved to your bookmarks.',
-    });
   };
 
-  const handleFlag = (postId) => {
-    const post = posts.find(p => p.id === postId);
-    if (post) {
-      toast({
-        title: 'Post Reported',
-        description: 'Thank you for helping keep our community safe.',
-      });
-    }
-  };
-
-  const handleJoinGroup = async (groupId) => {
-    const group = groups.find((g) => g.id === groupId);
-    if (!group) return;
-
-    // Update local state
+  const handleJoinGroup = (groupId) => {
     setGroups(groups.map(g =>
       g.id === groupId
         ? { ...g, joined: !g.joined, members: g.joined ? g.members - 1 : g.members + 1 }
         : g
     ));
-
-    // If it's a Firebase group, update Firebase
-    if (userDocRef && group.id.startsWith('group') === false) {
-      const groupRef = doc(userDocRef, 'groups', groupId);
-      const updatedJoined = !group.joined;
-      const updatedMembers = updatedJoined ? group.members + 1 : group.members - 1;
-      try {
-        await updateDoc(groupRef, {
-          joined: updatedJoined,
-          members: updatedMembers,
-        });
-      } catch (error) {
-        console.error('Error updating group join status:', error);
-      }
-    }
-
-    if (!group.joined) {
-      addCommunityNotification(`You joined the "${group.name}" group! Connect with like-minded people.`);
-      toast({
-        title: 'Group Joined!',
-        description: `Welcome to ${group.name}. Start connecting with ${group.members} members.`,
-      });
-    } else {
-      toast({
-        title: 'Left Group',
-        description: `You've left ${group.name}.`,
-      });
-    }
   };
 
-  const handleRegisterEvent = async (eventId) => {
-    const event = events.find((e) => e.id === eventId);
-    if (!event) return;
-
-    // Update local state
+  const handleRegisterEvent = (eventId) => {
     setEvents(events.map(e =>
       e.id === eventId
         ? { ...e, registered: !e.registered, attendees: e.registered ? e.attendees - 1 : e.attendees + 1 }
         : e
     ));
-
-    // If it's a Firebase event, update Firebase
-    if (userDocRef && event.id.startsWith('event') === false) {
-      const eventRef = doc(userDocRef, 'events', eventId);
-      const updatedRegistered = !event.registered;
-      const updatedAttendees = updatedRegistered ? event.attendees + 1 : event.attendees - 1;
-      try {
-        await updateDoc(eventRef, {
-          registered: updatedRegistered,
-          attendees: updatedAttendees,
-        });
-      } catch (error) {
-        console.error('Error updating event registration:', error);
-      }
-    }
-
-    if (!event.registered) {
-      addCommunityNotification(`You registered for "${event.title}"! Don't forget to attend on ${event.date}.`);
-      toast({
-        title: 'Event Registration Successful!',
-        description: `You're registered for ${event.title}. See you on ${event.date}!`,
-      });
-    } else {
-      toast({
-        title: 'Registration Cancelled',
-        description: `You've unregistered from ${event.title}.`,
-      });
-    }
   };
 
-  const handleJoinChallenge = async (challengeId) => {
-    const challenge = challenges.find((c) => c.id === challengeId);
-    if (!challenge) return;
-
-    // Update local state
+  const handleJoinChallenge = (challengeId) => {
     setChallenges(challenges.map(c =>
       c.id === challengeId
         ? { ...c, joined: !c.joined, participants: c.joined ? c.participants - 1 : c.participants + 1 }
         : c
     ));
-
-    // If it's a Firebase challenge, update Firebase
-    if (userDocRef && challenge.id.startsWith('challenge') === false) {
-      const challengeRef = doc(userDocRef, 'challenges', challengeId);
-      const updatedJoined = !challenge.joined;
-      const updatedParticipants = updatedJoined ? challenge.participants + 1 : challenge.participants - 1;
-      try {
-        await updateDoc(challengeRef, {
-          joined: updatedJoined,
-          participants: updatedParticipants,
-        });
-      } catch (error) {
-        console.error('Error updating challenge join status:', error);
-      }
-    }
-
-    if (!challenge.joined) {
-      addCommunityNotification(`You joined the "${challenge.title}" challenge! Start making a difference today.`);
-      toast({
-        title: 'Challenge Joined!',
-        description: `You're now part of ${challenge.title}. Good luck making a positive impact!`,
-      });
-    } else {
-      toast({
-        title: 'Challenge Left',
-        description: `You've left ${challenge.title}.`,
-      });
-    }
   };
 
-  const handleCreatePost = async () => {
+  const handleCreatePost = () => {
     if (!newPostContent.trim()) return;
 
     const newPost = {
+      id: Date.now().toString(),
       author: {
-        name: 'You',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
+        name: currentUser.name,
+        avatar: currentUser.avatar,
         badge: 'Community Member',
-        level: 'Beginner',
+        level: currentUser.level,
       },
       content: newPostContent,
-      image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=300&fit=crop',
+      image: null,
       timestamp: new Date().toISOString(),
       likes: 0,
       comments: 0,
@@ -552,25 +713,38 @@ const CommunityHub = () => {
       bookmarked: false,
     };
 
-    try {
-      if (userDocRef) {
-        const postsRef = collection(userDocRef, 'posts');
-        await addDoc(postsRef, newPost);
-      } else {
-        // If no user, just add to local state
-        setPosts([{ ...newPost, id: Date.now().toString() }, ...posts]);
-      }
+    setPosts([newPost, ...posts]);
+    setNewPostContent('');
+    setShowCreatePost(false);
+  };
 
-      setNewPostContent('');
-      setShowCreatePost(false);
-      addCommunityNotification('Your post has been shared with the community! Engage with others to build connections.');
-      toast({
-        title: 'Post Created!',
-        description: 'Your post is now live in the community feed.',
-      });
-    } catch (error) {
-      console.error('Error creating post:', error);
+  const getDifficultyColor = (difficulty) => {
+    switch (difficulty) {
+      case 'Easy': return 'bg-green-100 text-green-700';
+      case 'Medium': return 'bg-yellow-100 text-yellow-700';
+      case 'Hard': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
+  };
+
+  const getActivityColor = (activity) => {
+    switch (activity) {
+      case 'Very Active': return 'bg-green-100 text-green-700';
+      case 'Active': return 'bg-blue-100 text-blue-700';
+      case 'Moderate': return 'bg-yellow-100 text-yellow-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInMilliseconds = now.getTime() - date.getTime();
+    const diffInHours = Math.floor(diffInMilliseconds / (1000 * 60 * 60));
+
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`;
+    return `${Math.floor(diffInHours / 24)} days ago`;
   };
 
   return (
@@ -599,7 +773,7 @@ const CommunityHub = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Create Post
               </Button>
-              <Button variant="outline" onClick={() => toast({ title: "Filter Options", description: "Advanced filtering coming soon!" })}>
+              <Button variant="outline">
                 <Filter className="w-4 h-4" />
               </Button>
             </div>
@@ -633,133 +807,169 @@ const CommunityHub = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="feed">Feed</TabsTrigger>
+        <TabsTrigger value="feed">Feed</TabsTrigger>
           <TabsTrigger value="groups">Groups</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
           <TabsTrigger value="challenges">Challenges</TabsTrigger>
           <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="feed" className="space-y-4">
-          {posts.map((post) => (
-            <Card key={post.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start space-x-3 mb-4">
-                  <Avatar>
-                    <AvatarImage src={post.author.avatar} alt={post.author.name} />
-                    <AvatarFallback>{post.author.name[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <h3 className="font-semibold">{post.author.name}</h3>
-                      <Badge variant="outline" className="text-xs">
-                        {post.author.badge}
-                      </Badge>
-                      <Badge className="text-xs bg-blue-100 text-blue-700">
-                        {post.author.level}
-                      </Badge>
+        <TabsContent value="feed">
+          <div className="space-y-4">
+            {posts.filter(post => 
+              post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              post.author.name.toLowerCase().includes(searchQuery.toLowerCase())
+            ).map(post => (
+              <Card key={post.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="flex items-center space-x-3">
+                    <Avatar>
+                      <AvatarImage src={post.author.avatar} alt={post.author.name} />
+                      <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{post.author.name}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {post.author.badge}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {post.author.level}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Clock className="w-3 h-3" />
+                        {formatTimestamp(post.timestamp)}
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-500">{formatTimestamp(post.timestamp)}</p>
                   </div>
-                </div>
-
-                <p className="text-gray-700 mb-4">{post.content}</p>
-
-                {post.image && (
-                  <img
-                    src={post.image}
-                    alt="Post content"
-                    className="w-full h-64 object-cover rounded-lg mb-4"
-                  />
-                )}
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {post.tags.map((tag, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between border-t pt-4">
-                  <div className="flex items-center space-x-4">
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-gray-700">{post.content}</p>
+                  
+                  {post.image && (
+                    <div className="rounded-lg overflow-hidden">
+                      <img 
+                        src={post.image} 
+                        alt="Post content" 
+                        className="w-full h-64 object-cover"
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-wrap gap-2">
+                    {post.tags.map((tag, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <div className="flex items-center gap-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleLike(post.id)}
+                        className={post.liked ? 'text-red-500' : 'text-gray-600'}
+                      >
+                        <Heart className={`w-4 h-4 mr-1 ${post.liked ? 'fill-current' : ''}`} />
+                        {post.likes}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        // onClick={() => {}} // Keep interactive, but handled by input field now
+                        className="text-gray-600"
+                      >
+                         <MessageCircle className="w-4 h-4 mr-1" />
+                        {post.comments}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleShare(post.id)}
+                        className="text-gray-600"
+                      >
+                        <Share2 className="w-4 h-4 mr-1" />
+                        {post.shares}
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleBookmark(post.id)}
+                        className={post.bookmarked ? 'text-blue-500' : 'text-gray-600'}
+                      >
+                        <BookmarkPlus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-3 border-t">
+                    <Input
+                      placeholder="Add a comment..."
+                      value={commentInputs[post.id] || ''}
+                      onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
+                      className="flex-1"
+                    />
                     <Button
-                      variant="ghost"
                       size="sm"
-                      onClick={() => handleLike(post.id)}
-                      className={post.liked ? 'text-red-600' : 'text-gray-600'}
-                    >
-                      <Heart className={`w-4 h-4 mr-1 ${post.liked ? 'fill-current' : ''}`} />
-                      {post.likes}
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-600" onClick={() => handleComment(post.id)}>
-                      <MessageCircle className="w-4 h-4 mr-1" />
-                      {post.comments}
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-600" onClick={() => handleShare(post.id)}>
-                      <Share2 className="w-4 h-4 mr-1" />
-                      {post.shares}
+                      onClick={() => handleAddComment(post.id)}                      
+                    > 
+ Comment
                     </Button>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleBookmark(post.id)}
-                      className={post.bookmarked ? 'text-blue-600' : 'text-gray-600'}
-                    >
-                      <BookmarkPlus className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-gray-600" onClick={() => handleFlag(post.id)}>
-                      <Flag className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
 
-        <TabsContent value="groups" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {groups.map((group) => (
+        <TabsContent value="groups">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {groups.filter(group => 
+              group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              group.description.toLowerCase().includes(searchQuery.toLowerCase())
+            ).map(group => (
               <Card key={group.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4 mb-4">
-                    <img
-                      src={group.image}
-                      alt={group.name}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg">{group.name}</h3>
-                      <p className="text-sm text-gray-600 mb-2">{group.description}</p>
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Badge variant="outline" className="text-xs">
-                          {group.category}
-                        </Badge>
-                        <Badge className={`text-xs ${getActivityColor(group.activity)}`}>
-                          {group.activity}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span className="flex items-center">
-                          <Users className="w-4 h-4 mr-1" />
-                          {group.members.toLocaleString()} members
-                        </span>
-                        <span className="flex items-center">
-                          <MessageCircle className="w-4 h-4 mr-1" />
-                          {group.posts} posts
-                        </span>
-                      </div>
+                <div className="aspect-video overflow-hidden rounded-t-lg">
+                  <img 
+                    src={group.image} 
+                    alt={group.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-lg">{group.name}</CardTitle>
+                  <p className="text-sm text-gray-600">{group.description}</p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-1">
+                      <Users className="w-4 h-4 text-gray-500" />
+                      <span>{group.members.toLocaleString()} members</span>
                     </div>
+                    <Badge variant="outline" className="text-xs">
+                      {group.category}
+                    </Badge>
                   </div>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-1">
+                      <MessageCircle className="w-4 h-4 text-gray-500" />
+                      <span>{group.posts.toLocaleString()} posts</span>
+                    </div>
+                    <Badge className={`text-xs ${getActivityColor(group.activity)}`}>
+                      {group.activity}
+                    </Badge>
+                  </div>
+                  
                   <Button
                     onClick={() => handleJoinGroup(group.id)}
-                    className={`w-full ${
-                      group.joined
-                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    className={`w-full ${group.joined 
+                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                      : 'bg-green-600 text-white hover:bg-green-700'
                     }`}
                   >
                     {group.joined ? 'Joined' : 'Join Group'}
@@ -770,128 +980,127 @@ const CommunityHub = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="events" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event) => (
+        <TabsContent value="events">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {events.filter(event => 
+              event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              event.description.toLowerCase().includes(searchQuery.toLowerCase())
+            ).map(event => (
               <Card key={event.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <img
-                    src={event.image}
+                <div className="aspect-video overflow-hidden rounded-t-lg">
+                  <img 
+                    src={event.image} 
                     alt={event.title}
-                    className="w-full h-32 object-cover rounded-lg mb-4"
+                    className="w-full h-full object-cover"
                   />
-                  <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
-                  <p className="text-sm text-gray-600 mb-4">{event.description}</p>
+                </div>
+                <CardHeader>
+                  <CardTitle className="text-lg">{event.title}</CardTitle>
+                  <p className="text-sm text-gray-600">{event.description}</p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <span>{event.date}</span>
+                    <Clock className="w-4 h-4 text-gray-500 ml-2" />
+                    <span>{event.time}</span>
+                  </div>
                   
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      {event.date} at {event.time}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <MapPin className="w-4 h-4 mr-2" />
-                      {event.location}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Users className="w-4 h-4 mr-2" />
-                      {event.attendees}/{event.maxAttendees} attending
-                    </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="w-4 h-4 text-gray-500" />
+                    <span>{event.location}</span>
                   </div>
-
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Capacity</span>
-                      <span>{Math.round((event.attendees / event.maxAttendees) * 100)}%</span>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-1">
+                      <Users className="w-4 h-4 text-gray-500" />
+                      <span>{event.attendees}/{event.maxAttendees} attending</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-green-600 h-2 rounded-full"
-                        style={{ width: `${(event.attendees / event.maxAttendees) * 100}%` }}
-                      ></div>
-                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {event.organizer}
+                    </Badge>
                   </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">by {event.organizer}</span>
-                    <Button
-                      onClick={() => handleRegisterEvent(event.id)}
-                      size="sm"
-                      className={`${
-                        event.registered
-                          ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
-                      }`}
-                    >
-                      {event.registered ? 'Registered' : 'Register'}
-                    </Button>
+                  
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(event.attendees / event.maxAttendees) * 100}%` }}
+                    />
                   </div>
+                  
+                  <Button
+                    onClick={() => handleRegisterEvent(event.id)}
+                    className={`w-full ${event.registered 
+                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {event.registered ? 'Registered' : 'Register'}
+                  </Button>
                 </CardContent>
               </Card>
             ))}
           </div>
         </TabsContent>
 
-        <TabsContent value="challenges" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {challenges.map((challenge) => (
+        <TabsContent value="challenges">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {challenges.filter(challenge => 
+              challenge.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              challenge.description.toLowerCase().includes(searchQuery.toLowerCase())
+            ).map(challenge => (
               <Card key={challenge.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-2">{challenge.title}</h3>
-                      <p className="text-sm text-gray-600 mb-4">{challenge.description}</p>
-                    </div>
-                    <Trophy className="w-6 h-6 text-yellow-500" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-green-600">{challenge.participants}</div>
-                      <div className="text-sm text-gray-500">Participants</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">{challenge.duration}</div>
-                      <div className="text-sm text-gray-500">Duration</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Badge variant="outline" className="text-xs">
-                      {challenge.category}
-                    </Badge>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{challenge.title}</CardTitle>
                     <Badge className={`text-xs ${getDifficultyColor(challenge.difficulty)}`}>
                       {challenge.difficulty}
                     </Badge>
                   </div>
-
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Reward</span>
-                      <span className="font-semibold text-green-600">{challenge.reward}</span>
+                  <p className="text-sm text-gray-600">{challenge.description}</p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-1">
+                      <Users className="w-4 h-4 text-gray-500" />
+                      <span>{challenge.participants.toLocaleString()} participants</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {challenge.category}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4 text-gray-500" />
+                      <span>{challenge.duration}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Award className="w-4 h-4 text-yellow-500" />
+                      <span>{challenge.reward}</span>
                     </div>
                   </div>
-
+                  
                   {challenge.joined && (
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm mb-1">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
                         <span>Progress</span>
                         <span>{challenge.progress}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                        <div 
+                          className="bg-green-500 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${challenge.progress}%` }}
-                        ></div>
+                        />
                       </div>
                     </div>
                   )}
-
+                  
                   <Button
                     onClick={() => handleJoinChallenge(challenge.id)}
-                    className={`w-full ${
-                      challenge.joined
-                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    className={`w-full ${challenge.joined 
+                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                      : 'bg-purple-600 text-white hover:bg-purple-700'
                     }`}
                   >
                     {challenge.joined ? 'Joined' : 'Join Challenge'}
@@ -902,243 +1111,74 @@ const CommunityHub = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="leaderboard" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="leaderboard">
+          <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center gap-2">
                   <Trophy className="w-5 h-5 text-yellow-500" />
-                  <span>Top Contributors</span>
+                  Community Leaderboard
                 </CardTitle>
+                <p className="text-sm text-gray-600">
+                  Top contributors this month
+                </p>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { name: 'Sarah Green', points: 2845, rank: 1, avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=40&h=40&fit=crop&crop=face' },
-                    { name: 'Mike Rodriguez', points: 2634, rank: 2, avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face' },
-                    { name: 'Emma Thompson', points: 2456, rank: 3, avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face' },
-                    { name: 'Alex Chen', points: 2234, rank: 4, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face' },
-                    { name: 'Lisa Johnson', points: 2156, rank: 5, avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=40&h=40&fit=crop&crop=face' }
-                  ].map((user) => (
-                    <div key={user.rank} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full text-white font-bold">
-                        {user.rank}
+                <div className="space-y-3">
+                  {leaderboardData.map((user, index) => (
+                    <div
+                      key={index}
+                      className={`flex items-center gap-3 p-3 rounded-lg ${
+                        user.name === currentUser.name 
+                          ? 'bg-green-50 border border-green-200' 
+                          : 'bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white border">
+                        <span className={`text-sm font-bold ${
+                          user.rank === 1 ? 'text-yellow-600' :
+                          user.rank === 2 ? 'text-gray-600' :
+                          user.rank === 3 ? 'text-amber-600' :
+                          'text-gray-800'
+                        }`}>
+                          {user.rank}
+                        </span>
                       </div>
-                      <Avatar>
+                      
+                      <Avatar className="w-10 h-10">
                         <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback>{user.name[0]}</AvatarFallback>
+                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                       </Avatar>
+                      
                       <div className="flex-1">
-                        <div className="font-semibold">{user.name}</div>
-                        <div className="text-sm text-gray-500">{user.points} points</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{user.name}</span>
+                          {user.name === currentUser.name && (
+                            <Badge variant="default" className="text-xs">You</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Star className="w-3 h-3 fill-current text-yellow-500" />
+                          <span>{user.points.toLocaleString()} points</span>
+                        </div>
                       </div>
+                      
                       {user.rank <= 3 && (
-                        <Star className={`w-5 h-5 ${user.rank === 1 ? 'text-yellow-500' : user.rank === 2 ? 'text-gray-400' : 'text-amber-600'}`} />
+                        <div className="flex items-center">
+                          {user.rank === 1 && <Trophy className="w-5 h-5 text-yellow-500" />}
+                          {user.rank === 2 && <Award className="w-5 h-5 text-gray-500" />}
+                          {user.rank === 3 && <Award className="w-5 h-5 text-amber-600" />}
+                        </div>
                       )}
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Zap className="w-5 h-5 text-blue-500" />
-                  <span>Challenge Leaders</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { name: 'Zero Waste Warriors', members: 1234, challenges: 15, category: 'Zero Waste' },
-                    { name: 'Solar Champions', members: 987, challenges: 12, category: 'Energy' },
-                    { name: 'Eco Transport', members: 876, challenges: 18, category: 'Transportation' },
-                    { name: 'Green Builders', members: 765, challenges: 9, category: 'Construction' },
-                    { name: 'Sustainable Fashion', members: 654, challenges: 14, category: 'Fashion' }
-                  ].map((team, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full text-white font-bold">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-semibold">{team.name}</div>
-                        <div className="text-sm text-gray-500">{team.members} members • {team.challenges} challenges</div>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {team.category}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Award className="w-5 h-5 text-green-500" />
-                <span>Recent Achievements</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  { title: 'Plastic-Free Champion', description: 'Completed 30-day plastic-free challenge', user: 'Sarah Green', time: '2 hours ago' },
-                  { title: 'Solar Advocate', description: 'Convinced 10 neighbors to install solar panels', user: 'Mike Rodriguez', time: '5 hours ago' },
-                  { title: 'Zero Waste Master', description: 'Reduced waste by 95% for 3 months', user: 'Emma Thompson', time: '1 day ago' },
-                  { title: 'Community Leader', description: 'Organized 5 sustainability events', user: 'Alex Chen', time: '2 days ago' },
-                  { title: 'Eco Educator', description: 'Taught 50 people about sustainability', user: 'Lisa Johnson', time: '3 days ago' },
-                  { title: 'Green Commuter', description: 'Biked to work for 100 days straight', user: 'David Park', time: '1 week ago' }
-                ].map((achievement, index) => (
-                  <div key={index} className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Trophy className="w-4 h-4 text-yellow-500" />
-                      <h3 className="font-semibold text-sm">{achievement.title}</h3>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-2">{achievement.description}</p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-medium text-green-600">{achievement.user}</span>
-                      <span className="text-xs text-gray-500">{achievement.time}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
-  );
-
-  // Helper functions
-  function getDifficultyColor(difficulty) {
-    switch (difficulty) {
-      case 'Easy': return 'bg-green-100 text-green-700';
-      case 'Medium': return 'bg-yellow-100 text-yellow-700';
-      case 'Hard': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
-    }
-  }
-
-  function getActivityColor(activity) {
-    switch (activity) {
-      case 'Very Active': return 'bg-green-100 text-green-700';
-      case 'Active': return 'bg-blue-100 text-blue-700';
-      case 'Moderate': return 'bg-yellow-100 text-yellow-700';
-      default: return 'bg-gray-100 text-gray-700';
-    }
-  }
-
-  function formatTimestamp(timestamp) {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInMilliseconds = now.getTime() - date.getTime();
-    const diffInHours = Math.floor(diffInMilliseconds / (1000 * 60 * 60));
-
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`;
-    return `${Math.floor(diffInHours / 24)} days ago`;
-  }
-
-  // Initialize with sample data
-  React.useEffect(() => {
-    setPosts([
-      {
-        id: 'post1',
-        author: {
-          name: 'Sarah Green',
-          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=40&h=40&fit=crop&crop=face',
-          badge: 'Eco Champion',
-          level: 'Expert'
-        },
-        content: 'Just switched to a bamboo toothbrush and love it! Small changes make a big difference. What sustainable swaps have you made recently?',
-        image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        likes: 24,
-        comments: 8,
-        shares: 3,
-        tags: ['Zero Waste', 'Personal Care', 'Sustainability'],
-        liked: false,
-        bookmarked: false
-      },
-      {
-        id: 'post2',
-        author: {
-          name: 'Mike Rodriguez',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
-          badge: 'Solar Advocate',
-          level: 'Pro'
-        },
-        content: 'Amazing to see so many active eco warriors! Keep up the great work everyone!',
-        image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=300&fit=crop',
-        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        likes: 67,
-        comments: 15,
-        shares: 12,
-        tags: ['Community', 'Motivation'],
-        liked: true,
-        bookmarked: true
-      }
-    ]);
-
-    setGroups([
-      {
-        id: 'group1',
-        name: 'Zero Waste Living',
-        description: 'Tips and tricks for reducing waste in daily life',
-        members: 12543,
-        category: 'Lifestyle',
-        image: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=400&h=200&fit=crop',
-        joined: true,
-        posts: 1234,
-        activity: 'Very Active'
-      },
-      {
-        id: 'group2',
-        name: 'Renewable Energy Enthusiasts',
-        description: 'Discussing solar, wind, and other clean energy solutions',
-        members: 8967,
-        category: 'Energy',
-        image: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=400&h=200&fit=crop',
-        joined: false,
-        posts: 2345,
-        activity: 'Active'
-      }
-    ]);
-
-    setEvents([
-      {
-        id: 'event1',
-        title: 'Community Solar Workshop',
-        description: 'Learn about community solar programs and how to join',
-        date: '2024-07-15',
-        time: '2:00 PM',
-        location: 'Community Center',
-        attendees: 45,
-        maxAttendees: 100,
-        image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=200&fit=crop',
-        organizer: 'Green Energy Group',
-        registered: false
-      }
-    ]);
-
-    setChallenges([
-      {
-        id: 'challenge1',
-        title: '30-Day Plastic Free Challenge',
-        description: 'Eliminate single-use plastics for 30 days',
-        participants: 1234,
-        duration: '30 days',
-        difficulty: 'Medium',
-        reward: '500 Green Points',
-        progress: 65,
-        joined: true,
-        category: 'Zero Waste'
-      }
-    ]);
-  }, []);
-};
-
+ );
+}
 export default CommunityHub;
