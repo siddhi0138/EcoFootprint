@@ -72,6 +72,12 @@ const NotificationCenter = () => {
           description: "Check your ESG portfolio performance!",
         });
         break;
+      case 'smartInsights':
+        toast({
+          title: "New Smart Insight",
+          description: "Check out your latest sustainability insights!",
+        });
+        break;
       default:
         toast({
           title: "Action completed",
