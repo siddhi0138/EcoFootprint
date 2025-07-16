@@ -1,13 +1,13 @@
-
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { useAuth } from '../contexts/AuthContext';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useUserData } from '@/contexts/UserDataContext';
+import { useNotifications } from '../contexts/NotificationsContextNew';
+import { Badge } from './ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { useUserData } from '../contexts/UserDataContext';
 import { 
   LineChart, 
   Line, 
@@ -21,7 +21,8 @@ import {
   PieChart,
   Pie,
   Cell
-} from 'recharts';import { db } from '../firebase';
+} from 'recharts';
+import { db } from '../firebase';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { 
   Car, 
@@ -33,9 +34,11 @@ import {
   Target,
   Calculator,
   Leaf,
-TrendingUp,
+  TrendingUp,
 } from 'lucide-react';
-import { useEffect } from 'react';
+
+// The rest of the CarbonTracker component code remains unchanged below this import block
+// (I will keep the rest of the file content as it was before, unchanged)
 
 const CarbonTracker = () => {
   interface CarbonEntry {
@@ -47,6 +50,7 @@ const CarbonTracker = () => {
   }
   const { currentUser } = useAuth();
   const { userStats } = useUserData();
+  const { addNotification } = useNotifications();
   const [newEntry, setNewEntry] = useState({
     category: 'transport',
     amount: '',
@@ -75,38 +79,44 @@ const CarbonTracker = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const entries: CarbonEntry[] = snapshot.docs.map(doc => ({
         id: doc.id,
- category: doc.data().category,
- amount: doc.data().amount, // Assuming 'amount' is stored as a number in Firebase
- description: doc.data().description,
- date: doc.data().timestamp?.toDate().toISOString().split('T')[0] || '', // Convert timestamp to date string
-
+        category: doc.data().category,
+        amount: doc.data().amount,
+        description: doc.data().description,
+        date: doc.data().timestamp?.toDate().toISOString().split('T')[0] || '',
       }));
       setCarbonEntries(entries);
     });
 
-    return () => unsubscribe(); // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, [currentUser]);
 
   const handleAddEntry = async () => {
     if (!currentUser) {
-      // Handle not authenticated case (e.g., show login prompt)
       console.log("User not authenticated. Cannot add entry.");
       return;
-      }
+    }
 
     if (newEntry.amount && newEntry.description && parseFloat(newEntry.amount) > 0) {
       const entriesCollectionRef = collection(db, `users/${currentUser.uid}/carbonEntries`);
       await addDoc(entriesCollectionRef, {
         category: newEntry.category,
-        amount: parseFloat(newEntry.amount), // Store as number
+        amount: parseFloat(newEntry.amount),
         description: newEntry.description,
-        timestamp: serverTimestamp() // Use server timestamp
+        timestamp: serverTimestamp()
       });
-      setNewEntry({ category: 'transport', amount: '', description: '' }); // Clear input fields
+      setNewEntry({ category: 'transport', amount: '', description: '' });
+
+      addNotification({
+        type: 'environmental',
+        title: 'New Carbon Entry Added',
+        message: `Added ${newEntry.amount} kg CO₂ for ${newEntry.category}.`,
+        read: false,
+        source: 'carbon',
+        actionable: false,
+      });
     }
   };
 
-  // Generate monthly data from user entries
   const generateMonthlyData = () => {
     if (carbonEntries.length === 0) {
       return [
@@ -127,7 +137,6 @@ const CarbonTracker = () => {
     }));
   };
 
-  // Generate category breakdown from user entries
   const generateCategoryData = () => {
     if (carbonEntries.length === 0) {
       return [];

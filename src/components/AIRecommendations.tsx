@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { productsData, searchProducts } from '../data/productsData';
 import { useUserData } from '../contexts/UserDataContext';
+import { useNotifications } from '../contexts/NotificationsContextNew';
 
 interface Recommendation {
   id: number;
@@ -62,6 +63,8 @@ const AIRecommendations = () => {
     completedActions, setCompletedActions,
     actionProgress, setActionProgress,
   } = useUserData();
+
+  const { addNotification } = useNotifications();
 
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 
@@ -307,6 +310,15 @@ const AIRecommendations = () => {
           }
         }));
         addPoints(10);
+        addNotification({
+          type: 'suggestion',
+          title: 'New Product Search Recommendation',
+          message: `You started a product search for "${recommendation.actionData.query}".`,
+          read: false,
+          source: 'AIRecommendations',
+          actionable: true,
+          action: 'View',
+        });
         break;
         
       case 'habit_tracker':
@@ -325,6 +337,15 @@ const AIRecommendations = () => {
           }
         }));
         addPoints(25);
+        addNotification({
+          type: 'suggestion',
+          title: 'Habit Tracker Started',
+          message: `You started tracking the habit "${recommendation.actionData.habit}".`,
+          read: false,
+          source: 'AIRecommendations',
+          actionable: true,
+          action: 'View',
+        });
         break;
         
       case 'action_plan':
@@ -342,11 +363,29 @@ const AIRecommendations = () => {
           }
         }));
         addPoints(15);
+        addNotification({
+          type: 'suggestion',
+          title: 'Action Plan Created',
+          message: `You created a new action plan.`,
+          read: false,
+          source: 'AIRecommendations',
+          actionable: true,
+          action: 'View',
+        });
         break;
         
       default:
         setCompletedActions(prev => [...prev, recommendation.id]);
         addPoints(20);
+        addNotification({
+          type: 'suggestion',
+          title: 'Action Completed',
+          message: `You completed the recommendation "${recommendation.title}".`,
+          read: false,
+          source: 'AIRecommendations',
+          actionable: true,
+          action: 'View',
+        });
     }
   };
 

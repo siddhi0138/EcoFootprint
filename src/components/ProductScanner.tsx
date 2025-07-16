@@ -37,6 +37,7 @@ import { useUserData } from '../contexts/UserDataContext';
 import { useProductComparison } from '../contexts/ProductComparisonContext';
 
 import { useCart } from "../contexts/CartContext";
+import { useNotifications } from '../contexts/NotificationsContextNew';
 
 interface ProductScannerProps {
   scannedProduct: any; // Define a more specific type if possible
@@ -49,6 +50,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
   const navigate = useNavigate();  const { scannedProducts, addScannedProduct } = useUserData();
   const { addToCart } = useCart();
   const { addProductToComparison } = useProductComparison();
+  const { addNotification } = useNotifications();
   const [isScanning, setIsScanning] = useState(false);
   const [detectedProduct, setDetectedProduct] = useState(null);
   const [scanMode, setScanMode] = useState(false);
@@ -175,19 +177,17 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
       
       setDetectedProduct(productData);
       
-      // Add to user's scanned products
-      // Removed automatic addScannedProduct call to prevent default saving
-      // const today = new Date();
-      // addScannedProduct({
-      //   id: randomProduct.id.toString(),
-      //   name: randomProduct.name,
-      //   brand: randomProduct.brand,
-      //   sustainabilityScore: randomProduct.sustainabilityScore,
-      //   category: randomProduct.category,
-      //   date: `${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}/${today.getFullYear()}`,
-      //   alternatives: randomProduct.alternatives, // Store alternatives here
-      //   source: 'ProductScanner',
-      // });
+      // Add notification for scanned product
+      addNotification({
+        type: 'scanning',
+        title: 'Product Scanned',
+        message: `You scanned ${randomProduct.name} by ${randomProduct.brand}.`,
+        read: false,
+        source: 'scanner',
+        actionable: true,
+        action: 'View',
+      });
+
       // Add to product comparison
       addProductToComparison({
         id: randomProduct.id.toString(),
@@ -367,6 +367,18 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
         //   date: new Date().toLocaleDateString(),
         //   source: 'ProductScanner',
         // });
+
+        // Add notification for scanned product
+        addNotification({
+          type: 'scanning',
+          title: 'Product Scanned',
+          message: `You scanned ${product.name} by ${product.brand}.`,
+          read: false,
+          source: 'scanner',
+          actionable: true,
+          action: 'View',
+        });
+
         setIsScanning(false);
       }, 2000);
   };
