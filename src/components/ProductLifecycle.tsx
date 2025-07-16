@@ -11,6 +11,7 @@ import {
 import { db } from '../firebase';
 import { doc, setDoc, getDocs, getDoc, collection } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotifications } from '../contexts/NotificationsContextNew';
 
 interface ProductLifecycleProps {
   product?: any;
@@ -18,6 +19,7 @@ interface ProductLifecycleProps {
 
 const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduct }) => {
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
   const [viewedProducts, setViewedProducts] = useState<{ [key: string]: any }>({});
   const [savedProduct, setSavedProduct] = React.useState<any>(null);
   const location = useLocation();
@@ -223,6 +225,18 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
       // Persist to localStorage
       localStorage.setItem('persistedProductLifecycle', JSON.stringify(sanitizedProduct));
       alert('Product lifecycle data saved successfully.');
+
+      // Add notification for saved product lifecycle
+      addNotification({
+        type: 'achievement',
+        title: 'Product Lifecycle Saved',
+        message: `You have saved the lifecycle data for ${product.name}.`,
+        read: false,
+        source: 'productLifecycle',
+        actionable: true,
+        action: 'View',
+      });
+
     } catch (error) {
       console.error('Error saving product lifecycle data:', error);
       alert('Failed to save product lifecycle data.');

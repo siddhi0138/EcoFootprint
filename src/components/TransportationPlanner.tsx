@@ -23,6 +23,8 @@ import {
 
 import { OPEN_ROUTE_SERVICE_API_KEY } from '../config/openRouteConfig';
 import { db, auth } from '../firebase';
+import { useNotifications } from '../contexts/NotificationsContextNew';
+
 const TransportationPlanner = () => {
   const [fromLocation, setFromLocation] = useState('');
   const [toLocation, setToLocation] = useState('');
@@ -30,6 +32,8 @@ const TransportationPlanner = () => {
   const [loading, setLoading] = useState(false);
   const apiKey = OPEN_ROUTE_SERVICE_API_KEY;
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
+
 
   // Geocoding function using Nominatim (free)
   const geocodeLocation = async (location: string) => {
@@ -287,6 +291,14 @@ const TransportationPlanner = () => {
           title: "Routes Calculated",
           description: `Found ${calculatedRoutes.length} route options.`,
         });
+        addNotification({
+          type: 'suggestion',
+          title: 'Routes Calculated',
+          message: `Found ${calculatedRoutes.length} route options for your trip.`,
+          read: false,
+          source: 'travelPlanner',
+          actionable: false,
+        });
       }
     } catch (error) {
       console.error('Error planning route:', error);
@@ -438,50 +450,58 @@ const TransportationPlanner = () => {
           {routes.map((route, index) => {
             const sustainabilityBadge = getSustainabilityBadge(route.sustainability);
 
-const saveRouteToFirestore = async (routeToSave) => {
-  try {
-    if (!auth.currentUser) {
-      toast({
-        title: 'Authentication Required',
-        description: 'Please log in to save routes.',
-        variant: 'destructive',
+  const saveRouteToFirestore = async (routeToSave) => {
+    try {
+      if (!auth.currentUser) {
+        toast({
+          title: 'Authentication Required',
+          description: 'Please log in to save routes.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const userRoutesCollection = collection(db, 'users', auth.currentUser.uid, 'savedRoutes');
+      await addDoc(userRoutesCollection, {
+        mode: routeToSave.mode,
+        name: routeToSave.name,
+        duration: routeToSave.duration,
+        distance: routeToSave.distance,
+        cost: routeToSave.cost,
+        emissions: routeToSave.emissions,
+        calories: routeToSave.calories,
+        sustainability: routeToSave.sustainability,
+        timestamp: new Date()
       });
-      return;
+      toast({
+        title: 'Route Saved',
+        description: 'Your route has been saved successfully.',
+        variant: 'default',
+      });
+      addNotification({
+        type: 'suggestion',
+        title: 'Route Saved',
+        message: `Your route "${routeToSave.name}" has been saved.`,
+        read: false,
+        source: 'travelPlanner',
+        actionable: false,
+      });
+    } catch (error) {
+      console.error('Error saving route:', error);
+      if (error.code === 'permission-denied') {
+        toast({
+          title: 'Permission Denied',
+          description: 'You do not have permission to save routes. Please check your account permissions.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Save Failed',
+          description: 'Failed to save the route. Please try again.',
+          variant: 'destructive',
+        });
+      }
     }
-    const userRoutesCollection = collection(db, 'users', auth.currentUser.uid, 'savedRoutes');
-    await addDoc(userRoutesCollection, {
-      mode: routeToSave.mode,
-      name: routeToSave.name,
-      duration: routeToSave.duration,
-      distance: routeToSave.distance,
-      cost: routeToSave.cost,
-      emissions: routeToSave.emissions,
-      calories: routeToSave.calories,
-      sustainability: routeToSave.sustainability,
-      timestamp: new Date()
-    });
-    toast({
-      title: 'Route Saved',
-      description: 'Your route has been saved successfully.',
-      variant: 'default',
-    });
-  } catch (error) {
-    console.error('Error saving route:', error);
-    if (error.code === 'permission-denied') {
-      toast({
-        title: 'Permission Denied',
-        description: 'You do not have permission to save routes. Please check your account permissions.',
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Save Failed',
-        description: 'Failed to save the route. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  }
-};
+  };
 
             return (
               <div key={index} className="bg-white/80 rounded-xl p-6 border border-gray-100">

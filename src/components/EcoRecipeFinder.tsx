@@ -25,7 +25,6 @@ import {
 import { useUserData } from '@/contexts/UserDataContext';
 import { useToast } from '@/hooks/use-toast';
 import {
-  collection,
   doc,
   onSnapshot,
   setDoc,
@@ -35,6 +34,7 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
+import { useNotificationHelper } from '@/hooks/useNotificationHelper';
 
 interface Recipe {
   id: number;
@@ -64,8 +64,8 @@ interface Recipe {
 }
 
 interface MealPlanEntry {
-    day: string;
-    recipeId: number; // Store recipe ID instead of full object
+  day: string;
+  recipeId: number; // Store recipe ID instead of full object
 }
 
 export const EcoRecipeFinder = () => {
@@ -78,6 +78,7 @@ export const EcoRecipeFinder = () => {
   const [selectedDayToAdd, setSelectedDayToAdd] = useState<string>('Monday'); // New state for day selection
   const { incrementRecipeViewed, addPoints } = useUserData();
   const { toast } = useToast();
+  const { addGeneralNotification } = useNotificationHelper();
 
   // Fetch user recipe data
   useEffect(() => {
@@ -99,10 +100,10 @@ export const EcoRecipeFinder = () => {
         setFirebaseFavoriteRecipes(new Set());
         setFirebaseMealPlan([]);
         // Optionally create the document with initial empty values
-         setDoc(userRecipeRef, {
-           favoriteRecipes: [],
-           mealPlan: []
-         }).catch(error => console.error("Error initializing user recipe data:", error));
+        setDoc(userRecipeRef, {
+          favoriteRecipes: [],
+          mealPlan: []
+        }).catch(error => console.error("Error initializing user recipe data:", error));
       }
     }, (error) => {
       console.error('Error fetching user recipe data:', error);
@@ -110,7 +111,6 @@ export const EcoRecipeFinder = () => {
 
     return () => unsubscribeRecipeData();
   }, [user]);
-
 
   const recipes: Recipe[] = [ // Specify type
     {
@@ -261,6 +261,11 @@ export const EcoRecipeFinder = () => {
       title: 'Recipe Viewed!',
       description: 'You earned 5 points for viewing a recipe!',
     });
+    addGeneralNotification(
+      'Recipe Viewed',
+      `You viewed the recipe: ${recipe.name}`,
+      'suggestion'
+    );
   };
 
   const handleFavoriteRecipe = async (recipeId: number) => { // Make async, specify type
@@ -279,6 +284,11 @@ export const EcoRecipeFinder = () => {
         title: 'Recipe Removed',
         description: 'Recipe removed from favorites.',
       });
+      addGeneralNotification(
+        'Recipe Removed',
+        `You removed the recipe from favorites.`,
+        'suggestion'
+      );
     } else {
       // Favorite
       newFavorites.add(recipeId);
@@ -290,6 +300,11 @@ export const EcoRecipeFinder = () => {
         title: 'Recipe Favorited!',
         description: 'You earned 5 points for favoriting a recipe!',
       });
+      addGeneralNotification(
+        'Recipe Favorited',
+        `You favorited a recipe.`,
+        'suggestion'
+      );
     }
      // State will be updated by the onSnapshot listener
   };
@@ -302,8 +317,8 @@ export const EcoRecipeFinder = () => {
     const existingIndex = newMealPlan.findIndex(meal => meal.day === day);
 
     const mealPlanEntry: MealPlanEntry = { // Create meal plan entry object
-        day,
-        recipeId: recipe.id,
+      day,
+      recipeId: recipe.id,
     };
 
     if (existingIndex >= 0) {
@@ -312,16 +327,21 @@ export const EcoRecipeFinder = () => {
       newMealPlan.push(mealPlanEntry);
     }
 
-     await updateDoc(userRecipeRef, {
-        mealPlan: newMealPlan // Update entire mealPlan array in Firebase
-      });
+    await updateDoc(userRecipeRef, {
+      mealPlan: newMealPlan // Update entire mealPlan array in Firebase
+    });
 
     addPoints(10); // This will update userStats in Firebase via useUserData
     toast({
       title: 'Added to Meal Plan!',
       description: 'You earned 10 points for meal planning!',
     });
-     // State will be updated by the onSnapshot listener
+    addGeneralNotification(
+      'Added to Meal Plan',
+      `You added a recipe to your meal plan for ${day}.`,
+      'suggestion'
+    );
+    // State will be updated by the onSnapshot listener
   };
 
   const generateMealPlan = async () => { // Make async
@@ -334,8 +354,8 @@ export const EcoRecipeFinder = () => {
     }));
 
     const userRecipeRef = doc(db, 'users', user.uid, 'recipeData', 'data');
-     await updateDoc(userRecipeRef, {
-        mealPlan: newMealPlan // Update entire mealPlan array in Firebase
+    await updateDoc(userRecipeRef, {
+      mealPlan: newMealPlan // Update entire mealPlan array in Firebase
       });
 
     addPoints(25); // This will update userStats in Firebase via useUserData
@@ -343,6 +363,11 @@ export const EcoRecipeFinder = () => {
       title: 'Meal Plan Generated!',
       description: 'You earned 25 points for generating a meal plan!',
     });
+    addGeneralNotification(
+      'Meal Plan Generated',
+      'You generated a new meal plan for the week.',
+      'suggestion'
+    );
      // State will be updated by the onSnapshot listener
   };
 
