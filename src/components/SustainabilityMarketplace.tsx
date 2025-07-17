@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, setDoc, query, where, deleteDoc, doc } from 'firebase/firestore';
 import { useCart } from '../contexts/CartContext'; // Import useCart for cart context
+import { useNotificationHelperNew } from '../hooks/useNotificationHelperNew';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +57,7 @@ const SustainabilityMarketplace = () => {
   const { toast } = useToast();
   const { currentUser } = useAuth(); // Get current user from AuthContext
   const { addToCart } = useCart();
+  const { addPurchaseNotification } = useNotificationHelperNew();
 
   // Fetch marketplace data from Firestore on component mount
       useEffect(() => {
@@ -288,6 +290,7 @@ const SustainabilityMarketplace = () => {
         title: "Product Favorited!",
         description: "You earned 5 points for favoriting a product!",
       });
+      addPurchaseNotification('Product Favorited');
     }
   };
 
@@ -553,13 +556,16 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                       {/* Removed Add to Cart button as part of removing incart feature */}
                       <Button 
                         className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                        onClick={() => addToCart({
-                          id: product.id.toString(),
-                          name: product.name,
-                          price: product.price,
-                          image: getProductImage(product),
-                          brand: product.brand
-                        })}
+                        onClick={() => {
+                          addToCart({
+                            id: product.id.toString(),
+                            name: product.name,
+                            price: product.price,
+                            image: getProductImage(product),
+                            brand: product.brand
+                          });
+                          addPurchaseNotification(product.name);
+                        }}
                         disabled={!product.inStock}
                       >
                         {product.inStock ? (

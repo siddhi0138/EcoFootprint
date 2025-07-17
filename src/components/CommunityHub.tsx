@@ -29,7 +29,11 @@ import {
   TrendingUp
 } from 'lucide-react';
 
+import { useNotificationHelperNew } from '../hooks/useNotificationHelperNew';
+
 const CommunityHub = () => {
+  const { addCommunityNotification } = useNotificationHelperNew();
+
   const [activeTab, setActiveTab] = useState('feed');
   const [searchQuery, setSearchQuery] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
@@ -668,6 +672,12 @@ const CommunityHub = () => {
   };
 
   const handleJoinGroup = (groupId) => {
+    const group = groups.find(g => g.id === groupId);
+    if (group) {
+      const newJoinedStatus = !group.joined;
+      addCommunityNotification(`You have ${newJoinedStatus ? 'joined' : 'left'} the group "${group.name}".`);
+    }
+
     setGroups(groups.map(g =>
       g.id === groupId
         ? { ...g, joined: !g.joined, members: g.joined ? g.members - 1 : g.members + 1 }
@@ -676,6 +686,12 @@ const CommunityHub = () => {
   };
 
   const handleRegisterEvent = (eventId) => {
+    const event = events.find(e => e.id === eventId);
+    if (event) {
+      const newRegisteredStatus = !event.registered;
+      addCommunityNotification(`You have ${newRegisteredStatus ? 'registered for' : 'unregistered from'} the event "${event.title}".`);
+    }
+
     setEvents(events.map(e =>
       e.id === eventId
         ? { ...e, registered: !e.registered, attendees: e.registered ? e.attendees - 1 : e.attendees + 1 }
@@ -684,6 +700,12 @@ const CommunityHub = () => {
   };
 
   const handleJoinChallenge = (challengeId) => {
+    const challenge = challenges.find(c => c.id === challengeId);
+    if (challenge) {
+      const newJoinedStatus = !challenge.joined;
+      addCommunityNotification(`You have ${newJoinedStatus ? 'joined' : 'left'} the challenge "${challenge.title}".`);
+    }
+
     setChallenges(challenges.map(c =>
       c.id === challengeId
         ? { ...c, joined: !c.joined, participants: c.joined ? c.participants - 1 : c.participants + 1 }
@@ -716,6 +738,8 @@ const CommunityHub = () => {
     setPosts([newPost, ...posts]);
     setNewPostContent('');
     setShowCreatePost(false);
+
+    addCommunityNotification('A new post has been created in the Community Hub. Check it out!');
   };
 
   const getDifficultyColor = (difficulty) => {

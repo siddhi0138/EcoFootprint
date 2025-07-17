@@ -22,10 +22,12 @@ import {
   ShoppingBag,
   Sparkles
 } from 'lucide-react';
+import { useNotificationHelperNew } from '../hooks/useNotificationHelperNew';
 
 const RewardsSystem = () => {
   const { userStats, redeemReward, addPoints } = useUserData();
   const { toast } = useToast();
+  const { addRewardNotification } = useNotificationHelperNew();
 
   // Dynamic achievements based on actual user data
   const achievements = [
@@ -263,6 +265,7 @@ const RewardsSystem = () => {
         description: `You've successfully redeemed: ${reward.name}. Check your email for details.`,
         duration: 5000,
       });
+      addRewardNotification(reward.name);
     } else {
       toast({
         title: "Insufficient Points",

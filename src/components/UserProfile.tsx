@@ -84,7 +84,7 @@ const UserProfile = () => {
         }
 
         // Fetch user stats
-        const userStatsDocRef = doc(db, 'userStats', user.id);
+        const userStatsDocRef = doc(db, 'users', user.id);
         const userStatsDocSnap = await getDoc(userStatsDocRef);
 
         if (userStatsDocSnap.exists()) {
