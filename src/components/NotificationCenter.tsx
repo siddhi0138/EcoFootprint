@@ -102,12 +102,6 @@ const NotificationCenter = () => {
         return 'bg-orange-50 border-orange-200 text-orange-800';
       case 'tip':
         return 'bg-teal-50 border-teal-200 text-teal-800';
-      case 'investment':
-        return 'bg-teal-50 border-teal-200 text-teal-800';
-      case 'investment':
-        return 'bg-emerald-50 border-emerald-200 text-emerald-800';
-      default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
     }
   };
 
@@ -301,23 +295,23 @@ const NotificationCenter = () => {
 
         <TabsContent value="notifications">
           <div className="space-y-4">
-            {notifications.length === 0 ? (
-              <Card className="text-center py-12">
-                <CardContent>
-                  <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">No notifications yet</h3>
-                  <p className="text-gray-500">Start using the app to receive notifications about your eco journey!</p>
-                </CardContent>
-              </Card>
-            ) : (
-              notifications.map((notification) => (
-                <Card 
-                  key={notification.id} 
-                  className={`transition-all duration-300 hover:shadow-lg cursor-pointer ${
-                    !notification.read ? 'bg-white border-l-4 border-l-blue-500 shadow-sm' : 'bg-gray-50'
-                  }`}
-                  onClick={() => markAsRead(notification.id)}
-                >
+{notifications.length === 0 ? (
+  <Card className="text-center py-12">
+    <CardContent>
+      <Bell className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+      <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-200 mb-2">No notifications yet</h3>
+      <p className="text-gray-500 dark:text-gray-400">Start using the app to receive notifications about your eco journey!</p>
+    </CardContent>
+  </Card>
+) : (
+notifications.map((notification) => (
+  <Card 
+    key={notification.id} 
+    className={`transition-all duration-300 hover:shadow-lg cursor-pointer ${
+      !notification.read ? 'bg-white dark:bg-gray-800 border-l-4 border-l-blue-500 dark:border-l-blue-400 shadow-sm' : 'bg-gray-50 dark:bg-gray-700'
+    }`}
+    onClick={() => markAsRead(notification.id)}
+  >
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-4">
                       <div className={`p-2 rounded-full ${getTypeColor(notification.type)}`}>
@@ -329,9 +323,9 @@ const NotificationCenter = () => {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
-                          <h3 className={`font-semibold ${!notification.read ? 'text-gray-900' : 'text-gray-600'}`}>
-                            {notification.title}
-                          </h3>
+<h3 className={`font-semibold ${!notification.read ? 'text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400'}`}>
+  {notification.title}
+</h3>
                           <div className="flex items-center space-x-2">
 <span className="text-xs text-gray-500">
   {notification.timestamp
@@ -347,9 +341,9 @@ const NotificationCenter = () => {
                             )}
                           </div>
                         </div>
-                        <p className={`text-sm ${!notification.read ? 'text-gray-700' : 'text-gray-500'} mb-3`}>
-                          {notification.message}
-                        </p>
+<p className={`text-sm ${!notification.read ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'} mb-3`}>
+  {notification.message}
+</p>
                         {notification.actionable && (
                           <Button 
                             size="sm" 
