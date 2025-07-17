@@ -25,6 +25,7 @@ interface NotificationContextType {
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   clearAllNotifications: () => Promise<void>;
+  loading: boolean;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -45,12 +46,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const { currentUser } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const { isLoading } = useAuth();
 
   useEffect(() => {
     if (isLoading) {
       // Auth state is still loading, do not clear notifications yet
+      setLoading(true);
       return;
     }
     if (!currentUser) {
@@ -59,34 +62,49 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       setUnreadCount(0);
       return;
     }
+    setLoading(true);
 
     console.log('Setting up notifications listener for user:', currentUser.uid);
 
     let unsubscribe: (() => void) | undefined;
 
-    try {
+    const fetchAndListen = async () => {
       const userDocRef = doc(db, 'users', currentUser.uid);
       const notificationsCollectionRef = collection(userDocRef, 'notifications');
 
       const q = query(notificationsCollectionRef, orderBy('timestamp', 'desc'), limit(50));
 
-      unsubscribe = onSnapshot(q, (snapshot) => {
-        const notifs: Notification[] = [];
-        let unread = 0;
-        snapshot.forEach(doc => {
+      try {
+        // First, fetch the initial data
+        const initialSnapshot = await getDocs(q);
+        const initialNotifs: Notification[] = [];
+        let initialUnread = 0;
+        initialSnapshot.forEach(doc => {
           const data = doc.data() as Notification;
-          notifs.push({ id: doc.id, ...data });
-          if (!data.read) unread++;
+          initialNotifs.push({ id: doc.id, ...data });
+          if (!data.read) initialUnread++;
         });
-        setNotifications(notifs);
-        setUnreadCount(unread);
-      }, (error) => {
+        setNotifications(initialNotifs);
+        setUnreadCount(initialUnread);
+        setLoading(false); // Set loading to false after initial fetch
+
+        // Then, set up the real-time listener
+        unsubscribe = onSnapshot(q, (snapshot) => {
+          const notifs: Notification[] = [];
+          let unread = 0;
+          snapshot.forEach(doc => {
+            const data = doc.data() as Notification;
+            notifs.push({ id: doc.id, ...data });
+            if (!data.read) unread++;
+          });
+          setNotifications(notifs);
+          setUnreadCount(unread);
+        }, (error) => {
         if (error.code === 'permission-denied') {
           console.warn('Firestore permission denied for notifications:', error.message);
-          // Optionally clear notifications on permission error
-          setNotifications([]);
-          setUnreadCount(0);
-          // Additional user feedback or retry logic could be added here
+            // Optionally clear notifications on permission error
+            setNotifications([]);
+            setUnreadCount(0);
         } else {
           console.error('Error fetching notifications from Firestore:', error);
         }
@@ -95,14 +113,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       console.error('Unexpected error setting up notifications listener:', error);
       setNotifications([]);
       setUnreadCount(0);
+      setLoading(false); // Set loading to false on error
     }
+    };
 
+    fetchAndListen();
     return () => {
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, [currentUser]);
+  }, [currentUser, isLoading]);
 
   const addNotification = async (notification: Omit<Notification, 'id' | 'timestamp'>) => {
     if (!currentUser) return;
@@ -178,7 +199,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     addNotification,
     markAsRead,
     markAllAsRead,
-    clearAllNotifications
+    clearAllNotifications,
+    loading
   };
 
   return (

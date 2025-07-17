@@ -1,7 +1,7 @@
 
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { collection, doc, onSnapshot, addDoc, updateDoc, getDoc, setDoc, getDocs, query, where, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { collection, doc, onSnapshot, addDoc, updateDoc, getDoc, setDoc, getDocs, query, where, serverTimestamp, writeBatch, increment } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 import { db } from '../firebase';
 import { Timestamp } from 'firebase/firestore';
@@ -478,7 +478,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     // Calculate totalPoints (example: 10 points per scan + 5 points per kg CO2 saved)
     const totalPoints = totalScans * 10 + totalCO2Saved * 5;
 
-    // Update userStats with recalculated values
+    // Update userStats with recalculated values, preserving recipesViewed
     setUserStats(prev => ({
       ...prev,
       totalScans,
@@ -487,6 +487,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       currentWeekScans,
       streakDays: streak,
       totalPoints,
+      recipesViewed: prev.recipesViewed, // Preserve recipesViewed to prevent reset
     }));
 
   }, [scannedProducts, carbonEntries, currentUser]);
@@ -579,7 +580,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
           currentWeekScans: Number(fetchedStats.currentWeekScans) || 0,
           streakDays: Number(fetchedStats.streakDays) || 0,
           coursesCompleted: Number(fetchedStats.coursesCompleted) || 0,
-          recipesViewed: Number(fetchedStats.recipesViewed) || 0,
+          recipesViewed: typeof fetchedStats.recipesViewed === 'number' ? fetchedStats.recipesViewed : 0,
           transportTrips: Number(fetchedStats.transportTrips) || 0,
           esgReports: Number(fetchedStats.esgReports) || 0,
           investmentsMade: Number(fetchedStats.investmentsMade) || 0,
@@ -681,39 +682,10 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
   // Removed redundant localStorage loading on component mount as Firestore loading on login covers this
 
   // Load AI Recommendations state from Firestore on user login
+  // Removed explicit loading of recipesViewed from getDoc on login to avoid race condition with onSnapshot listener
   React.useEffect(() => {
     if (currentUser) {
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      getDoc(userDocRef).then(docSnap => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.completedActions) {
-            console.log('Loading completedActions from Firestore on login:', data.completedActions);
-            setCompletedActions(data.completedActions);
-          }
-          if (data.actionProgress) {
-            console.log('Loading actionProgress from Firestore on login:', data.actionProgress);
-            setActionProgress(data.actionProgress);
-          }
-          if (data.selectedAICategory) {
-            setSelectedAICategory(data.selectedAICategory);
-          }
-          if (data.selectedAIPriority) {
-            setSelectedAIPriority(data.selectedAIPriority);
-          }
-          if (data.selectedCategory) {
-            setSelectedCategory(data.selectedCategory);
-          }
-          if (data.selectedPriority) {
-            setSelectedPriority(data.selectedPriority);
-          }
-          if (data.selectedTab) {
-            setSelectedTab(data.selectedTab);
-          }
-        }
-      }).catch(error => {
-        console.error('Error loading AI Recommendations state from Firestore:', error);
-      });
+      // No explicit loading here; onSnapshot listener will handle userStats including recipesViewed
     }
   }, [currentUser]);
 
@@ -1014,8 +986,6 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       console.error('Error updating user stat field in Firestore:', error);
     }
   };
-
-import { increment } from 'firebase/firestore';
 
   const incrementCourseCompleted = () => {
     incrementUserStat('coursesCompleted', 50);

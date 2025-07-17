@@ -274,7 +274,7 @@ export const EcoRecipeFinder = () => {
     addGeneralNotification(
       'Recipe Viewed',
       `You viewed the recipe: ${recipe.name}`,
-      'suggestion'
+      'recipes' // Corrected source
     );
   };
 
