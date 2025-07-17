@@ -55,10 +55,12 @@ interface ScannedProduct {
   features?: string[];
 }
 import { useProductComparison } from '../contexts/ProductComparisonContext';
+import { useNotificationHelperNew } from '@/hooks/useNotificationHelperNew';
 
 const ProductComparison = () => {
   const { addScannedProduct, addPoints } = useUserData();
   const { comparisonProducts, addProductToComparison, clearComparison } = useProductComparison();
+  const { addPurchaseNotification } = useNotificationHelperNew();
 
   // Explicitly type comparisonProducts as ScannedProduct[]
   const typedComparisonProducts = comparisonProducts as ScannedProduct[];
@@ -175,6 +177,7 @@ const ProductComparison = () => {
       title: "Product Added",
       description: `${product.name} has been added to comparison (+5 points!)`,
     });
+    addPurchaseNotification(product.name);
   };
 
   const handleSearch = async () => {

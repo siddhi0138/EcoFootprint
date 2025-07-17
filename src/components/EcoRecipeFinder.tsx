@@ -255,8 +255,18 @@ export const EcoRecipeFinder = () => {
 
   const handleViewRecipe = (recipe: Recipe) => { // Specify recipe type
     setSelectedRecipe(recipe);
-    incrementRecipeViewed(); // This will update userStats in Firebase via useUserData
-    addPoints(5); // This will update userStats in Firebase via useUserData
+    try {
+      incrementRecipeViewed(); // This will update userStats in Firebase via useUserData
+      console.log('incrementRecipeViewed called successfully');
+    } catch (error) {
+      console.error('Error calling incrementRecipeViewed:', error);
+    }
+    try {
+      addPoints(5); // This will update userStats in Firebase via useUserData
+      console.log('addPoints called successfully');
+    } catch (error) {
+      console.error('Error calling addPoints:', error);
+    }
     toast({
       title: 'Recipe Viewed!',
       description: 'You earned 5 points for viewing a recipe!',

@@ -559,6 +559,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       console.log('UserDataContext: user stats snapshot received', docSnap.data());
       if (docSnap.exists()) {
         const fetchedStats = docSnap.data() as UserStats;
+        console.log('Fetched recipesViewed from Firestore:', fetchedStats.recipesViewed);
         const defaultAchievements = [
           { id: 1, name: 'Green Streak Master', description: '12 consecutive days', icon: Star, color: 'yellow' },
           { id: 2, name: 'Carbon Reducer', description: 'Saved 67.8kg CO₂', icon: Leaf, color: 'green' },
@@ -983,21 +984,61 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const incrementUserStat = async (stat: keyof UserStats, points: number) => {
+    console.log(`Incrementing user stat: \${stat} by \${points}`);
+    const newValue = typeof userStats[stat] === 'number' ? (userStats[stat] as number) + 1 : 1;
     const updatedStats = {
       ...userStats,
-      [stat]: typeof userStats[stat] === 'number' ? (userStats[stat] as number) + 1 : 1,
+      [stat]: newValue,
       totalPoints: typeof userStats.totalPoints === 'number' ? userStats.totalPoints + points : points
     };
+    console.log('Updated stats before Firestore update:', updatedStats);
     setUserStats(updatedStats);
-    updateFirestoreUserStats(updatedStats);
+    try {
+      if (currentUser) {
+        const userDocRef = doc(db, 'users', currentUser.uid);
+        // Update only the specific stat and totalPoints fields
+        await updateDoc(userDocRef, {
+          [stat]: newValue,
+          totalPoints: updatedStats.totalPoints
+        });
+        console.log('Successfully updated user stat field in Firestore');
+        // Read back the updated document to verify
+        const updatedDoc = await getDoc(userDocRef);
+        if (updatedDoc.exists()) {
+          console.log('Verified updated user stat in Firestore:', updatedDoc.data());
+        } else {
+          console.warn('User document not found after update');
+        }
+      }
+    } catch (error) {
+      console.error('Error updating user stat field in Firestore:', error);
+    }
   };
+
+import { increment } from 'firebase/firestore';
 
   const incrementCourseCompleted = () => {
     incrementUserStat('coursesCompleted', 50);
   };
 
-  const incrementRecipeViewed = () => {
-    incrementUserStat('recipesViewed', 10);
+  const incrementRecipeViewed = async () => {
+    if (!currentUser) return;
+    try {
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userDocRef, {
+        recipesViewed: increment(1),
+        totalPoints: increment(10)
+      });
+      // Update local state optimistically
+      setUserStats(prev => ({
+        ...prev,
+        recipesViewed: (prev.recipesViewed || 0) + 1,
+        totalPoints: (prev.totalPoints || 0) + 10
+      }));
+      console.log('Successfully incremented recipesViewed and totalPoints in Firestore');
+    } catch (error) {
+      console.error('Error incrementing recipesViewed in Firestore:', error);
+    }
   };
 
   const incrementTransportTrip = () => {
