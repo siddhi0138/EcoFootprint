@@ -394,12 +394,12 @@ export const EcoRecipeFinder = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-green-50 to-lime-50 border-green-200">
+      <Card className="bg-gradient-to-r from-green-50 to-lime-50 border-green-200 dark:from-green-900/50 dark:to-lime-900/50 dark:border-green-700">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-green-700">
+          <CardTitle className="flex items-center space-x-2 text-green-700 dark:text-green-400">
             <ChefHat className="w-6 h-6" />
             <span>Eco-Friendly Recipe Finder</span>
-            <Badge variant="secondary" className="ml-auto bg-green-100 text-green-700">
+            <Badge variant="secondary" className="ml-auto bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
               <Leaf className="w-4 h-4 mr-1" />
               Sustainable Cooking
             </Badge>
@@ -417,15 +417,15 @@ export const EcoRecipeFinder = () => {
               {/* Search and Filter */}
               <div className="flex space-x-2 mb-6">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
                   <Input
                     placeholder="Search recipes by ingredients, diet, or cuisine..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 border-green-200 focus:border-green-400"
+                    className="pl-10 border-green-200 focus:border-green-400 dark:border-green-700 dark:focus:border-green-500"
                   />
                 </div>
-                <Button variant="outline" className="border-green-200">
+                <Button variant="outline" className="border-green-200 dark:border-green-700">
                   <Filter className="w-4 h-4 mr-2" />
                   Filters
                 </Button>
@@ -434,8 +434,8 @@ export const EcoRecipeFinder = () => {
               {/* Recipe Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {recipes.map((recipe) => (
-                  <div key={recipe.id} className="bg-white/80 rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow">
-                    <div className="h-48 bg-gray-200 relative">
+                  <div key={recipe.id} className="bg-white/80 rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow dark:bg-gray-900/80 dark:border-gray-700">
+                    <div className="h-48 bg-gray-200 relative dark:bg-gray-800">
                       <img
                         src={`https://images.unsplash.com/${recipe.image}?w=400&h=300&fit=crop`}
                         alt={recipe.name}
@@ -453,7 +453,7 @@ export const EcoRecipeFinder = () => {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="bg-white/80 hover:bg-white"
+                          className="bg-white/80 hover:bg-white dark:bg-gray-800 dark:hover:bg-gray-700"
                           onClick={() => handleFavoriteRecipe(recipe.id)}
                         >
                           <Heart className={`w-4 h-4 ${firebaseFavoriteRecipes.has(recipe.id) ? 'fill-current text-red-500' : ''}`} />
@@ -462,9 +462,9 @@ export const EcoRecipeFinder = () => {
                     </div>
 
                     <div className="p-4">
-                      <h3 className="font-semibold text-gray-800 mb-2">{recipe.name}</h3>
+                      <h3 className="font-semibold text-gray-800 dark:text-gray-300 mb-2">{recipe.name}</h3>
 
-                      <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+                      <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
                         <div className="flex items-center space-x-1">
                           <Clock className="w-4 h-4" />
                           <span>{recipe.cookTime}</span>
@@ -481,13 +481,13 @@ export const EcoRecipeFinder = () => {
 
                       <div className="flex flex-wrap gap-1 mb-3">
                         {recipe.tags.map((tag, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
+                          <Badge key={index} variant="outline" className="text-xs dark:text-gray-400">
                             {tag}
                           </Badge>
                         ))}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-3">
+                      <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400 mb-3">
                         <div className="flex items-center space-x-1">
                           <TreePine className="w-3 h-3 text-green-600" />
                           <span>{recipe.carbonFootprint}</span>
@@ -501,24 +501,24 @@ export const EcoRecipeFinder = () => {
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
-                            className="w-full bg-green-600 hover:bg-green-700"
+                            className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
                             onClick={() => handleViewRecipe(recipe)}
                           >
                             View Recipe
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto dark:bg-gray-900">
                           <DialogHeader>
-                            <DialogTitle className="flex items-center justify-between">
+                            <DialogTitle className="flex items-center justify-between text-gray-900 dark:text-gray-100">
                               <span>{recipe.name}</span>
                               <div className="flex items-center space-x-2">
                                 <Badge className={`text-white ${getScoreColor(recipe.sustainabilityScore)}`}>
                                   Sustainability: {recipe.sustainabilityScore}
                                 </Badge>
-                                <Badge variant="outline">{recipe.difficulty}</Badge>
+                                <Badge variant="outline" className="dark:text-gray-300">{recipe.difficulty}</Badge>
                               </div>
                             </DialogTitle>
-                            <DialogDescription>
+                            <DialogDescription className="text-gray-700 dark:text-gray-300">
                               Detailed recipe information and sustainability analysis
                             </DialogDescription>
                           </DialogHeader>
@@ -556,28 +556,28 @@ export const EcoRecipeFinder = () => {
 
                                 <div className="flex flex-wrap gap-1">
                                   {recipe.tags.map((tag, index) => (
-                                    <Badge key={index} variant="outline" className="text-xs">
+                                    <Badge key={index} variant="outline" className="text-xs dark:text-gray-400">
                                       {tag}
                                     </Badge>
                                   ))}
                                 </div>
 
-                                <div className="grid grid-cols-4 gap-2 p-3 bg-green-50 rounded-lg text-center text-xs">
+                                <div className="grid grid-cols-4 gap-2 p-3 bg-green-50 rounded-lg text-center text-xs dark:bg-green-900">
                                   <div>
-                                    <div className="font-semibold text-green-700">{recipe.nutrition.calories}</div>
-                                    <div className="text-green-600">Calories</div>
+                                    <div className="font-semibold text-green-700 dark:text-green-400">{recipe.nutrition.calories}</div>
+                                    <div className="text-green-600 dark:text-green-300">Calories</div>
                                   </div>
                                   <div>
-                                    <div className="font-semibold text-green-700">{recipe.nutrition.protein}</div>
-                                    <div className="text-green-600">Protein</div>
+                                    <div className="font-semibold text-green-700 dark:text-green-400">{recipe.nutrition.protein}</div>
+                                    <div className="text-green-600 dark:text-green-300">Protein</div>
                                   </div>
                                   <div>
-                                    <div className="font-semibold text-green-700">{recipe.nutrition.carbs}</div>
-                                    <div className="text-green-600">Carbs</div>
+                                    <div className="font-semibold text-green-700 dark:text-green-400">{recipe.nutrition.carbs}</div>
+                                    <div className="text-green-600 dark:text-green-300">Carbs</div>
                                   </div>
                                   <div>
-                                    <div className="font-semibold text-green-700">{recipe.nutrition.fat}</div>
-                                    <div className="text-green-600">Fat</div>
+                                    <div className="font-semibold text-green-700 dark:text-green-400">{recipe.nutrition.fat}</div>
+                                    <div className="text-green-600 dark:text-green-300">Fat</div>
                                   </div>
                                 </div>
                               </div>
@@ -585,8 +585,8 @@ export const EcoRecipeFinder = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div>
-                                <h3 className="font-semibold mb-2">Ingredients:</h3>
-                                <ul className="text-sm text-gray-700 space-y-1">
+                                <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Ingredients:</h3>
+                                <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
                                   {recipe.ingredients.map((ingredient, index) => (
                                     <li key={index}>• {ingredient}</li>
                                   ))}
@@ -594,8 +594,8 @@ export const EcoRecipeFinder = () => {
                               </div>
 
                               <div>
-                                <h3 className="font-semibold mb-2">Instructions:</h3>
-                                <ol className="text-sm text-gray-700 space-y-1">
+                                <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Instructions:</h3>
+                                <ol className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
                                   {recipe.instructions.map((step, index) => (
                                     <li key={index}>
                                       {index + 1}. {step}
@@ -605,11 +605,11 @@ export const EcoRecipeFinder = () => {
                               </div>
                             </div>
 
-                            <div className="flex gap-2 pt-4 border-t">
+                            <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
                               <Button
                                 variant="outline"
                                 onClick={() => handleFavoriteRecipe(recipe.id)}
-                                className={firebaseFavoriteRecipes.has(recipe.id) ? 'bg-red-50 text-red-600' : ''}
+                                className={firebaseFavoriteRecipes.has(recipe.id) ? 'bg-red-50 text-red-600 dark:bg-red-900 dark:text-red-400' : ''}
                               >
                                 <Heart
                                   className={`w-4 h-4 mr-2 ${
@@ -622,7 +622,7 @@ export const EcoRecipeFinder = () => {
                                 <select
                                   value={selectedDayToAdd}
                                   onChange={(e) => setSelectedDayToAdd(e.target.value)}
-                                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                                  className="border border-gray-300 dark:border-gray-700 rounded px-2 py-1 text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-300"
                                 >
                                   <option value="Monday">Monday</option>
                                   <option value="Tuesday">Tuesday</option>
@@ -648,16 +648,16 @@ export const EcoRecipeFinder = () => {
             </TabsContent>
 
             <TabsContent value="tips" className="space-y-4 mt-6">
-              <h3 className="text-lg font-semibold text-gray-800">Sustainable Cooking Tips</h3>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Sustainable Cooking Tips</h3>
               {sustainabilityTips.map((tip, index) => (
-                <div key={index} className="bg-white/80 rounded-xl p-6 border border-gray-100">
+                <div key={index} className="bg-white/80 rounded-xl p-6 border border-gray-100 dark:bg-gray-900/80 dark:border-gray-700">
                   <div className="flex items-start space-x-4">
                     <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                       <tip.icon className="w-6 h-6 text-green-600" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-semibold text-gray-800 mb-2">{tip.title}</h4>
-                      <p className="text-gray-600 mb-2">{tip.description}</p>
+                      <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">{tip.title}</h4>
+                      <p className="text-gray-600 dark:text-gray-300 mb-2">{tip.description}</p>
                       <Badge className="bg-green-500 text-white">Impact: {tip.impact}</Badge>
                     </div>
                   </div>
@@ -667,51 +667,51 @@ export const EcoRecipeFinder = () => {
 
             <TabsContent value="planner" className="mt-6">
               <div className="space-y-6">
-                <div className="bg-white/80 rounded-xl p-6 border border-gray-100 text-center">
+                <div className="bg-white/80 rounded-xl p-6 border border-gray-100 text-center dark:bg-gray-900/80 dark:border-gray-700">
                   <ChefHat className="w-12 h-12 mx-auto mb-4 text-green-600" />
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Weekly Meal Planner</h3>
-                  <p className="text-gray-600 mb-4">Plan sustainable meals for the week based on seasonal ingredients and your dietary preferences.</p>
-                  <Button className="bg-green-600 hover:bg-green-700" onClick={generateMealPlan}>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Weekly Meal Planner</h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4">Plan sustainable meals for the week based on seasonal ingredients and your dietary preferences.</p>
+                  <Button className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800" onClick={generateMealPlan}>
                     <Calendar className="w-4 h-4 mr-2" />
                     Generate Meal Plan
                   </Button>
                 </div>
 
                 {firebaseMealPlan.length > 0 && ( // Use firebaseMealPlan state
-                  <div className="bg-white/80 rounded-xl p-6 border border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Your Weekly Meal Plan</h3>
+                  <div className="bg-white/80 rounded-xl p-6 border border-gray-100 dark:bg-gray-900/80 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Your Weekly Meal Plan</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {firebaseMealPlan.map((meal, index) => {
                           const recipe = getRecipeForMealPlanEntry(meal); // Get recipe using helper
                           if (!recipe) return null; // Handle case where recipe is not found
 
                         return (
-                          <div key={index} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium text-gray-800">{meal.day}</h4>
-                            <Badge className={`text-white ${getScoreColor(recipe.sustainabilityScore)}`}>
-                              {recipe.sustainabilityScore}
-                            </Badge>
+                          <div key={index} className="border border-gray-200 rounded-lg p-4 dark:border-gray-700">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-medium text-gray-800 dark:text-gray-100">{meal.day}</h4>
+                              <Badge className={`text-white ${getScoreColor(recipe.sustainabilityScore)}`}>
+                                {recipe.sustainabilityScore}
+                              </Badge>
+                            </div>
+                            <img
+                              src={`https://images.unsplash.com/${recipe.image}?w=300&h=200&fit=crop`}
+                              alt={recipe.name}
+                              className="w-full h-32 object-cover rounded mb-2"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=200&fit=crop';
+                              }}
+                            />
+                            <h5 className="font-medium text-sm text-gray-800 dark:text-gray-100">{recipe.name}</h5>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">{recipe.cookTime} • {recipe.servings} servings</p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full mt-2"
+                              onClick={() => handleViewRecipe(recipe)}
+                            >
+                              View Recipe
+                            </Button>
                           </div>
-                          <img
-                            src={`https://images.unsplash.com/${recipe.image}?w=300&h=200&fit=crop`}
-                            alt={recipe.name}
-                            className="w-full h-32 object-cover rounded mb-2"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=300&h=200&fit=crop';
-                            }}
-                          />
-                          <h5 className="font-medium text-sm">{recipe.name}</h5>
-                          <p className="text-xs text-gray-600">{recipe.cookTime} • {recipe.servings} servings</p>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="w-full mt-2"
-                            onClick={() => handleViewRecipe(recipe)}
-                          >
-                            View Recipe
-                          </Button>
-                        </div>
                        );
                        })}
                     </div>

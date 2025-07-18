@@ -394,28 +394,28 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
   };
 
   return (
-    <div className="space-y-6">
+<div className="space-y-6">
       {scannedProducts.length > 0 && (
-        <Card className="bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-lg rounded-2xl">
+        <Card className="bg-white/95 dark:bg-slate-800 backdrop-blur-sm border-slate-200/50 dark:border-slate-700 shadow-lg rounded-2xl">
           <CardHeader>
-            <CardTitle className="text-slate-800">Recent Scans</CardTitle>
+            <CardTitle className="text-slate-800 dark:text-slate-200">Recent Scans</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {scannedProducts.slice(0, 6).map((product) => (
-                <div key={product.id} className="p-4 border border-slate-200 rounded-lg hover:shadow-md transition-shadow">
+                <div key={product.id} className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h3 className="font-semibold text-slate-800">{product.name}</h3>
-                      <p className="text-sm text-slate-600">{product.brand}</p>
+                      <h3 className="font-semibold text-slate-800 dark:text-slate-200">{product.name}</h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{product.brand}</p>
                     </div>
                     <Badge className={getScoreColor(product.sustainabilityScore)}>
                       {product.sustainabilityScore}
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-500">{product.category}</span>
-                    <span className="text-slate-500">{product.date}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{product.category}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{product.date}</span>
                   </div>
                 </div>
               ))}
@@ -424,19 +424,19 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
         </Card>
       )}
 
-      <Card className="bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-lg rounded-2xl">
+      <Card className="bg-white/95 dark:bg-slate-800 backdrop-blur-sm border-slate-200/50 dark:border-slate-700 shadow-lg rounded-2xl">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center justify-between text-slate-800">
+          <CardTitle className="flex items-center justify-between text-slate-800 dark:text-slate-200">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
                 <Camera className="w-5 h-5 text-white" />
               </div>
               <div>
                 <span className="text-xl font-bold">Smart Product Scanner</span>
-                <p className="text-sm text-slate-600 font-normal">Instant sustainability analysis</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-normal">Instant sustainability analysis</p>
               </div>
             </div>
-            <Badge variant="outline" className="border-slate-300 text-slate-700 bg-slate-50">
+            <Badge variant="outline" className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-700">
               <Zap className="w-3 h-3 mr-1" />
               AI Powered
             </Badge>
@@ -444,8 +444,8 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="p-4 border border-slate-200">
-              <h3 className="font-semibold text-slate-800 mb-3 flex items-center">
+            <Card className="p-4 border border-slate-200 dark:border-slate-700">
+              <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center">
                 <Search className="w-4 h-4 mr-2" />
                 Search Products
               </h3>
@@ -469,7 +469,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                     {searchResults.map((product) => (
                       <div
                         key={product.id}
-                        className="p-2 border border-slate-200 rounded cursor-pointer hover:bg-slate-50 transition-colors"
+                        className="p-2 border border-slate-200 dark:border-slate-700 rounded cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                         onClick={() => selectSearchResult(product)}
                       >
                         <div className="flex items-center space-x-3">
@@ -479,8 +479,8 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                             className="w-8 h-8 object-cover rounded"
                           />
                           <div className="flex-1">
-                            <h4 className="text-sm font-medium text-slate-800">{product.name}</h4>
-                            <p className="text-xs text-slate-600">{product.brand} • {product.category}</p>
+                            <h4 className="text-sm font-medium text-slate-800 dark:text-slate-200">{product.name}</h4>
+                            <p className="text-xs text-slate-600 dark:text-slate-400">{product.brand} • {product.category}</p>
                           </div>
                           <Badge className={`text-xs px-2 py-1 ${getScoreColor(product.sustainabilityScore)}`}>
                             {product.sustainabilityScore}
@@ -493,8 +493,8 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
               </div>
             </Card>
 
-            <Card className="p-4 border border-slate-200">
-              <h3 className="font-semibold text-slate-800 mb-3 flex items-center">
+            <Card className="p-4 border border-slate-200 dark:border-slate-700">
+              <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center">
                 <Upload className="w-4 h-4 mr-2" />
                 Upload Files
               </h3>
@@ -519,7 +519,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                     <img 
                       src={uploadedImage} 
                       alt="Uploaded product" 
-                      className="w-full h-24 object-cover rounded border"
+                      className="w-full h-24 object-cover rounded border border-slate-200 dark:border-slate-700"
                     />
                   </div>
                 )}
@@ -602,7 +602,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                     <Button 
                       onClick={mockScan} 
                       disabled={isScanning}
-                      className="bg-white/20 hover:bg-white/30 rounded-full w-16 h-16 border-2 border-white backdrop-blur-sm"
+                      className="bg-white/20 dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 rounded-full w-16 h-16 border-2 border-white dark:border-white/50 backdrop-blur-sm"
                     >
                       <Scan className="w-6 h-6 text-white" />
                     </Button>
@@ -613,26 +613,26 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-slate-50/80 rounded-xl border border-slate-200/50">
-              <Zap className="w-8 h-8 mx-auto mb-2 text-slate-600" />
-              <h3 className="font-semibold text-slate-800 mb-1">Instant Analysis</h3>
-              <p className="text-sm text-slate-600">Real-time sustainability scoring</p>
+            <div className="text-center p-4 bg-slate-50/80 dark:bg-slate-700 rounded-xl border border-slate-200/50 dark:border-slate-700">
+              <Zap className="w-8 h-8 mx-auto mb-2 text-slate-600 dark:text-slate-300" />
+              <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-1">Instant Analysis</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Real-time sustainability scoring</p>
             </div>
-            <div className="text-center p-4 bg-slate-50/80 rounded-xl border border-slate-200/50">
+            <div className="text-center p-4 bg-slate-50/80 dark:bg-slate-700 rounded-xl border border-slate-200/50 dark:border-slate-700">
               <Leaf className="w-8 h-8 mx-auto mb-2 text-green-600" />
-              <h3 className="font-semibold text-slate-800 mb-1">Impact Assessment</h3>
-              <p className="text-sm text-slate-600">Environmental footprint analysis</p>
+              <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-1">Impact Assessment</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Environmental footprint analysis</p>
             </div>
-            <div className="text-center p-4 bg-slate-50/80 rounded-xl border border-slate-200/50">
-              <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-slate-600" />
-              <h3 className="font-semibold text-slate-800 mb-1">Smart Alternatives</h3>
-              <p className="text-sm text-slate-600">Better product suggestions</p>
+            <div className="text-center p-4 bg-slate-50/80 dark:bg-slate-700 rounded-xl border border-slate-200/50 dark:border-slate-700">
+              <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-slate-600 dark:text-slate-300" />
+              <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-1">Smart Alternatives</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Better product suggestions</p>
             </div>
           </div>
 
           {detectedProduct && (
             <div className="space-y-4">
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex space-x-4">
                     <img 
@@ -641,14 +641,14 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                       className="w-20 h-20 object-cover rounded-lg"
                     />
                     <div>
-                      <h3 className="font-bold text-lg text-slate-800">{detectedProduct.name}</h3>
-                      <p className="text-slate-600">{detectedProduct.brand}</p>
+                      <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">{detectedProduct.name}</h3>
+                      <p className="text-slate-600 dark:text-slate-400">{detectedProduct.brand}</p>
                       <p className="text-lg font-bold text-green-600">${detectedProduct.price}</p>
                       <div className="flex items-center space-x-2 mt-1">
                         <div className="flex text-yellow-400">
                           {'★'.repeat(Math.floor(detectedProduct.rating))}
                         </div>
-                        <span className="text-sm text-slate-500">({detectedProduct.reviews})</span>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">({detectedProduct.reviews})</span>
                       </div>
                     </div>
                   </div>
@@ -658,31 +658,31 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <div className="text-center p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                     <Leaf className="w-6 h-6 mx-auto mb-1 text-green-600" />
-                    <div className="text-lg font-bold text-slate-800">{detectedProduct.sustainability.carbon}</div>
-                    <div className="text-xs text-slate-600">Carbon</div>
+                    <div className="text-lg font-bold text-slate-800 dark:text-slate-200">{detectedProduct.sustainability.carbon}</div>
+                    <div className="text-xs text-slate-600 dark:text-slate-400">Carbon</div>
                   </div>
-                  <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <div className="text-center p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                     <Droplets className="w-6 h-6 mx-auto mb-1 text-blue-600" />
-                    <div className="text-lg font-bold text-slate-800">{detectedProduct.sustainability.water}</div>
-                    <div className="text-xs text-slate-600">Water</div>
+                    <div className="text-lg font-bold text-slate-800 dark:text-slate-200">{detectedProduct.sustainability.water}</div>
+                    <div className="text-xs text-slate-600 dark:text-slate-400">Water</div>
                   </div>
-                  <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <div className="text-center p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                     <Zap className="w-6 h-6 mx-auto mb-1 text-purple-600" />
-                    <div className="text-lg font-bold text-slate-800">{detectedProduct.sustainability.energy}</div>
-                    <div className="text-xs text-slate-600">Energy</div>
+                    <div className="text-lg font-bold text-slate-800 dark:text-slate-200">{detectedProduct.sustainability.energy}</div>
+                    <div className="text-xs text-slate-600 dark:text-slate-400">Energy</div>
                   </div>
-                  <div className="text-center p-3 bg-slate-50 rounded-lg">
+                  <div className="text-center p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                     <Heart className="w-6 h-6 mx-auto mb-1 text-red-600" />
-                    <div className="text-lg font-bold text-slate-800">{detectedProduct.sustainability.ethics}</div>
-                    <div className="text-xs text-slate-600">Ethics</div>
+                    <div className="text-lg font-bold text-slate-800 dark:text-slate-200">{detectedProduct.sustainability.ethics}</div>
+                    <div className="text-xs text-slate-600 dark:text-slate-400">Ethics</div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <h4 className="font-semibold text-slate-800 mb-2">Environmental Impact</h4>
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Environmental Impact</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span>Carbon Footprint:</span>
@@ -699,7 +699,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-slate-800 mb-2">Product Info</h4>
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Product Info</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span>Origin:</span>
@@ -720,10 +720,10 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                 </div>
 
                 <div className="mb-6">
-                  <h4 className="font-semibold text-slate-800 mb-2">Key Features</h4>
+                  <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Key Features</h4>
                   <div className="flex flex-wrap gap-2">
                     {detectedProduct.features.slice(0, 6).map((feature, index) => (
-                      <Badge key={index} variant="outline" className="border-slate-300 text-slate-700 bg-slate-50">
+                      <Badge key={index} variant="outline" className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-700">
                         {feature}
                       </Badge>
                     ))}
@@ -731,10 +731,10 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                 </div>
 
                 <div className="mb-6">
-                  <h4 className="font-semibold text-slate-800 mb-2">Certifications</h4>
+                  <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Certifications</h4>
                   <div className="flex flex-wrap gap-2">
                     {detectedProduct.certifications.map((cert, index) => (
-                      <Badge key={index} className="bg-green-100 text-green-800 border-green-200">
+                      <Badge key={index} className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700">
                         <CheckCircle className="w-3 h-3 mr-1" />
                         {cert}
                       </Badge>
@@ -743,17 +743,17 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                 </div>
 
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-slate-800">Better Alternatives</h4>
+                  <h4 className="font-semibold text-slate-800 dark:text-slate-200">Better Alternatives</h4>
                   {detectedProduct.alternatives.map((alt, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200/50">
+                    <div key={index} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border border-slate-200/50 dark:border-slate-700">
                       <div>
-                        <span className="font-medium text-slate-800">{alt.name}</span>
-                        <p className="text-sm text-slate-600">{alt.reason}</p>
-                        <p className="text-xs text-slate-500">{alt.priceComparison}</p>
+                        <span className="font-medium text-slate-800 dark:text-slate-200">{alt.name}</span>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">{alt.reason}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{alt.priceComparison}</p>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Badge variant="outline" className="border-slate-300 text-slate-700">{alt.score}</Badge>
-                        <ArrowRight className="w-4 h-4 text-slate-400" />
+                        <Badge variant="outline" className="border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">{alt.score}</Badge>
+                        <ArrowRight className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                       </div>
                     </div>
                   ))}
@@ -762,17 +762,17 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                 <div className="flex flex-wrap gap-3 mt-6">
                   {detectedProduct && (
                     <>
-                      <Button 
-                        className="bg-slate-800 hover:bg-slate-900"
-                        onClick={() => {
-                          setScannedProduct(detectedProduct);
-                          if (onTabChange) {
-                            onTabChange('lifecycle');
-                          }
-                        }}
-                      >
-                        View Full Analysis
-                      </Button>
+                  <Button 
+                    className="bg-slate-800 hover:bg-slate-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-foreground"
+                    onClick={() => {
+                      setScannedProduct(detectedProduct);
+                      if (onTabChange) {
+                        onTabChange('lifecycle');
+                      }
+                    }}
+                  >
+                    View Full Analysis
+                  </Button>
                       {/* Remove Save Scan button since saving is automatic */}
                       {/* <Button
                         variant="outline"
@@ -785,7 +785,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                   )}
                   <Button
                     variant="outline" 
-                    className="border-slate-300"
+                    className="border-slate-300 dark:border-slate-700"
                     onClick={() => {
                       if (detectedProduct) {
                         addProductToComparison({
@@ -822,7 +822,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="border-green-300 text-green-700 hover:bg-green-50"
+                    className="border-green-300 text-green-700 hover:bg-green-50 dark:hover:bg-green-900"
                     onClick={() => {
                       if (detectedProduct && detectedProduct.price !== undefined) {
                         addToCart({

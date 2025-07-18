@@ -1,9 +1,8 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Badge } from './ui/badge';
 import { 
   Bot, 
   Send, 
@@ -101,28 +100,28 @@ const EcoChatbot = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 border-emerald-200">
+      <Card className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-900 border-emerald-200 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-3 text-emerald-700">
+          <CardTitle className="flex items-center space-x-3 text-emerald-700 dark:text-emerald-300">
             <div className="p-2 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl">
               <Bot className="w-6 h-6 text-white" />
             </div>
             <div>
               <span>EcoBot Assistant</span>
-              <div className="text-sm font-normal text-emerald-600 flex items-center space-x-1">
+              <div className="text-sm font-normal text-emerald-600 dark:text-emerald-400 flex items-center space-x-1">
                 <Sparkles className="w-4 h-4 animate-pulse" />
                 <span>AI-Powered Sustainability Helper</span>
               </div>
             </div>
-            <Badge variant="secondary" className="ml-auto bg-emerald-100 text-emerald-700">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></div>
+            <Badge variant="secondary" className="ml-auto bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300">
+              <div className="w-2 h-2 bg-emerald-500 dark:bg-emerald-700 rounded-full mr-2 animate-pulse"></div>
               Online
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {/* Chat Messages */}
-          <div className="bg-white/80 rounded-2xl p-4 mb-6 h-96 overflow-y-auto border border-emerald-100">
+          <div className="bg-white/80 dark:bg-slate-800 rounded-2xl p-4 mb-6 h-96 overflow-y-auto border border-emerald-100 dark:border-emerald-700">
             <div className="space-y-4">
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -140,8 +139,8 @@ const EcoChatbot = () => {
                     </div>
                     <div className={`px-4 py-3 rounded-2xl ${
                       message.type === 'user'
-                        ? 'bg-gradient-to-r from-sage-100 to-emerald-100 text-sage-800'
-                        : 'bg-white border border-emerald-100 text-gray-800 shadow-sm'
+                        ? 'bg-gradient-to-r from-sage-100 to-emerald-100 text-sage-800 dark:text-sage-200'
+                        : 'bg-white border border-emerald-100 text-gray-800 dark:bg-slate-800 dark:border-emerald-700 dark:text-gray-300 shadow-sm'
                     }`}>
                       <p className="text-sm whitespace-pre-line">{message.content}</p>
                       <span className="text-xs opacity-60 mt-1 block">
@@ -158,7 +157,7 @@ const EcoChatbot = () => {
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 flex items-center justify-center">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
-                    <div className="bg-white border border-emerald-100 px-4 py-3 rounded-2xl shadow-sm">
+                    <div className="bg-white border border-emerald-100 px-4 py-3 rounded-2xl shadow-sm dark:bg-slate-800 dark:border-emerald-700">
                       <div className="flex space-x-1">
                         <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></div>
                         <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -174,7 +173,7 @@ const EcoChatbot = () => {
 
           {/* Quick Questions */}
           <div className="mb-4">
-            <h4 className="text-sm font-semibold text-emerald-700 mb-3 flex items-center space-x-2">
+            <h4 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 mb-3 flex items-center space-x-2">
               <Zap className="w-4 h-4" />
               <span>Quick Questions</span>
             </h4>
@@ -183,11 +182,11 @@ const EcoChatbot = () => {
                 <Button
                   key={index}
                   variant="outline"
-                  className="justify-start text-left h-auto py-3 px-4 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300"
+                  className="justify-start text-left h-auto py-3 px-4 border-emerald-200 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900 hover:border-emerald-300"
                   onClick={() => handleQuickQuestion(question)}
                 >
-                  <question.icon className="w-4 h-4 mr-2 text-emerald-600" />
-                  <span className="text-sm">{question.text}</span>
+                  <question.icon className="w-4 h-4 mr-2 text-emerald-600 dark:text-emerald-300" />
+                  <span className="text-sm dark:text-emerald-300">{question.text}</span>
                 </Button>
               ))}
             </div>
@@ -200,7 +199,7 @@ const EcoChatbot = () => {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              className="flex-1 border-emerald-200 focus:border-emerald-400 rounded-xl"
+              className="flex-1 border-emerald-200 dark:border-emerald-700 focus:border-emerald-400 rounded-xl dark:bg-slate-800 dark:text-gray-300"
             />
             <Button 
               onClick={handleSendMessage}
@@ -214,24 +213,24 @@ const EcoChatbot = () => {
           {/* Features */}
           <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3">
-              <Leaf className="w-6 h-6 mx-auto mb-2 text-emerald-600" />
-              <h4 className="font-semibold text-sm mb-1">Eco Tips</h4>
-              <p className="text-xs text-gray-600">Daily sustainability advice</p>
+              <Leaf className="w-6 h-6 mx-auto mb-2 text-emerald-600 dark:text-emerald-400" />
+              <h4 className="font-semibold text-sm mb-1 text-emerald-700 dark:text-emerald-300">Eco Tips</h4>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Daily sustainability advice</p>
             </div>
             <div className="text-center p-3">
-              <Target className="w-6 h-6 mx-auto mb-2 text-emerald-600" />
-              <h4 className="font-semibold text-sm mb-1">Goal Setting</h4>
-              <p className="text-xs text-gray-600">Personalized targets</p>
+              <Target className="w-6 h-6 mx-auto mb-2 text-emerald-600 dark:text-emerald-400" />
+              <h4 className="font-semibold text-sm mb-1 text-emerald-700 dark:text-emerald-300">Goal Setting</h4>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Personalized targets</p>
             </div>
             <div className="text-center p-3">
-              <TrendingUp className="w-6 h-6 mx-auto mb-2 text-emerald-600" />
-              <h4 className="font-semibold text-sm mb-1">Impact Analysis</h4>
-              <p className="text-xs text-gray-600">Track your progress</p>
+              <TrendingUp className="w-6 h-6 mx-auto mb-2 text-emerald-600 dark:text-emerald-400" />
+              <h4 className="font-semibold text-sm mb-1 text-emerald-700 dark:text-emerald-300">Impact Analysis</h4>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Track your progress</p>
             </div>
             <div className="text-center p-3">
-              <Heart className="w-6 h-6 mx-auto mb-2 text-emerald-600" />
-              <h4 className="font-semibold text-sm mb-1">Community</h4>
-              <p className="text-xs text-gray-600">Connect with others</p>
+              <Heart className="w-6 h-6 mx-auto mb-2 text-emerald-600 dark:text-emerald-400" />
+              <h4 className="font-semibold text-sm mb-1 text-emerald-700 dark:text-emerald-300">Community</h4>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Connect with others</p>
             </div>
           </div>
         </CardContent>

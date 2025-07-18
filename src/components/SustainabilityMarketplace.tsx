@@ -375,42 +375,38 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 dark:from-background dark:to-background dark:border-border">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <ShoppingCart className="w-6 h-6 text-green-600" />
-              <span>Sustainability Marketplace</span>
+              <ShoppingCart className="w-6 h-6 text-green-600 dark:text-foreground" />
+              <span className="dark:text-foreground">Sustainability Marketplace</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge className="bg-green-600 text-white">
+              <Badge className="bg-green-600 text-white dark:bg-primary dark:text-primary-foreground">
                 {filteredProducts.length} Products
               </Badge>
-              {/* Removed cart count badge as part of removing incart feature */}
-              {/* <Badge variant="outline" className="border-blue-300 text-blue-700">
-                {cart.length} in Cart
-              </Badge> */}
             </div>
           </CardTitle>
-          <p className="text-gray-600">Discover and purchase eco-friendly alternatives that make a difference</p>
+          <p className="text-gray-600 dark:text-muted-foreground">Discover and purchase eco-friendly alternatives that make a difference</p>
         </CardHeader>
         <CardContent>
           {/* Search and Filters */}
           <div className="flex flex-col lg:flex-row gap-4 mb-6">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="Search sustainable products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 dark:bg-background dark:text-foreground"
               />
             </div>
             <div className="flex gap-2">
               <select 
                 value={sortBy} 
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm"
+                className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm dark:bg-background dark:border-border dark:text-foreground"
               >
                 <option value="score">Best Score</option>
                 <option value="rating">Highest Rated</option>
@@ -418,20 +414,20 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                 <option value="price-high">Price: High to Low</option>
               </select>
               <Button variant="outline" className="flex items-center space-x-2">
-                <Filter className="w-4 h-4" />
-                <span>More Filters</span>
+                <Filter className="w-4 h-4 dark:text-foreground" />
+                <span className="dark:text-foreground">More Filters</span>
               </Button>
             </div>
           </div>
 
           {/* Category Tabs */}
           <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="mb-6">
-            <TabsList className="inline-flex h-10 items-center justify-start gap-x-4 rounded-md bg-muted p-1 text-muted-foreground w-full">
+            <TabsList className="inline-flex h-10 items-center justify-start gap-x-4 rounded-md bg-muted p-1 text-muted-foreground dark:bg-muted dark:text-muted-foreground w-full">
               {categories.map((category) => (
-                <TabsTrigger key={category.id} value={category.id} className="flex items-center space-x-1 text-xs px-3 py-1.5">
+                <TabsTrigger key={category.id} value={category.id} className="flex items-center space-x-1 text-xs px-3 py-1.5 dark:text-foreground">
                   <category.icon className="w-4 h-4" />
                   <span className="hidden sm:inline">{category.label}</span>
-                  <Badge variant="outline" className="text-xs px-1">{category.count}</Badge>
+                  <Badge variant="outline" className="text-xs px-1 dark:text-foreground">{category.count}</Badge>
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -440,9 +436,9 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
           {/* Products Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProducts.map((product) => (
-              <Card key={product.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+              <Card key={product.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden dark:bg-card dark:border-border">
                 {/* Product Image */}
-                <div className="relative overflow-hidden h-48 bg-gray-100">
+                <div className="relative overflow-hidden h-48 bg-gray-100 dark:bg-muted">
                   <img 
                     src={getProductImage(product)}
                     alt={product.name}
@@ -470,24 +466,24 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                     <Button
                       size="sm"
                       variant="outline"
-                      className="w-8 h-8 p-0 bg-white/90 hover:bg-white"
+                      className="w-8 h-8 p-0 bg-white/90 hover:bg-white dark:bg-background dark:hover:bg-muted"
                       onClick={async (e) => {
                         e.stopPropagation(); // Prevent opening dialog
                         toggleFavorite(product.id);
                       }}
                     >
-                      <Heart className={`w-4 h-4 ${favorites.includes(product.id.toString()) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
+                      <Heart className={`w-4 h-4 ${favorites.includes(product.id.toString()) ? 'fill-red-500 text-red-500' : 'text-gray-500 dark:text-muted-foreground'}`} />
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="w-8 h-8 p-0 bg-white/90 hover:bg-white"
+                      className="w-8 h-8 p-0 bg-white/90 hover:bg-white dark:bg-background dark:hover:bg-muted"
                       onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         shareProduct(product);
                       }}
                     >
-                      <Share2 className="w-4 h-4 text-gray-500" />
+                      <Share2 className="w-4 h-4 text-gray-500 dark:text-muted-foreground" />
                     </Button>
                   </div>
                 </div>
@@ -496,11 +492,11 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                   <div className="space-y-3">
                     {/* Product Info */}
                     <div>
-                      <h3 className="font-semibold text-lg group-hover:text-green-600 transition-colors line-clamp-2">
+                      <h3 className="font-semibold text-lg group-hover:text-green-600 dark:group-hover:text-primary transition-colors line-clamp-2 dark:text-foreground">
                         {product.name}
                       </h3>
-                      <p className="text-sm text-gray-600">{product.brand}</p>
-                      <p className="text-xs text-gray-500 mt-1">Made in {product.origin}</p>
+                      <p className="text-sm text-gray-600 dark:text-muted-foreground">{product.brand}</p>
+                      <p className="text-xs text-gray-500 mt-1 dark:text-muted-foreground">Made in {product.origin}</p>
                     </div>
 
                     {/* Rating */}
@@ -509,44 +505,44 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                         {Array.from({ length: 5 }).map((_, i) => (
                           <Star 
                             key={i} 
-                            className={`w-4 h-4 ${i < Math.floor(product.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                            className={`w-4 h-4 ${i < Math.floor(product.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300 dark:text-muted-foreground'}`} 
                           />
                         ))}
                       </div>
-                      <span className="text-sm text-gray-600">({product.reviews})</span>
+                      <span className="text-sm text-gray-600 dark:text-muted-foreground">({product.reviews})</span>
                     </div>
 
                     {/* Features */}
                     <div className="flex flex-wrap gap-1">
                       {product.features?.slice(0, 3).map((feature, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
+                        <Badge key={index} variant="outline" className="text-xs dark:text-foreground">
                           {feature}
                         </Badge>
                       ))}
                       {product.features?.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs dark:text-foreground">
                           +{product.features.length - 3} more
                         </Badge>
                       )}
                     </div>
 
                     {/* Environmental Impact */}
-                    <div className="bg-green-50 p-2 rounded-lg">
+                    <div className="bg-green-50 p-2 rounded-lg dark:bg-muted">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-green-700 font-medium">Environmental Impact:</span>
-                        <span className="text-green-600">{product.co2Saved} CO₂ saved</span>
+                        <span className="text-green-700 font-medium dark:text-foreground">Environmental Impact:</span>
+                        <span className="text-green-600 dark:text-foreground">{product.co2Saved} CO₂ saved</span>
                       </div>
                     </div>
 
                     {/* Pricing */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="text-lg font-bold text-green-600">${product.price}</span>
+                        <span className="text-lg font-bold text-green-600 dark:text-primary">${product.price}</span>
                         {product.originalPrice > product.price && (
-                          <span className="text-sm text-gray-500 line-through ml-2">${product.originalPrice}</span>
+                          <span className="text-sm text-gray-500 dark:text-muted-foreground line-through ml-2">${product.originalPrice}</span>
                         )}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-gray-500 dark:text-muted-foreground">
                         {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off
                       </div>
                     </div>
@@ -555,7 +551,7 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                     <div className="flex gap-2 pt-2">
                       {/* Removed Add to Cart button as part of removing incart feature */}
                       <Button 
-                        className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                        className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 dark:from-primary dark:to-primary/90 dark:hover:from-primary/90 dark:hover:to-primary"
                         onClick={() => {
                           addToCart({
                             id: product.id.toString(),
@@ -580,13 +576,13 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm" className="px-3" onClick={() => setSelectedProduct(product)}>
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-4 h-4 dark:text-foreground" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto dark:bg-background dark:text-foreground">
                           <DialogHeader>
-                            <DialogTitle>{product.name}</DialogTitle>
-                            <DialogDescription>
+                            <DialogTitle className="dark:text-foreground">{product.name}</DialogTitle>
+                            <DialogDescription className="dark:text-muted-foreground">
                               Detailed sustainability analysis and product information
                             </DialogDescription>
                           </DialogHeader>
@@ -602,39 +598,39 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
                               />
                               <div className="space-y-4">
                                 <div>
-                                  <h3 className="text-xl font-bold">{product.name}</h3>
-                                  <p className="text-gray-600">{product.brand}</p>
+                                  <h3 className="text-xl font-bold dark:text-foreground">{product.name}</h3>
+                                  <p className="text-gray-600 dark:text-muted-foreground">{product.brand}</p>
                                   <Badge className={getScoreColor(product.sustainabilityScore)}>
                                     Score: {product.sustainabilityScore}
                                   </Badge>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-2xl font-bold text-green-600">${product.price}</span>
+                                  <span className="text-2xl font-bold text-green-600 dark:text-primary">${product.price}</span>
                                   {product.originalPrice > product.price && (
-                                    <span className="text-lg text-gray-500 line-through">${product.originalPrice}</span>
+                                    <span className="text-lg text-gray-500 dark:text-muted-foreground line-through">${product.originalPrice}</span>
                                   )}
                                 </div>
-                                <p className="text-gray-700">{product.description}</p>
+                                <p className="text-gray-700 dark:text-foreground">{product.description}</p>
                               </div>
                             </div>
                             
                             {product.detailedAnalysis && (
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                  <h4 className="font-semibold mb-2">Environmental Impact</h4>
-                                  <p className="text-sm text-gray-600">{product.detailedAnalysis.environmentalImpact}</p>
+                                  <h4 className="font-semibold mb-2 dark:text-foreground">Environmental Impact</h4>
+                                  <p className="text-sm text-gray-600 dark:text-muted-foreground">{product.detailedAnalysis.environmentalImpact}</p>
                                 </div>
                                 <div>
-                                  <h4 className="font-semibold mb-2">Social Impact</h4>
-                                  <p className="text-sm text-gray-600">{product.detailedAnalysis.socialImpact}</p>
+                                  <h4 className="font-semibold mb-2 dark:text-foreground">Social Impact</h4>
+                                  <p className="text-sm text-gray-600 dark:text-muted-foreground">{product.detailedAnalysis.socialImpact}</p>
                                 </div>
                               </div>
                             )}
                             
                             {product.carbonFootprint && (
                               <div>
-                                <h4 className="font-semibold mb-2">Carbon Footprint</h4>
-                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                <h4 className="font-semibold mb-2 dark:text-foreground">Carbon Footprint</h4>
+                                <div className="grid grid-cols-3 gap-4 text-sm dark:text-muted-foreground">
                                   <div>Production: {product.carbonFootprint.production}</div>
                                   <div>Transport: {product.carbonFootprint.transport}</div>
                                   <div>Total: {product.carbonFootprint.total}</div>
@@ -675,11 +671,11 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
 
           {filteredProducts.length === 0 && (
             <div className="text-center py-12">
-              <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <Search className="w-12 h-12 text-gray-400" />
+              <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center dark:bg-muted">
+                <Search className="w-12 h-12 text-gray-400 dark:text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">No products found</h3>
-              <p className="text-gray-500">Try adjusting your search or filters</p>
+              <h3 className="text-lg font-semibold text-gray-600 dark:text-muted-foreground mb-2">No products found</h3>
+              <p className="text-gray-500 dark:text-muted-foreground">Try adjusting your search or filters</p>
             </div>
           )}
         </CardContent>

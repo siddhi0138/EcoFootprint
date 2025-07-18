@@ -214,11 +214,11 @@ const NotificationCenter = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 dark:from-background dark:to-background dark:border-border">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Bell className="w-6 h-6 text-blue-600" />
-            <span>Notification Center</span>
+            <Bell className="w-6 h-6 text-blue-600 dark:text-foreground" />
+            <span className="dark:text-foreground">Notification Center</span>
             {unreadCount > 0 && (
               <Badge className="bg-red-500 hover:bg-red-600 ml-2">
                 {unreadCount}
@@ -226,15 +226,15 @@ const NotificationCenter = () => {
             )}
           </CardTitle>
           <div className="flex items-center justify-between">
-            <p className="text-gray-600">Stay updated with your eco journey</p>
+            <p className="text-gray-600 dark:text-muted-foreground">Stay updated with your eco journey</p>
             <div className="flex space-x-2">
               {unreadCount > 0 && (
-                <Button variant="outline" size="sm" onClick={markAllAsRead}>
+                <Button variant="outline" size="sm" onClick={markAllAsRead} className="dark:border-border dark:text-foreground">
                   Mark All Read
                 </Button>
               )}
               {notifications.length > 0 && (
-                <Button variant="outline" size="sm" onClick={clearAllNotifications}>
+                <Button variant="outline" size="sm" onClick={clearAllNotifications} className="dark:border-border dark:text-foreground">
                   Clear All
                 </Button>
               )}

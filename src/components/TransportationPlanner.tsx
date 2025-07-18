@@ -321,12 +321,12 @@ const TransportationPlanner = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 dark:from-slate-800 dark:to-slate-900 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-green-700">
+          <CardTitle className="flex items-center space-x-2 text-green-700 dark:text-green-400">
             <Navigation className="w-6 h-6" />
             <span>Real-Time Transportation Planner</span>
-            <Badge variant="secondary" className="ml-auto bg-green-100 text-green-700">
+            <Badge variant="secondary" className="ml-auto bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
               <Leaf className="w-4 h-4 mr-1" />
               Live Data
             </Badge>
@@ -363,26 +363,26 @@ const TransportationPlanner = () => {
           {/* Route Input */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">From</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">From</label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
                 <Input
                   placeholder="Enter starting location (e.g., New York, NY)"
                   value={fromLocation}
                   onChange={(e) => setFromLocation(e.target.value)}
-                  className="pl-10 border-green-200 focus:border-green-400"
+                  className="pl-10 border-green-200 focus:border-green-400 dark:border-green-700 dark:focus:border-green-500 dark:bg-slate-800 dark:text-slate-200"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">To</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">To</label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400 dark:text-gray-500" />
                 <Input
                   placeholder="Enter destination (e.g., Boston, MA)"
                   value={toLocation}
                   onChange={(e) => setToLocation(e.target.value)}
-                  className="pl-10 border-green-200 focus:border-green-400"
+                  className="pl-10 border-green-200 focus:border-green-400 dark:border-green-700 dark:focus:border-green-500 dark:bg-slate-800 dark:text-slate-200"
                 />
               </div>
             </div>
@@ -390,7 +390,7 @@ const TransportationPlanner = () => {
               <Button 
                 onClick={planRoute}
                 disabled={loading}
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600"
               >
                 {loading ? (
                   <>

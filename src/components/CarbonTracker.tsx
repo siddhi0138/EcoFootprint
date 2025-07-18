@@ -37,9 +37,6 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-// The rest of the CarbonTracker component code remains unchanged below this import block
-// (I will keep the rest of the file content as it was before, unchanged)
-
 const CarbonTracker = () => {
   interface CarbonEntry {
     id: string;
@@ -166,44 +163,44 @@ const CarbonTracker = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
+      <Card className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-slate-800 dark:to-slate-900 border-green-200 dark:border-slate-700">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Leaf className="w-6 h-6 text-green-600" />
-            <span>Carbon Footprint Tracker</span>
+            <Leaf className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <span className="dark:text-slate-200">Carbon Footprint Tracker</span>
           </CardTitle>
-          <p className="text-gray-600">Monitor and reduce your environmental impact</p>
+          <p className="text-gray-600 dark:text-gray-400">Monitor and reduce your environmental impact</p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg border">
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Total CO₂ Tracked</p>
-                  <p className="text-2xl font-bold text-green-600">{getCurrentMonthEmissions().toFixed(1)} kg</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total CO₂ Tracked</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{getCurrentMonthEmissions().toFixed(1)} kg</p>
                 </div>
-                <TrendingDown className="w-8 h-8 text-green-500" />
+                <TrendingDown className="w-8 h-8 text-green-500 dark:text-green-400" />
               </div>
             </div>
-            <div className="bg-white p-4 rounded-lg border">
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Entries</p>
-                  <p className="text-2xl font-bold text-blue-600">{carbonEntries.length}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Entries</p>
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{carbonEntries.length}</p>
                 </div>
-                <Target className="w-8 h-8 text-blue-500" />
+                <Target className="w-8 h-8 text-blue-500 dark:text-blue-400" />
               </div>
             </div>
-            <div className="bg-white p-4 rounded-lg border">
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
               <div>
-                <p className="text-sm text-gray-600">Carbon Entries</p>
-                <p className="text-2xl font-bold text-blue-600">{carbonEntries.length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Carbon Entries</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{carbonEntries.length}</p>
               </div>
             </div>
-            <div className="bg-white p-4 rounded-lg border">
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
               <div>
-                <p className="text-sm text-gray-600">Points Earned</p>
-                <p className="text-2xl font-bold text-orange-600">{Math.floor(getCurrentMonthEmissions() * 10)}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Points Earned</p>
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{Math.floor(getCurrentMonthEmissions() * 10)}</p>
               </div>
             </div> 
           </div>
@@ -218,7 +215,7 @@ const CarbonTracker = () => {
         </TabsList>
 
         <TabsContent value="tracker" className="space-y-4">
-          <Card>
+          <Card className="dark:bg-slate-800">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Calculator className="w-5 h-5" />
@@ -227,7 +224,7 @@ const CarbonTracker = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category" className="dark:text-slate-200">Category</Label>
                 <div className="grid grid-cols-5 gap-2 mt-2">
                   {categories.map((category) => (
                     <Button
@@ -237,14 +234,14 @@ const CarbonTracker = () => {
                       onClick={() => setNewEntry({ ...newEntry, category: category.id })}
                     >
                       <category.icon className="w-5 h-5 mb-1" />
-                      <span className="text-xs">{category.label}</span>
+                      <span className="text-xs dark:text-slate-300">{category.label}</span>
                     </Button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="amount">CO₂ Amount (kg)</Label>
+                <Label htmlFor="amount" className="dark:text-slate-200">CO₂ Amount (kg)</Label>
                 <Input
                   id="amount"
                   type="number"
@@ -252,20 +249,22 @@ const CarbonTracker = () => {
                   placeholder="0.00"
                   value={newEntry.amount}
                   onChange={(e) => setNewEntry({ ...newEntry, amount: e.target.value })}
+                  className="dark:bg-slate-800 dark:text-slate-300"
                 />
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description" className="dark:text-slate-200">Description</Label>
                 <Input
                   id="description"
                   placeholder="Describe the activity..."
                   value={newEntry.description}
                   onChange={(e) => setNewEntry({ ...newEntry, description: e.target.value })}
+                  className="dark:bg-slate-800 dark:text-slate-300"
                 />
               </div>
 
-              <Button onClick={handleAddEntry} className="w-full">
+              <Button onClick={handleAddEntry} className="w-full dark:bg-blue-700 dark:hover:bg-blue-600 dark:text-white">
                 Add Entry
               </Button>
             </CardContent>
@@ -274,17 +273,17 @@ const CarbonTracker = () => {
 
         <TabsContent value="overview" className="space-y-4">
           {carbonEntries.length === 0 ? (
-            <Card>
+            <Card className="dark:bg-slate-800">
               <CardContent className="p-8 text-center">
-                <Leaf className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-600 mb-2">No entries yet</h3>
-                <p className="text-gray-500">Start tracking your carbon footprint by adding your first entry!</p>
+                <Leaf className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">No entries yet</h3>
+                <p className="text-gray-500 dark:text-gray-400">Start tracking your carbon footprint by adding your first entry!</p>
               </CardContent>
             </Card>
           ) : (
             <>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
+                <Card className="dark:bg-slate-800">
                   <CardHeader>
                     <CardTitle>Monthly Emissions</CardTitle>
                   </CardHeader>
@@ -305,7 +304,7 @@ const CarbonTracker = () => {
                 </Card>
 
                 {categoryData.length > 0 && (
-                  <Card className="hidden md:block"> {/* Hide on small screens */}
+                  <Card className="hidden md:block dark:bg-slate-800"> {/* Hide on small screens */}
                     <CardHeader>
                       <CardTitle>Emissions by Category</CardTitle>
                     </CardHeader>
@@ -334,7 +333,7 @@ const CarbonTracker = () => {
                 )}
               </div>
               
-              <Card>
+              <Card className="dark:bg-slate-800">
                 <CardHeader>
                   <CardTitle>Recent Activities</CardTitle>
                 </CardHeader>
@@ -343,17 +342,17 @@ const CarbonTracker = () => {
                     {carbonEntries.slice(0, 5).map((activity) => {
                       const category = categories.find(c => c.id === activity.category);
                       return (
-                        <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div key={activity.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
                           <div className="flex items-center space-x-3">
                             <div className={`p-2 rounded-full bg-${category?.color}-100`}>
                               <category.icon className={`w-4 h-4 text-${category?.color}-600`} />
                             </div>
                             <div>
-                              <p className="font-medium">{activity.description}</p>
-                              <p className="text-sm text-gray-600">{activity.date}</p>
+                              <p className="font-medium dark:text-slate-200">{activity.description}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">{activity.date}</p>
                             </div>
                           </div>
-                          <Badge variant="outline">
+                          <Badge variant="outline" className="dark:border-slate-600 dark:text-slate-300">
                             {activity.amount} kg CO₂
                           </Badge>
                         </div>
@@ -368,22 +367,22 @@ const CarbonTracker = () => {
 
         <TabsContent value="breakdown" className="space-y-4">
           {carbonEntries.length === 0 ? (
-            <Card>
+            <Card className="dark:bg-slate-800">
               <CardContent className="p-8 text-center">
-                <h3 className="text-lg font-semibold text-gray-600 mb-2">No data to show</h3>
-                <p className="text-gray-500">Add some carbon entries to see your breakdown!</p>
+                <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">No data to show</h3>
+                <p className="text-gray-500 dark:text-gray-400">Add some carbon entries to see your breakdown!</p>
               </CardContent>
             </Card>
           ) : (
-            <Card>
+            <Card className="dark:bg-slate-800">
               <CardHeader>
                 <CardTitle>Category Breakdown</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {categoryData.map((category, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="font-medium">{category.name}</span>
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
+                      <span className="font-medium dark:text-slate-200">{category.name}</span>
                       <div className="flex items-center space-x-2">
                         <div className="w-4 h-4 rounded" style={{ backgroundColor: category.color }}></div>
                         <span>{category.value}%</span>

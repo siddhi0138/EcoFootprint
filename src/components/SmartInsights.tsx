@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import {
   Brain,
   TrendingUp,
@@ -135,7 +135,7 @@ const SmartInsights = () => {
       description: `Your average score ${scoreTrend >= 0 ? 'increased' : 'decreased'} by ${Math.abs(scoreTrend)}% this month`,
       impact: `${scoreTrend >= 0 ? '+' : ''}${scoreTrend}%`,
       icon: TrendingUp,
-      color: scoreTrend >= 0 ? 'text-green-600' : 'text-red-600',
+      color: scoreTrend >= 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400',
       action: 'View Details',
       details: {
         title: 'Sustainability Score Analysis',
@@ -154,7 +154,7 @@ const SmartInsights = () => {
       description: `At current pace, you'll ${carbonProgress >= 100 ? 'exceed' : 'reach'} ${carbonProgress}% of your monthly carbon reduction goal`,
       impact: `${carbonProgress}%`,
       icon: Target,
-      color: carbonProgress >= 100 ? 'text-green-600' : carbonProgress >= 75 ? 'text-blue-600' : 'text-orange-600',
+      color: carbonProgress >= 100 ? 'text-green-500 dark:text-green-400' : carbonProgress >= 75 ? 'text-blue-500 dark:text-blue-400' : 'text-orange-500 dark:text-orange-400',
       action: 'Optimize',
       details: {
         title: 'Carbon Footprint Goal Progress',
@@ -174,7 +174,7 @@ const SmartInsights = () => {
       description: 'You tend to buy more sustainable products on weekends. Consider planning ahead.',
       impact: 'Pattern',
       icon: Lightbulb,
-      color: 'text-purple-600',
+      color: 'text-purple-600 dark:text-purple-400',
       action: 'Set Reminder',
       details: {
         title: 'Shopping Pattern Insights',
@@ -523,12 +523,12 @@ const SmartInsights = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
+      <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 dark:from-gray-900 dark:to-gray-800 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-indigo-700">
+          <CardTitle className="flex items-center space-x-2 text-indigo-700 dark:text-indigo-300">
             <Brain className="w-6 h-6" />
             <span>Smart Insights & Analytics</span>
-            <Badge variant="secondary" className="ml-auto bg-indigo-100 text-indigo-700">
+            <Badge variant="secondary" className="ml-auto bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
               AI Powered
             </Badge>
           </CardTitle>
@@ -544,18 +544,18 @@ const SmartInsights = () => {
             <TabsContent value="week" className="space-y-6 mt-6">
               {/* Key Insights */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center space-x-2">
                   <Lightbulb className="w-5 h-5" />
                   <span>Key Insights</span>
                 </h3>
                 {insights.map((insight, index) => (
-                  <div key={index} className="bg-white/80 rounded-xl p-6 border border-gray-100">
+                  <div key={index} className="bg-white/80 dark:bg-gray-900 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-3">
                         <insight.icon className={`w-6 h-6 ${insight.color}`} />
                         <div>
-                          <h4 className="font-semibold text-gray-800">{insight.title}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{insight.description}</p>
+                          <h4 className="font-semibold text-gray-800 dark:text-gray-200">{insight.title}</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{insight.description}</p>
                         </div>
                       </div>
                       <Badge variant="outline" className={`${insight.color} border-current`}>
@@ -573,23 +573,23 @@ const SmartInsights = () => {
               </div>
 
               {/* Weekly Chart */}
-              <div className="bg-white/80 rounded-xl p-6 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+              <div className="bg-white/80 dark:bg-gray-900 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center space-x-2">
                   <BarChart3 className="w-5 h-5" />
                   <span>Weekly Activity</span>
                 </h3>
                 <div className="space-y-3">
                   {calculateWeeklyData().map((day, index) => (
                     <div key={index} className="flex items-center space-x-4">
-                      <div className="w-12 text-sm font-medium text-gray-600">{day.day}</div>
-                      <div className="flex-1 bg-gray-200 rounded-full h-3">
+                      <div className="w-12 text-sm font-medium text-gray-600 dark:text-gray-400">{day.day}</div>
+                      <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                         <div
-                          className="bg-indigo-500 h-3 rounded-full"
+                          className="bg-indigo-500 dark:bg-indigo-400 h-3 rounded-full"
                           style={{width: `${Math.min((day.scans / 10) * 100, 100)}%`}}
                         ></div>
                       </div>
-                      <div className="w-16 text-sm text-gray-600">{day.scans} scans</div>
-                      <Badge variant="outline" className="text-xs">
+                      <div className="w-16 text-sm text-gray-600 dark:text-gray-400">{day.scans} scans</div>
+                      <Badge variant="outline" className="text-xs dark:text-gray-300">
                         {day.avgScore}
                       </Badge>
                     </div>
@@ -599,19 +599,19 @@ const SmartInsights = () => {
 
               {/* Personalized Tips */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-800">Personalized Tips</h3>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Personalized Tips</h3>
                 {personalizedTips.map((tip, index) => (
-                  <div key={index} className="bg-white/80 rounded-xl p-4 border border-gray-100">
+                  <div key={index} className="bg-white/80 dark:bg-gray-900 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
                     <div className="flex items-start space-x-3">
-                      <tip.icon className="w-5 h-5 text-green-600 mt-1" />
+                      <tip.icon className="w-5 h-5 text-green-600 dark:text-green-400 mt-1" />
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
-                          <span className="font-medium text-gray-800">{tip.category}</span>
-                          <Badge variant="secondary" className="text-xs">
+                          <span className="font-medium text-gray-800 dark:text-gray-200">{tip.category}</span>
+                          <Badge variant="secondary" className="text-xs dark:text-gray-300">
                             {tip.confidence}% confidence
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600">{tip.tip}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{tip.tip}</p>
                       </div>
                     </div>
                   </div>
@@ -621,59 +621,59 @@ const SmartInsights = () => {
 
             <TabsContent value="month" className="mt-6">
               {!user ? (
-                <div className="bg-white/80 rounded-xl p-6 border border-gray-100 text-center">
-                  <PieChart className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">Monthly Analytics</h3>
-                  <p className="text-gray-500">Log in to view your monthly sustainability trends.</p>
+                <div className="bg-white/80 dark:bg-gray-900 rounded-xl p-6 border border-gray-100 dark:border-gray-700 text-center">
+                  <PieChart className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
+                  <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-300 mb-2">Monthly Analytics</h3>
+                  <p className="text-gray-500 dark:text-gray-400">Log in to view your monthly sustainability trends.</p>
                 </div>
               ) : (
                 <div className="space-y-6">
                   {/* Monthly Overview Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                    <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 dark:from-blue-900 dark:to-blue-800 dark:border-blue-700">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-blue-600 font-medium">Total Scans</p>
-                            <p className="text-2xl font-bold text-blue-800">{monthlyData.analytics.totalScans}</p>
+                            <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Scans</p>
+                            <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">{monthlyData.analytics.totalScans}</p>
                           </div>
-                          <ShoppingCart className="w-8 h-8 text-blue-600" />
+                          <ShoppingCart className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                         </div>
                       </CardContent>
                     </Card>
                     
-                    <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                    <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 dark:from-green-900 dark:to-green-800 dark:border-green-700">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-green-600 font-medium">Avg Score</p>
-                            <p className="text-2xl font-bold text-green-800">{monthlyData.analytics.avgSustainabilityScore}</p>
+                            <p className="text-sm text-green-600 dark:text-green-400 font-medium">Avg Score</p>
+                            <p className="text-2xl font-bold text-green-800 dark:text-green-300">{monthlyData.analytics.avgSustainabilityScore}</p>
                           </div>
-                          <Award className="w-8 h-8 text-green-600" />
+                          <Award className="w-8 h-8 text-green-600 dark:text-green-400" />
                         </div>
                       </CardContent>
                     </Card>
                     
-                    <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+                    <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 dark:from-purple-900 dark:to-purple-800 dark:border-purple-700">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-purple-600 font-medium">Carbon Saved</p>
-                            <p className="text-2xl font-bold text-purple-800">{Math.round(monthlyData.analytics.totalCarbonSaved)} kg</p>
+                            <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Carbon Saved</p>
+                            <p className="text-2xl font-bold text-purple-800 dark:text-purple-300">{Math.round(monthlyData.analytics.totalCarbonSaved)} kg</p>
                           </div>
-                          <Leaf className="w-8 h-8 text-purple-600" />
+                          <Leaf className="w-8 h-8 text-purple-600 dark:text-purple-400" />
                         </div>
                       </CardContent>
                     </Card>
                     
-                    <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+                    <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200 dark:from-orange-900 dark:to-orange-800 dark:border-orange-700">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-orange-600 font-medium">Scan Streak</p>
-                            <p className="text-2xl font-bold text-orange-800">{monthlyData.analytics.scanStreak} days</p>
+                            <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Scan Streak</p>
+                            <p className="text-2xl font-bold text-orange-800 dark:text-orange-300">{monthlyData.analytics.scanStreak} days</p>
                           </div>
-                          <Activity className="w-8 h-8 text-orange-600" />
+                          <Activity className="w-8 h-8 text-orange-600 dark:text-orange-400" />
                         </div>
                       </CardContent>
                     </Card>
@@ -681,49 +681,49 @@ const SmartInsights = () => {
 
                   {/* Monthly Details */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className="bg-white/80 border border-gray-100">
+                    <Card className="bg-white/80 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
                       <CardHeader>
-                        <CardTitle className="text-lg text-gray-800">Top Sustainable Products</CardTitle>
+                        <CardTitle className="text-lg text-gray-800 dark:text-gray-200">Top Sustainable Products</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
                           {monthlyData.analytics.topProducts.map((product: any, index: number) => (
-                            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                              <span className="font-medium text-gray-800">{product.name}</span>
-                              <Badge variant="outline" className="text-green-600 border-green-600">
+                            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                              <span className="font-medium text-gray-800 dark:text-gray-200">{product.name}</span>
+                              <Badge variant="outline" className="text-green-600 dark:text-green-400 border-green-600 dark:border-green-400">
                                 {product.score}
                               </Badge>
                             </div>
                           ))}
                           {monthlyData.analytics.topProducts.length === 0 && (
-                            <p className="text-gray-500 text-center py-4">No products scanned this month</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No products scanned this month</p>
                           )}
                         </div>
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-white/80 border border-gray-100">
+                    <Card className="bg-white/80 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
                       <CardHeader>
-                        <CardTitle className="text-lg text-gray-800">Category Breakdown</CardTitle>
+                        <CardTitle className="text-lg text-gray-800 dark:text-gray-200">Category Breakdown</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
                           {monthlyData.analytics.categoryBreakdown.map((category: any, index: number) => (
                             <div key={index} className="flex items-center justify-between">
-                              <span className="text-gray-700">{category.name}</span>
+                              <span className="text-gray-700 dark:text-gray-300">{category.name}</span>
                               <div className="flex items-center space-x-2">
-                                <div className="w-20 bg-gray-200 rounded-full h-2">
+                                <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                   <div
-                                    className="bg-indigo-500 h-2 rounded-full"
+                                    className="bg-indigo-500 dark:bg-indigo-400 h-2 rounded-full"
                                     style={{width: `${Math.min((category.count / monthlyData.analytics.totalScans) * 100, 100)}%`}}
                                   ></div>
                                 </div>
-                                <span className="text-sm text-gray-600 w-8">{category.count}</span>
+                                <span className="text-sm text-gray-600 dark:text-gray-400 w-8">{category.count}</span>
                               </div>
                             </div>
                           ))}
                           {monthlyData.analytics.categoryBreakdown.length === 0 && (
-                            <p className="text-gray-500 text-center py-4">No categories to display</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No categories to display</p>
                           )}
                         </div>
                       </CardContent>
@@ -731,21 +731,21 @@ const SmartInsights = () => {
                   </div>
 
                   {/* Monthly Summary */}
-                  <Card className="bg-white/80 border border-gray-100">
+                  <Card className="bg-white/80 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
                     <CardHeader>
-                      <CardTitle className="text-lg text-gray-800">Monthly Summary</CardTitle>
+                      <CardTitle className="text-lg text-gray-800 dark:text-gray-200">Monthly Summary</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <h4 className="font-semibold text-gray-800 mb-2">Best Performing Category</h4>
-                          <p className="text-2xl font-bold text-indigo-600">{monthlyData.analytics.bestCategory}</p>
-                          <p className="text-sm text-gray-600 mt-1">Highest average sustainability score</p>
+                          <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Best Performing Category</h4>
+                          <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{monthlyData.analytics.bestCategory}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Highest average sustainability score</p>
                         </div>
                         <div>
-                          <h4 className="font-semibold text-gray-800 mb-2">Carbon Entries</h4>
-                          <p className="text-2xl font-bold text-green-600">{monthlyData.carbonEntries.length}</p>
-                          <p className="text-sm text-gray-600 mt-1">Total tracking entries this month</p>
+                          <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Carbon Entries</h4>
+                          <p className="text-2xl font-bold text-green-600 dark:text-green-400">{monthlyData.carbonEntries.length}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Total tracking entries this month</p>
                         </div>
                       </div>
                     </CardContent>
@@ -756,81 +756,81 @@ const SmartInsights = () => {
             
             <TabsContent value="year" className="mt-6">
               {!user ? (
-                <div className="bg-white/80 rounded-xl p-6 border border-gray-100 text-center">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">Yearly Overview</h3>
-                  <p className="text-gray-500">Log in to view your yearly sustainability trends.</p>
+                <div className="bg-white/80 dark:bg-gray-900 rounded-xl p-6 border border-gray-100 dark:border-gray-700 text-center">
+                  <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
+                  <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-300 mb-2">Yearly Overview</h3>
+                  <p className="text-gray-500 dark:text-gray-400">Log in to view your yearly sustainability trends.</p>
                 </div>
               ) : (
                 <div className="space-y-6">
                   {/* Yearly Overview Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200">
+                    <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200 dark:from-indigo-900 dark:to-indigo-800 dark:border-indigo-700">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-indigo-600 font-medium">Total Scans</p>
-                            <p className="text-2xl font-bold text-indigo-800">{yearlyData.analytics.totalScans}</p>
+                            <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">Total Scans</p>
+                            <p className="text-2xl font-bold text-indigo-800 dark:text-indigo-300">{yearlyData.analytics.totalScans}</p>
                           </div>
-                          <BarChart3 className="w-8 h-8 text-indigo-600" />
+                          <BarChart3 className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
                         </div>
                       </CardContent>
                     </Card>
                     
-                    <Card className="bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200">
+                    <Card className="bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200 dark:from-teal-900 dark:to-teal-800 dark:border-teal-700">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-teal-600 font-medium">Avg Score</p>
-                            <p className="text-2xl font-bold text-teal-800">{yearlyData.analytics.avgSustainabilityScore}</p>
+                            <p className="text-sm text-teal-600 dark:text-teal-400 font-medium">Avg Score</p>
+                            <p className="text-2xl font-bold text-teal-800 dark:text-teal-300">{yearlyData.analytics.avgSustainabilityScore}</p>
                           </div>
-                          <TrendingUp className="w-8 h-8 text-teal-600" />
+                          <TrendingUp className="w-8 h-8 text-teal-600 dark:text-teal-400" />
                         </div>
                       </CardContent>
                     </Card>
                     
-                    <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
+                    <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 dark:from-emerald-900 dark:to-emerald-800 dark:border-emerald-700">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-emerald-600 font-medium">Carbon Saved</p>
-                            <p className="text-2xl font-bold text-emerald-800">{Math.round(yearlyData.analytics.totalCarbonSaved)} kg</p>
+                            <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">Carbon Saved</p>
+                            <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">{Math.round(yearlyData.analytics.totalCarbonSaved)} kg</p>
                           </div>
-                          <Leaf className="w-8 h-8 text-emerald-600" />
+                          <Leaf className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
                         </div>
                       </CardContent>
                     </Card>
                     
-                    <Card className="bg-gradient-to-br from-rose-50 to-rose-100 border-rose-200">
+                    <Card className="bg-gradient-to-br from-rose-50 to-rose-100 border-rose-200 dark:from-rose-900 dark:to-rose-800 dark:border-rose-700">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-rose-600 font-medium">Categories</p>
-                            <p className="text-2xl font-bold text-rose-800">{yearlyData.analytics.totalCategories}</p>
+                            <p className="text-sm text-rose-600 dark:text-rose-400 font-medium">Categories</p>
+                            <p className="text-2xl font-bold text-rose-800 dark:text-rose-300">{yearlyData.analytics.totalCategories}</p>
                           </div>
-                          <PieChart className="w-8 h-8 text-rose-600" />
+                          <PieChart className="w-8 h-8 text-rose-600 dark:text-rose-400" />
                         </div>
                       </CardContent>
                     </Card>
                   </div>
 
                   {/* Yearly Trend */}
-                  <Card className="bg-white/80 border border-gray-100">
+                  <Card className="bg-white/80 dark:bg-gray-900 rounded-xl p-6 border border-gray-100 dark:border-gray-700">
                     <CardHeader>
-                      <CardTitle className="text-lg text-gray-800">Monthly Activity Breakdown</CardTitle>
+                      <CardTitle className="text-lg text-gray-800 dark:text-gray-200">Monthly Activity Breakdown</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
                         {yearlyData.analytics.monthlyBreakdown.map((month: any, index: number) => (
                           <div key={index} className="flex items-center space-x-4">
-                            <div className="w-12 text-sm font-medium text-gray-600">{month.month}</div>
-                            <div className="flex-1 bg-gray-200 rounded-full h-3">
+                            <div className="w-12 text-sm font-medium text-gray-600 dark:text-gray-400">{month.month}</div>
+                            <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                               <div
-                                className="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full"
+                                className="bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-400 dark:to-purple-400 h-3 rounded-full"
                                 style={{width: `${Math.min((month.scans / Math.max(...yearlyData.analytics.monthlyBreakdown.map((m: any) => m.scans))) * 100, 100)}%`}}
                               ></div>
                             </div>
-                            <div className="w-16 text-sm text-gray-600">{month.scans} scans</div>
+                            <div className="w-16 text-sm text-gray-600 dark:text-gray-400">{month.scans} scans</div>
                           </div>
                         ))}
                       </div>
@@ -839,44 +839,44 @@ const SmartInsights = () => {
 
                   {/* Yearly Insights */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className="bg-white/80 border border-gray-100">
+                    <Card className="bg-white/80 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
                       <CardHeader>
-                        <CardTitle className="text-lg text-gray-800">Year Performance</CardTitle>
+                        <CardTitle className="text-lg text-gray-800 dark:text-gray-200">Year Performance</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="flex justify-between items-center p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
-                          <span className="font-medium text-gray-800">Best Month</span>
-                          <span className="font-bold text-green-700">{yearlyData.analytics.bestMonth}</span>
+                        <div className="flex justify-between items-center p-3 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 rounded-lg">
+                          <span className="font-medium text-gray-800 dark:text-gray-200">Best Month</span>
+                          <span className="font-bold text-green-700 dark:text-green-400">{yearlyData.analytics.bestMonth}</span>
                         </div>
-                        <div className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
-                          <span className="font-medium text-gray-800">Yearly Trend</span>
-                          <Badge variant="outline" className={`${yearlyData.analytics.yearlyTrend >= 0 ? 'text-green-600 border-green-600' : 'text-red-600 border-red-600'}`}>
+                        <div className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-lg">
+                          <span className="font-medium text-gray-800 dark:text-gray-200">Yearly Trend</span>
+                          <Badge variant="outline" className={`${yearlyData.analytics.yearlyTrend >= 0 ? 'text-green-600 border-green-600 dark:text-green-400 dark:border-green-400' : 'text-red-600 border-red-600 dark:text-red-400 dark:border-red-400'}`}>
                             {yearlyData.analytics.yearlyTrend >= 0 ? '+' : ''}{yearlyData.analytics.yearlyTrend}%
                           </Badge>
                         </div>
-                        <div className="flex justify-between items-center p-3 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg">
-                          <span className="font-medium text-gray-800">Carbon Entries</span>
-                          <span className="font-bold text-purple-700">{yearlyData.carbonEntries.length}</span>
+                        <div className="flex justify-between items-center p-3 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-lg">
+                          <span className="font-medium text-gray-800 dark:text-gray-200">Carbon Entries</span>
+                          <span className="text-purple-700 dark:text-purple-400 font-bold">{yearlyData.carbonEntries.length}</span>
                         </div>
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-white/80 border border-gray-100">
+                    <Card className="bg-white/80 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
                       <CardHeader>
-                        <CardTitle className="text-lg text-gray-800">Achievement Summary</CardTitle>
+                        <CardTitle className="text-lg text-gray-800 dark:text-gray-200">Achievement Summary</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <div className="text-center p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg">
-                          <Award className="w-12 h-12 mx-auto mb-2 text-orange-500" />
-                          <h4 className="font-semibold text-gray-800">Sustainability Champion</h4>
-                          <p className="text-sm text-gray-600 mt-1">
+                        <div className="text-center p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900 dark:to-orange-900 rounded-lg">
+                          <Award className="w-12 h-12 mx-auto mb-2 text-orange-500 dark:text-orange-400" />
+                          <h4 className="font-semibold text-gray-800 dark:text-gray-200">Sustainability Champion</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             {yearlyData.analytics.totalScans} products scanned this year
                           </p>
                         </div>
-                        <div className="text-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
-                          <Leaf className="w-12 h-12 mx-auto mb-2 text-emerald-500" />
-                          <h4 className="font-semibold text-gray-800">Carbon Reducer</h4>
-                          <p className="text-sm text-gray-600 mt-1">
+                        <div className="text-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 rounded-lg">
+                          <Leaf className="w-12 h-12 mx-auto mb-2 text-emerald-500 dark:text-emerald-400" />
+                          <h4 className="font-semibold text-gray-800 dark:text-gray-200">Carbon Reducer</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             {Math.round(yearlyData.analytics.totalCarbonSaved)} kg CO2 saved
                           </p>
                         </div>
@@ -892,11 +892,11 @@ const SmartInsights = () => {
 
       {/* Detail Modal */}
       {showDetailModal && selectedInsight && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-80 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800 flex items-center space-x-2">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center space-x-2">
                   <selectedInsight.icon className={`w-6 h-6 ${selectedInsight.color}`} />
                   <span>{selectedInsight.details.title}</span>
                 </h2>
@@ -909,13 +909,13 @@ const SmartInsights = () => {
                 </Button>
               </div>
               
-              <p className="text-gray-600 mb-6">{selectedInsight.details.content}</p>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">{selectedInsight.details.content}</p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedInsight.details.metrics.map((metric: any, index: number) => (
-                  <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold text-gray-800 mb-1">{metric.label}</h4>
-                    <p className="text-2xl font-bold text-indigo-600">{metric.value}</p>
+                  <div key={index} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">{metric.label}</h4>
+                    <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{metric.value}</p>
                   </div>
                 ))}
               </div>
