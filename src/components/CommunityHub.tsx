@@ -773,32 +773,32 @@ const CommunityHub = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
+      <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200 dark:from-background dark:to-background dark:border-border">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Users className="w-6 h-6 text-green-600" />
-            <span>Community Hub</span>
+            <Users className="w-6 h-6 text-green-600 dark:text-foreground" />
+            <span className="dark:text-foreground">Community Hub</span>
           </CardTitle>
-          <p className="text-gray-600">Connect, share, and grow with fellow sustainability champions</p>
+          <p className="text-gray-600 dark:text-muted-foreground">Connect, share, and grow with fellow sustainability champions</p>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="Search posts, groups, events..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 dark:bg-background dark:text-foreground"
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => setShowCreatePost(true)} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={() => setShowCreatePost(true)} className="bg-green-600 hover:bg-green-700 dark:bg-primary dark:hover:bg-primary/90">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Post
               </Button>
-              <Button variant="outline">
-                <Filter className="w-4 h-4" />
+              <Button variant="outline" className="dark:border-border dark:text-foreground dark:hover:bg-muted">
+                <Filter className="w-4 h-4 dark:text-foreground" />
               </Button>
             </div>
           </div>
@@ -806,22 +806,22 @@ const CommunityHub = () => {
       </Card>
 
       {showCreatePost && (
-        <Card className="bg-white border-blue-200">
+        <Card className="bg-white border-blue-200 dark:bg-background dark:border-border">
           <CardHeader>
-            <CardTitle>Create New Post</CardTitle>
+            <CardTitle className="dark:text-foreground">Create New Post</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
               placeholder="Share your sustainability journey, tips, or questions..."
               value={newPostContent}
               onChange={(e) => setNewPostContent(e.target.value)}
-              className="min-h-[100px]"
+              className="min-h-[100px] dark:bg-background dark:text-foreground"
             />
             <div className="flex gap-2">
-              <Button onClick={handleCreatePost} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={handleCreatePost} className="bg-green-600 hover:bg-green-700 dark:bg-primary dark:hover:bg-primary/90">
                 Post
               </Button>
-              <Button variant="outline" onClick={() => setShowCreatePost(false)}>
+              <Button variant="outline" onClick={() => setShowCreatePost(false)} className="dark:border-border dark:text-foreground dark:hover:bg-muted">
                 Cancel
               </Button>
             </div>
@@ -831,11 +831,11 @@ const CommunityHub = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
-        <TabsTrigger value="feed">Feed</TabsTrigger>
-          <TabsTrigger value="groups">Groups</TabsTrigger>
-          <TabsTrigger value="events">Events</TabsTrigger>
-          <TabsTrigger value="challenges">Challenges</TabsTrigger>
-          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+        <TabsTrigger value="feed" className="dark:text-foreground">Feed</TabsTrigger>
+          <TabsTrigger value="groups" className="dark:text-foreground">Groups</TabsTrigger>
+          <TabsTrigger value="events" className="dark:text-foreground">Events</TabsTrigger>
+          <TabsTrigger value="challenges" className="dark:text-foreground">Challenges</TabsTrigger>
+          <TabsTrigger value="leaderboard" className="dark:text-foreground">Leaderboard</TabsTrigger>
         </TabsList>
 
         <TabsContent value="feed">
@@ -844,7 +844,7 @@ const CommunityHub = () => {
               post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
               post.author.name.toLowerCase().includes(searchQuery.toLowerCase())
             ).map(post => (
-              <Card key={post.id} className="hover:shadow-lg transition-shadow">
+              <Card key={post.id} className="hover:shadow-lg transition-shadow dark:bg-card dark:border-border">
                 <CardHeader>
                   <div className="flex items-center space-x-3">
                     <Avatar>
@@ -853,15 +853,15 @@ const CommunityHub = () => {
                     </Avatar>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold">{post.author.name}</span>
-                        <Badge variant="secondary" className="text-xs">
+                        <span className="font-semibold dark:text-foreground">{post.author.name}</span>
+                        <Badge variant="secondary" className="text-xs dark:text-foreground">
                           {post.author.badge}
                         </Badge>
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs dark:text-foreground">
                           {post.author.level}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-muted-foreground">
                         <Clock className="w-3 h-3" />
                         {formatTimestamp(post.timestamp)}
                       </div>
@@ -869,7 +869,7 @@ const CommunityHub = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <p className="text-gray-700">{post.content}</p>
+                  <p className="text-gray-700 dark:text-foreground">{post.content}</p>
                   
                   {post.image && (
                     <div className="rounded-lg overflow-hidden">
@@ -883,7 +883,7 @@ const CommunityHub = () => {
                   
                   <div className="flex flex-wrap gap-2">
                     {post.tags.map((tag, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
+                      <Badge key={index} variant="outline" className="text-xs dark:text-foreground">
                         {tag}
                       </Badge>
                     ))}
@@ -895,7 +895,7 @@ const CommunityHub = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleLike(post.id)}
-                        className={post.liked ? 'text-red-500' : 'text-gray-600'}
+                        className={post.liked ? 'text-red-500' : 'text-gray-600 dark:text-muted-foreground'}
                       >
                         <Heart className={`w-4 h-4 mr-1 ${post.liked ? 'fill-current' : ''}`} />
                         {post.likes}
@@ -904,7 +904,7 @@ const CommunityHub = () => {
                         variant="ghost"
                         size="sm"
                         // onClick={() => {}} // Keep interactive, but handled by input field now
-                        className="text-gray-600"
+                        className="text-gray-600 dark:text-muted-foreground"
                       >
                          <MessageCircle className="w-4 h-4 mr-1" />
                         {post.comments}
@@ -913,7 +913,7 @@ const CommunityHub = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleShare(post.id)}
-                        className="text-gray-600"
+                        className="text-gray-600 dark:text-muted-foreground"
                       >
                         <Share2 className="w-4 h-4 mr-1" />
                         {post.shares}
@@ -924,7 +924,7 @@ const CommunityHub = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleBookmark(post.id)}
-                        className={post.bookmarked ? 'text-blue-500' : 'text-gray-600'}
+                        className={post.bookmarked ? 'text-blue-500' : 'text-gray-600 dark:text-muted-foreground'}
                       >
                         <BookmarkPlus className="w-4 h-4" />
                       </Button>
@@ -935,7 +935,7 @@ const CommunityHub = () => {
                       placeholder="Add a comment..."
                       value={commentInputs[post.id] || ''}
                       onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
-                      className="flex-1"
+                      className="flex-1 dark:bg-background dark:text-foreground"
                     />
                     <Button
                       size="sm"

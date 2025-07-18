@@ -578,7 +578,7 @@ const AIRecommendations = () => {
                             </div>
                           </div>
                         </div>
-                        <Badge variant="outline" className="border-slate-300 text-slate-700 bg-white/70 dark:border-slate-600 dark:text-slate-300 dark:bg-slate-800/70">
+                        <Badge variant="outline" className="border-slate-300 text-slate-700 bg-white/70 dark:border-slate-600 dark:text-slate-300 dark:bg-gray-800/70">
                           {rec.confidence}% confident
                         </Badge>
                       </div>
@@ -634,13 +634,13 @@ const AIRecommendations = () => {
                     
                     {action.type === 'product_search' && action.data && (
                       <div className="space-y-2">
-                        <p className="text-sm text-gray-600">Recommended products:</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Recommended products:</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {action.data.slice(0, 3).map((product: any) => (
-                            <div key={product.id} className="p-3 border rounded-lg bg-gray-50">
+                            <div key={product.id} className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-800">
                               <h4 className="font-medium text-sm">{product.name}</h4>
-                              <p className="text-xs text-gray-500">{product.brand} - Score: {product.sustainabilityScore}</p>
-                              <p className="text-sm font-semibold text-green-600">${product.price}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{product.brand} - Score: {product.sustainabilityScore}</p>
+                              <p className="text-sm font-semibold text-green-600 dark:text-green-400">${product.price}</p>
                             </div>
                           ))}
                         </div>
@@ -649,19 +649,19 @@ const AIRecommendations = () => {
                     
                     {action.type === 'habit_tracker' && (
                       <div className="space-y-2">
-                        <p className="text-sm text-gray-600">Tracking: {action.data.habit}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Tracking: {action.data.habit}</p>
                         <Progress value={action.data.progress} className="h-2" />
-                        <p className="text-xs text-gray-500">Target: {action.data.target}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Target: {action.data.target}</p>
                       </div>
                     )}
                     
                     {action.type === 'action_plan' && (
                       <div className="space-y-2">
-                        <p className="text-sm text-gray-600">Action steps:</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Action steps:</p>
                         <div className="space-y-1">
                           {action.data.steps.map((step: string, index: number) => (
                             <div key={index} className="flex items-center space-x-2 text-sm">
-                              <CheckCircle className="w-4 h-4 text-gray-400" />
+                              <CheckCircle className="w-4 h-4 text-gray-400 dark:text-gray-600" />
                               <span>{step}</span>
                             </div>
                           ))}
@@ -683,7 +683,7 @@ const AIRecommendations = () => {
                 
                 {Object.keys(actionProgress).length === 0 && (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No active actions yet. Take action on recommendations to see them here!</p>
+                    <p className="text-gray-500 dark:text-gray-400">No active actions yet. Take action on recommendations to see them here!</p>
                   </div>
                 )}
               </div>
@@ -693,7 +693,7 @@ const AIRecommendations = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-slate-200/50 dark:border-slate-700/50">
                   <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center space-x-2">
-                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                    <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     <span>Your Progress</span>
                   </h3>
                   <div className="space-y-4">
@@ -714,7 +714,7 @@ const AIRecommendations = () => {
                     <div>
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Sustainability Score</span>
-                        <span className="text-sm text-slate-600 dark:text-slate-400">{userStats.avgScore}/100</span>
+                        <span className="text-sm text-slate-600 dark:text-gray-400">{userStats.avgScore}/100</span>
                       </div>
                       <Progress value={userStats.avgScore} className="h-2" />
                     </div>
@@ -723,13 +723,13 @@ const AIRecommendations = () => {
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-slate-200/50 dark:border-slate-700/50">
                   <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center space-x-2">
-                    <Award className="w-5 h-5 text-yellow-600" />
+                    <Award className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                     <span>Achievements</span>
                   </h3>
                   <div className="space-y-3">
                     {userStats.streakDays >= 7 && (
                       <div className="flex items-center space-x-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200/50 dark:border-yellow-700/30">
-                        <Star className="w-5 h-5 text-yellow-600" />
+                        <Star className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                         <div>
                           <p className="font-medium text-yellow-800 dark:text-yellow-300">Week Streak Master</p>
                           <p className="text-xs text-yellow-600 dark:text-yellow-400">{userStats.streakDays} consecutive days</p>
@@ -738,7 +738,7 @@ const AIRecommendations = () => {
                     )}
                     {userStats.co2Saved >= 10 && (
                       <div className="flex items-center space-x-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200/50 dark:border-green-700/30">
-                        <Leaf className="w-5 h-5 text-green-600" />
+                        <Leaf className="w-5 h-5 text-green-600 dark:text-green-400" />
                         <div>
                           <p className="font-medium text-green-800 dark:text-green-300">Carbon Reducer</p>
                           <p className="text-xs text-green-600 dark:text-green-400">Saved {userStats.co2Saved.toFixed(1)}kg CO₂</p>
@@ -747,7 +747,7 @@ const AIRecommendations = () => {
                     )}
                     {userStats.avgScore >= 80 && (
                       <div className="flex items-center space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/30">
-                        <Brain className="w-5 h-5 text-blue-600" />
+                        <Brain className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         <div>
                           <p className="font-medium text-blue-800 dark:text-blue-300">Sustainability Expert</p>
                           <p className="text-xs text-blue-600 dark:text-blue-400">Average score: {userStats.avgScore}/100</p>

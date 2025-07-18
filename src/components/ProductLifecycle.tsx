@@ -245,50 +245,50 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
 
   return (
     <div className="space-y-6">
-      <Card className="bg-white/80 backdrop-blur-sm border-sage-200">
+      <Card className="bg-white/80 backdrop-blur-sm border-sage-200 dark:bg-gray-900 dark:border-gray-700">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2 text-sage-700">
+            <CardTitle className="flex items-center space-x-2 text-sage-700 dark:text-gray-200">
               <Package className="w-6 h-6" />
               <span>Product Lifecycle Tracking</span>
             </CardTitle>
-            <Button onClick={saveProductLifecycle} className="bg-emerald-500 hover:bg-emerald-600 text-white">
+            <Button onClick={saveProductLifecycle} className="bg-emerald-500 hover:bg-emerald-600 text-white dark:bg-emerald-700 dark:hover:bg-emerald-600">
               Save
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="bg-gradient-to-r from-sage-50 to-emerald-50 rounded-xl p-6 mb-6">
+          <div className="bg-gradient-to-r from-sage-50 to-emerald-50 rounded-xl p-6 mb-6 dark:from-gray-800 dark:to-gray-900">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-xl font-bold text-sage-800">{displayProduct.name}</h3>
-              <p className="text-sage-600">{displayProduct.brand || 'N/A'}</p>
+              <h3 className="text-xl font-bold text-sage-800 dark:text-gray-200">{displayProduct.name}</h3>
+              <p className="text-sage-600 dark:text-gray-400">{displayProduct.brand || 'N/A'}</p>
             </div>
-            <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-lg px-4 py-2">
+            <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white text-lg px-4 py-2 dark:bg-emerald-700 dark:hover:bg-emerald-600">
               {displayProduct.sustainabilityScore || 'N/A'}/100
             </Badge>
           </div> 
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <div className="flex items-center justify-center mb-2">
-                <Globe className="w-5 h-5 text-red-500 mr-2" />
-                <span className="text-2xl font-bold text-red-600">{totalImpact.co2.toFixed(1)}</span>
+                <Globe className="w-5 h-5 text-red-500 dark:text-red-400 mr-2" />
+                <span className="text-2xl font-bold text-red-600 dark:text-red-400">{totalImpact.co2.toFixed(1)}</span>
               </div>
-              <p className="text-sm text-sage-600">kg CO₂</p>
+              <p className="text-sm text-sage-600 dark:text-gray-400">kg CO₂</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center mb-2">
-                <Droplets className="w-5 h-5 text-blue-500 mr-2" />
-                <span className="text-2xl font-bold text-blue-600">{totalImpact.water}</span>
+                <Droplets className="w-5 h-5 text-blue-500 dark:text-blue-400 mr-2" />
+                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalImpact.water}</span>
               </div>
-              <p className="text-sm text-sage-600">L Water</p>
+              <p className="text-sm text-sage-600 dark:text-gray-400">L Water</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center mb-2">
-                <Zap className="w-5 h-5 text-yellow-500 mr-2" />
-                <span className="text-2xl font-bold text-yellow-600">{totalImpact.energy}</span>
+                <Zap className="w-5 h-5 text-yellow-500 dark:text-yellow-400 mr-2" />
+                <span className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{totalImpact.energy}</span>
               </div>
-              <p className="text-sm text-sage-600">kWh Energy</p>
+              <p className="text-sm text-sage-600 dark:text-gray-400">kWh Energy</p>
             </div>
           </div>
           </div>
@@ -299,21 +299,21 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
               <TabsTrigger value="impact">Impact Analysis</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="timeline" className="space-y-6" onPointerEnter={() => displayProduct.id && addViewedProduct(displayProduct.id)}>
+            <TabsContent value="timeline" className="space-y-6 dark:text-gray-200" onPointerEnter={() => displayProduct.id && addViewedProduct(displayProduct.id)}>
               <div className="space-y-4">
                 {(displayProduct.stages ?? []).map((stage: any) => (
-                  <div key={stage.name} className={`p-6 rounded-xl border-2 ${getStatusColor(stage.status)} transition-all duration-300`}>
+                  <div key={stage.name} className={`p-6 rounded-xl border-2 ${getStatusColor(stage.status)} transition-all duration-300 dark:border-gray-700 dark:bg-gray-800`}>
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-sage-600 rounded-xl flex items-center justify-center">
+                        <div className="w-12 h-12 bg-sage-600 rounded-xl flex items-center justify-center dark:bg-slate-700">
                           {stage.icon ? <stage.icon className="w-6 h-6 text-white" /> : null}
                         </div>
                         <div>
-                          <h3 className="font-semibold text-sage-800 flex items-center space-x-2">
+                          <h3 className="font-semibold text-sage-800 flex items-center space-x-2 dark:text-gray-200">
                             <span>{stage.name}</span>
                             {getStatusIcon(stage.status)}
                           </h3>
-                          <div className="flex items-center space-x-4 text-sm text-sage-600 mt-1">
+                          <div className="flex items-center space-x-4 text-sm text-sage-600 mt-1 dark:text-gray-400">
                             <div className="flex items-center space-x-1">
                               <MapPin className="w-3 h-3" />
                               <span>{stage.location || 'N/A'}</span>
@@ -329,24 +329,24 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
                       <div className="text-right">
                         <div className="grid grid-cols-3 gap-2 text-xs">
                           <div className="text-center">
-                            <span className="font-semibold text-red-600">{stage.impact.co2}</span>
-                            <p className="text-sage-500">CO₂</p>
+                            <span className="font-semibold text-red-600 dark:text-red-400">{stage.impact.co2}</span>
+                            <p className="text-sage-500 dark:text-gray-400">CO₂</p>
                           </div>
                           <div className="text-center">
-                            <span className="font-semibold text-blue-600">{stage.impact.water}</span>
-                            <p className="text-sage-500">H₂O</p>
+                            <span className="font-semibold text-blue-600 dark:text-blue-400">{stage.impact.water}</span>
+                            <p className="text-sage-500 dark:text-gray-400">H₂O</p>
                           </div>
                           <div className="text-center">
-                            <span className="font-semibold text-yellow-600">{stage.impact.energy}</span>
-                            <p className="text-sage-500">kWh</p>
+                            <span className="font-semibold text-yellow-600 dark:text-yellow-400">{stage.impact.energy}</span>
+                            <p className="text-sage-500 dark:text-gray-400">kWh</p>
                           </div>
                         </div>
                       </div>
                     </div>
-                    <p className="text-sage-700">{stage.details}</p>
+                    <p className="text-sage-700 dark:text-gray-300">{stage.details}</p>
                     {stage.status === 'active' && (
                       <div className="mt-4">
-                        <div className="flex justify-between text-sm text-sage-600 mb-2">
+                        <div className="flex justify-between text-sm text-sage-600 dark:text-gray-400 mb-2">
                           <span>Progress through use phase</span>
                           <span>2.3 / 3+ years</span>
                         </div>
