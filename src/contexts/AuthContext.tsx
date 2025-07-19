@@ -15,7 +15,7 @@ interface User {
   uid: string; 
   name: string;
   email: string;
-  change?: any; // Making it optional and using 'any' as a placeholder
+  change?: any;
   displayName?: string | null;
   photoURL?: string | null;
 }
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 const login = async (email: string, password: string) => {
     setIsLoading(true);
-    localStorage.removeItem('user'); // Clear stale user data at login start
+    localStorage.removeItem('user');
     setCurrentUser(null);
     try {
       if (!email || !password) {
@@ -53,15 +53,15 @@ const login = async (email: string, password: string) => {
         email: firebaseUser.email || '',
       };
 
-      // Only set currentUser and localStorage if login is successful
+      
       if (firebaseUser) {
         setCurrentUser(appUser);
         localStorage.setItem('user', JSON.stringify(appUser));
       }
-      return null; // no error
+      return null; 
     } catch (error: any) {
       console.error('Login error full object:', error);
-      // Return error message for display
+      
       if (error.code === 'auth/user-not-found') {
         return 'User not found. Please register first.';
       } else if (error.code === 'auth/wrong-password') {
@@ -103,7 +103,7 @@ const login = async (email: string, password: string) => {
         displayName: name,
       });
 
-      // Wait for auth state to update before writing to Firestore with retry
+      
       const writeUserData = async () => {
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
@@ -123,12 +123,12 @@ const login = async (email: string, password: string) => {
             console.error('Firestore write error during registration attempt', attempt, firestoreError);
             if (attempt === 3) throw firestoreError;
           }
-          await new Promise(res => setTimeout(res, 1000)); // wait 1 second before retry
+          await new Promise(res => setTimeout(res, 1000));
         }
       };
       await writeUserData();
 
-      return null; // no error
+      return null; 
     } catch (error: any) {
       console.error('Registration error:', error);
       if (error.code === 'auth/email-already-in-use') {
@@ -162,7 +162,7 @@ const login = async (email: string, password: string) => {
         email: firebaseUser.email || '',
       };
 
-      // Save to Firestore with retry
+     
       const writeUserData = async () => {
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
@@ -182,34 +182,22 @@ const login = async (email: string, password: string) => {
             console.error('Firestore write error during Google login attempt', attempt, firestoreError);
             if (attempt === 3) throw firestoreError;
           }
-          await new Promise(res => setTimeout(res, 1000)); // wait 1 second before retry
+          await new Promise(res => setTimeout(res, 1000));
         }
       };
       await writeUserData();
 
-      // Initialize subcollections with empty/default data
+      
       const userDocRef = doc(db, 'users', firebaseUser.uid);
 
       const subcollectionsInit = async () => {
         const batchPromises = [];
 
-        // profile/data document
+        
         batchPromises.push(setDoc(doc(userDocRef, 'profile', 'data'), {}));
 
-        // recentScans subcollection - empty
-        // scannedProducts subcollection - empty
-        // carbonEntries subcollection - empty
-        // aiRecommendations subcollection - empty
-        // userInsights subcollection - empty
-        // userRewards subcollection - empty
-        // reminders subcollection - empty
-        // goals subcollection - empty
-        // productComparison subcollection - empty
-        // cart/items document with empty items array
         batchPromises.push(setDoc(doc(userDocRef, 'cart', 'items'), { items: [] }));
 
-        // favorites subcollection - empty
-        // productLifecycleViewedProducts subcollection - empty
 
         await Promise.all(batchPromises);
       };

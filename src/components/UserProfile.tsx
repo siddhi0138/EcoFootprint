@@ -24,14 +24,16 @@ import {
   Calendar,
   Users,
   LogOut,
-  Recycle,
+  Bell,
+  Lock,
   ShoppingCart,
   Car,
   BookOpen,
   ChefHat,
   Clock,
   BarChart3,
-  TrendingDown
+  TrendingDown,
+  Recycle
 } from 'lucide-react';
 import { db } from '../firebase'; // Import db
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -179,7 +181,7 @@ const UserProfile = () => {
     { rank: userStats.rank, name: "You", scans: userStats.totalScans, co2Saved: userStats.co2Saved, highlight: true }
   ];
 
-  const preferences = {
+  const [preferences, setPreferences] = React.useState({
     notifications: {
       email: true,
       push: true,
@@ -191,6 +193,43 @@ const UserProfile = () => {
       statsVisible: true,
       allowMessages: true
     }
+  });
+
+  // Load preferences from user data on mount
+  React.useEffect(() => {
+    const fetchPreferences = async () => {
+      if (user) {
+        const userDocRef = doc(db, 'users', user.id);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          if (userData.preferences) {
+            setPreferences(userData.preferences);
+          }
+        }
+      }
+    };
+    fetchPreferences();
+  }, [user]);
+
+  const toggleNotificationPref = (key) => {
+    setPreferences((prev) => ({
+      ...prev,
+      notifications: {
+        ...prev.notifications,
+        [key]: !prev.notifications[key]
+      }
+    }));
+  };
+
+  const togglePrivacyPref = (key) => {
+    setPreferences((prev) => ({
+      ...prev,
+      privacy: {
+        ...prev.privacy,
+        [key]: !prev.privacy[key]
+      }
+    }));
   };
 
   const handleSave = async () => {
@@ -204,8 +243,9 @@ const UserProfile = () => {
           location: profile.location,
           bio: profile.bio,
           goals: profile.goals, // Save goals as well
+          preferences: preferences
         }, { merge: true });
-        console.log('Profile updated successfully!');
+        console.log('Profile and preferences updated successfully!');
       } catch (error) {
         console.error('Error updating profile:', error);
       }
@@ -355,25 +395,6 @@ const UserProfile = () => {
                   ) : (
                     <p className="text-gray-900 dark:text-gray-200">{profile.bio}</p>
                   )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-gray-200 dark:border-gray-600">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{userStats.totalScans}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Scans</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{userStats.co2Saved}kg</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">CO₂ Saved</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{achievements.filter(a => a.earned).length}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Badges</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">#{userStats.rank}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Global Rank</div>
                 </div>
               </div>
             </CardContent>
@@ -589,29 +610,29 @@ const UserProfile = () => {
               <Card key={index} className={`${
                 achievement.earned 
                   ? 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200 dark:from-amber-900/20 dark:to-yellow-900/20 dark:border-amber-600' 
-                  : 'bg-gray-50 border-gray-200 dark:bg-gray-700/50 dark:border-gray-600'
+                  : 'bg-gray-50 border-gray-200 dark:bg-gray-800/70 dark:border-gray-700'
               }`}>
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-3 mb-3">
                     <div className={`p-2 rounded-full ${
-                      achievement.earned ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-gray-200 text-gray-400 dark:bg-gray-600 dark:text-gray-500'
+                      achievement.earned ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-400'
                     }`}>
                       <achievement.icon className="w-5 h-5" />
                     </div>
                     <div>
                       <h3 className={`font-semibold ${
-                        achievement.earned ? 'text-amber-800 dark:text-amber-200' : 'text-gray-600 dark:text-gray-400'
+                        achievement.earned ? 'text-amber-800 dark:text-amber-200' : 'text-gray-600 dark:text-gray-300'
                       }`}>
                         {achievement.name}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{achievement.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{achievement.description}</p>
                     </div>
                   </div>
                   {achievement.earned ? (
                     <Badge className="bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700">Earned</Badge>
                   ) : (
                     <div>
-                      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-1">
                         <span>Progress</span>
                         <span>{achievement.progress}/{achievement.target}</span>
                       </div>
@@ -660,49 +681,72 @@ const UserProfile = () => {
 
         <TabsContent value="settings">
           <div className="space-y-6">
+            {/* Notification Preferences Section */}
             <Card className="bg-white/70 backdrop-blur-sm border-sage-200 dark:bg-gray-800/70 dark:border-gray-600">
               <CardHeader>
-                <CardTitle className="text-gray-800 dark:text-gray-200">Notification Preferences</CardTitle>
+                <CardTitle className="flex items-center space-x-2 text-gray-800 dark:text-gray-200">
+                  <Bell className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <span>Notification Preferences</span>
+                </CardTitle>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Manage how you receive updates and alerts.</p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700 dark:text-gray-300">Email Notifications</span>
-                  <input type="checkbox" defaultChecked={preferences.notifications.email} className="dark:bg-gray-700" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700 dark:text-gray-300">Push Notifications</span>
-                  <input type="checkbox" defaultChecked={preferences.notifications.push} className="dark:bg-gray-700" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700 dark:text-gray-300">Weekly Reports</span>
-                  <input type="checkbox" defaultChecked={preferences.notifications.weekly} className="dark:bg-gray-700" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700 dark:text-gray-300">Achievement Alerts</span>
-                  <input type="checkbox" defaultChecked={preferences.notifications.achievements} className="dark:bg-gray-700" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.entries(preferences.notifications).map(([key, value]) => (
+                    <div key={key} className="flex items-center justify-between p-3 border rounded-md dark:border-gray-700">
+                      <div>
+                        <span className="capitalize font-medium text-gray-700 dark:text-gray-300">{key.replace(/([A-Z])/g, ' $1')}</span>
+                        {key === 'email' && <p className="text-xs text-gray-500 dark:text-gray-400">Receive updates via email.</p>}
+                        {key === 'push' && <p className="text-xs text-gray-500 dark:text-gray-400">Receive real-time notifications on your device.</p>}
+                        {key === 'weekly' && <p className="text-xs text-gray-500 dark:text-gray-400">Get a weekly summary of your progress.</p>}
+                        {key === 'achievements' && <p className="text-xs text-gray-500 dark:text-gray-400">Be notified when you unlock new achievements.</p>}
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={value}
+                        onChange={() => toggleNotificationPref(key)}
+                        className="form-checkbox h-5 w-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 dark:bg-gray-700 dark:border-gray-600 dark:checked:bg-emerald-600 dark:focus:ring-emerald-600"
+                      />
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
 
+            {/* Privacy Settings Section */}
             <Card className="bg-white/70 backdrop-blur-sm border-sage-200 dark:bg-gray-800/70 dark:border-gray-600">
               <CardHeader>
-                <CardTitle className="text-gray-800 dark:text-gray-200">Privacy Settings</CardTitle>
+                <CardTitle className="flex items-center space-x-2 text-gray-800 dark:text-gray-200">
+                  <Lock className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  <span>Privacy Settings</span>
+                </CardTitle>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Control the visibility of your profile and activities.</p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700 dark:text-gray-300">Public Profile</span>
-                  <input type="checkbox" defaultChecked={preferences.privacy.profilePublic} className="dark:bg-gray-700" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700 dark:text-gray-300">Show Statistics</span>
-                  <input type="checkbox" defaultChecked={preferences.privacy.statsVisible} className="dark:bg-gray-700" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700 dark:text-gray-300">Allow Messages</span>
-                  <input type="checkbox" defaultChecked={preferences.privacy.allowMessages} className="dark:bg-gray-700" />
-                </div>
+                {Object.entries(preferences.privacy).map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between p-3 border rounded-md dark:border-gray-700">
+                    <div>
+                      <span className="capitalize font-medium text-gray-700 dark:text-gray-300">{key.replace(/([A-Z])/g, ' $1')}</span>
+                      {key === 'profilePublic' && <p className="text-xs text-gray-500 dark:text-gray-400">Make your profile visible to other users.</p>}
+                      {key === 'statsVisible' && <p className="text-xs text-gray-500 dark:text-gray-400">Show your statistics (total scans, CO₂ saved, etc.) publicly.</p>}
+                      {key === 'allowMessages' && <p className="text-xs text-gray-500 dark:text-gray-400">Allow other users to send you messages.</p>}
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={() => togglePrivacyPref(key)}
+                      className="form-checkbox h-5 w-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 dark:bg-gray-700 dark:border-gray-600 dark:checked:bg-emerald-600 dark:focus:ring-emerald-600"
+                    />
+                  </div>
+                ))}
               </CardContent>
             </Card>
+
+            <div className="flex justify-end">
+              <Button onClick={handleSave} className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-700 dark:hover:bg-emerald-800">
+                Save Settings
+              </Button>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

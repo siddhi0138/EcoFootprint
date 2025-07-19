@@ -321,7 +321,7 @@ const TransportationPlanner = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 dark:from-slate-800 dark:to-slate-900 dark:border-slate-700">
+      <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-900 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-green-700 dark:text-green-400">
             <Navigation className="w-6 h-6" />

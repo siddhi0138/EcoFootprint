@@ -408,7 +408,7 @@ The fashion industry is the second-largest polluter globally, responsible for 10
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 dark:from-background dark:to-background dark:border-border">
+      <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-900 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <BookOpen className="w-6 h-6 text-blue-600 dark:text-foreground" />

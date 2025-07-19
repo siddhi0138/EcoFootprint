@@ -37,7 +37,7 @@ const SmartInsights = () => {
   const [carbonEntries, setCarbonEntries] = useState<any[]>([]);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  // Async function to save user insights to Firestore
+  
   const saveUserInsights = async (monthlyAnalytics: any, yearlyAnalytics: any) => {
     if (!user) {
       console.warn("User not authenticated. Cannot save insights.");
@@ -112,7 +112,7 @@ const SmartInsights = () => {
 
   // Calculate carbon goal progress based on user's carbon entries
   const calculateCarbonProgress = () => {
-    const monthlyGoal = 500; // kg CO2 reduction goal
+    const monthlyGoal = 500; 
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
     
@@ -159,7 +159,7 @@ const SmartInsights = () => {
       details: {
         title: 'Carbon Footprint Goal Progress',
         content: `You're making ${carbonProgress >= 75 ? 'excellent' : carbonProgress >= 50 ? 'good' : 'steady'} progress toward your monthly carbon reduction goal.`,
-        // Metrics calculated based on the user's carbonEntries data
+        
         metrics: [
           { label: 'Monthly Goal', value: '500 kg CO2' },
           { label: 'Current Progress', value: `${Math.round((carbonProgress / 100) * 500)} kg CO2` },
@@ -179,7 +179,7 @@ const SmartInsights = () => {
       details: {
         title: 'Shopping Pattern Insights',
         content: 'Analysis of your shopping habits reveals interesting patterns that can help optimize your sustainable choices.',
-        // Metrics based on analysis of the user's scannedProducts data
+        
         metrics: [
           { label: 'Best Shopping Day', value: 'Saturday' },
           { label: 'Weekend vs Weekday Score', value: '+23% higher' },
@@ -196,9 +196,9 @@ const SmartInsights = () => {
   };
 
   const handleOptimize = (insight: any) => {
-    // Close modal if open
+    
     setShowDetailModal(false);
-    // Navigate to a goals or recommendations page
+    
     toast({
       title: 'Optimization started',
       description: `Optimizing based on: ${insight.title}`,
@@ -222,7 +222,7 @@ const SmartInsights = () => {
         title: insight.title,
         description: insight.details.content,
         createdAt: new Date(),
-        reminderDate: new Date(new Date().getTime() + 24 * 60 * 60 * 1000), // default reminder 24h later
+        reminderDate: new Date(new Date().getTime() + 24 * 60 * 60 * 1000), 
         completed: false,
       });
       toast({
@@ -287,8 +287,8 @@ const SmartInsights = () => {
     }));
   };
 
-  // Enhanced monthly data calculation
-  const calculateMonthlyData = () => { // Uses user's scannedProducts and carbonEntries
+  
+  const calculateMonthlyData = () => { 
     if (!user) return { scannedProducts: [], carbonEntries: [], analytics: {} };
 
     const today = new Date();
@@ -328,8 +328,8 @@ const SmartInsights = () => {
     };
   };
 
-  // Enhanced yearly data calculation
-  const calculateYearlyData = () => { // Uses user's scannedProducts and carbonEntries
+  
+  const calculateYearlyData = () => { 
     if (!user) return { scannedProducts: [], carbonEntries: [], analytics: {} };
 
     const today = new Date();
@@ -368,7 +368,7 @@ const SmartInsights = () => {
     };
   };
 
-  // Helper functions - ensure these operate on the passed user-specific data arrays
+  
   const getBestCategory = (products: any[]) => {
     const categories: { [key: string]: { count: number, totalScore: number } } = {};
     products.forEach(p => {
@@ -513,10 +513,10 @@ const SmartInsights = () => {
   const monthlyData = calculateMonthlyData();
   const yearlyData = calculateYearlyData();
 
-  // Effect to save insights when monthly or yearly data changes
+  
   useEffect(() => {
     if (user && monthlyData.analytics && yearlyData.analytics) {
-      // Add a small delay or debounce if updates are too frequent
+      
       saveUserInsights(monthlyData.analytics, yearlyData.analytics);
     }
   }, [user, monthlyData.analytics, yearlyData.analytics]); // Dependencies
@@ -926,7 +926,7 @@ const SmartInsights = () => {
                 </Button>
       <Button onClick={() => {
         setShowDetailModal(false);
-        // Add specific action based on insight type
+        
         if (selectedInsight.action === 'Optimize') {
           handleOptimize(selectedInsight);
         } else if (selectedInsight.action === 'Set Reminder') {

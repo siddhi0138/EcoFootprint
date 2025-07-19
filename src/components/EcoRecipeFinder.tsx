@@ -76,6 +76,7 @@ export const EcoRecipeFinder = () => {
   const [firebaseFavoriteRecipes, setFirebaseFavoriteRecipes] = useState<Set<number>>(new Set()); // Specify type
   const [firebaseMealPlan, setFirebaseMealPlan] = useState<MealPlanEntry[]>([]); // Specify type
   const [selectedDayToAdd, setSelectedDayToAdd] = useState<string>('Monday'); // New state for day selection
+  const [viewedRecipeIds, setViewedRecipeIds] = useState<Set<number>>(new Set()); // Track viewed recipes locally
   const { incrementRecipeViewed, addPoints } = useUserData();
   const { toast } = useToast();
   const { addGeneralNotification } = useNotificationHelper();
@@ -255,27 +256,30 @@ export const EcoRecipeFinder = () => {
 
   const handleViewRecipe = (recipe: Recipe) => { // Specify recipe type
     setSelectedRecipe(recipe);
-    try {
-      incrementRecipeViewed(); // This will update userStats in Firebase via useUserData
-      console.log('incrementRecipeViewed called successfully');
-    } catch (error) {
-      console.error('Error calling incrementRecipeViewed:', error);
+    if (!viewedRecipeIds.has(recipe.id)) {
+      try {
+        incrementRecipeViewed(); // This will update userStats in Firebase via useUserData
+        setViewedRecipeIds(new Set(viewedRecipeIds).add(recipe.id)); // Add to viewed set
+        console.log('incrementRecipeViewed called successfully');
+      } catch (error) {
+        console.error('Error calling incrementRecipeViewed:', error);
+      }
+      try {
+        addPoints(5); // This will update userStats in Firebase via useUserData
+        console.log('addPoints called successfully');
+      } catch (error) {
+        console.error('Error calling addPoints:', error);
+      }
+      toast({
+        title: 'Recipe Viewed!',
+        description: 'You earned 5 points for viewing a recipe!',
+      });
+      addGeneralNotification(
+        'Recipe Viewed',
+        `You viewed the recipe: ${recipe.name}`,
+        'recipes' // Corrected source
+      );
     }
-    try {
-      addPoints(5); // This will update userStats in Firebase via useUserData
-      console.log('addPoints called successfully');
-    } catch (error) {
-      console.error('Error calling addPoints:', error);
-    }
-    toast({
-      title: 'Recipe Viewed!',
-      description: 'You earned 5 points for viewing a recipe!',
-    });
-    addGeneralNotification(
-      'Recipe Viewed',
-      `You viewed the recipe: ${recipe.name}`,
-      'recipes' // Corrected source
-    );
   };
 
   const handleFavoriteRecipe = async (recipeId: number) => { // Make async, specify type
@@ -394,7 +398,7 @@ export const EcoRecipeFinder = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-green-50 to-lime-50 border-green-200 dark:from-green-900/50 dark:to-lime-900/50 dark:border-green-700">
+      <Card className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-green-700 dark:text-green-400">
             <ChefHat className="w-6 h-6" />

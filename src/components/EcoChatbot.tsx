@@ -100,7 +100,7 @@ const EcoChatbot = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-900 border-emerald-200 dark:border-slate-700">
+      <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-900 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="flex items-center space-x-3 text-emerald-700 dark:text-emerald-300">
             <div className="p-2 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl">

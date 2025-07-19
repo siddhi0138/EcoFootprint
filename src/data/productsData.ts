@@ -156,10 +156,10 @@ const generateProduct = (id: number): Product => {
   const variant = variants[Math.floor(Math.random() * variants.length)];
   
   const name = `${variant} ${baseName}`;
-  const sustainabilityScore = Math.floor(Math.random() * 40) + 60; // 60-99
+  const sustainabilityScore = Math.floor(Math.random() * 40) + 60; 
   const price = Math.round((Math.random() * 200 + 10) * 100) / 100;
   const originalPrice = Math.round(price * (1 + Math.random() * 0.5) * 100) / 100;
-  const rating = Math.round((Math.random() * 2 + 3) * 10) / 10; // 3.0-5.0
+  const rating = Math.round((Math.random() * 2 + 3) * 10) / 10; 
   const reviews = Math.floor(Math.random() * 5000) + 10;
   
   const productFeatures = features.sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 6) + 3);
@@ -193,8 +193,8 @@ const generateProduct = (id: number): Product => {
     features: productFeatures,
     co2Saved: `${co2Saved} kg`,
     description: `${name} by ${brand}. Made with sustainable practices and eco-friendly materials. Supports environmental conservation while delivering premium quality and performance.`,
-    inStock: Math.random() > 0.1, // 90% in stock
-    fastShipping: Math.random() > 0.3, // 70% fast shipping
+    inStock: Math.random() > 0.1, 
+    fastShipping: Math.random() > 0.3, 
     certifications: productCertifications,
     materials: productMaterials,
     origin,
@@ -222,8 +222,8 @@ const generateProduct = (id: number): Product => {
     waterUsage,
     energySource,
     laborPractices,
-    animalTesting: Math.random() < 0.1, // 10% tested on animals
-    vegan: Math.random() > 0.3, // 70% vegan
+    animalTesting: Math.random() < 0.1, 
+    vegan: Math.random() > 0.3, 
     alternatives: [
       {
         name: `Alternative ${baseName}`,

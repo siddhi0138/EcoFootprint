@@ -1,9 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, updateDoc, collection, addDoc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth'; // Import getAuth
-import { getDatabase } from 'firebase/database'; // Import getDatabase
+import { getAuth } from 'firebase/auth'; 
+import { getDatabase } from 'firebase/database'; 
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBsY9cFgrLX7lQlSpsU9uMkhPSYIawqzeI",
   authDomain: "ecoscope-89cb8.firebaseapp.com",
@@ -21,9 +20,9 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // Initialize Firebase Authentication
-const auth = getAuth(app); // Initialize auth
+const auth = getAuth(app); 
 
 // Initialize Realtime Database
-const database = getDatabase(app); // Initialize database
+const database = getDatabase(app); 
 
-export { app, db, auth, database, doc, updateDoc, collection, addDoc }; // Export auth, database, and Firestore functions
+export { app, db, auth, database, doc, updateDoc, collection, addDoc }; 

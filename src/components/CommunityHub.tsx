@@ -773,7 +773,7 @@ const CommunityHub = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200 dark:from-background dark:to-background dark:border-border">
+      <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-900 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Users className="w-6 h-6 text-green-600 dark:text-foreground" />

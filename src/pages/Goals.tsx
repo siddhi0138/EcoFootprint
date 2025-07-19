@@ -439,7 +439,7 @@ const Goals = () => {
     <>
       <Navbar onNavigate={handleNavigation} activeTab="goals" />
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-black dark:to-purple-950 pt-32 p-6 z-10">
-        <Card className="mb-6 shadow-xl border-indigo-200 bg-white/90 backdrop-blur-md dark:border-indigo-700 dark:bg-gray-800/90">
+        <Card className="mb-6 shadow-xl border-indigo-200 border bg-white dark:border-indigo-700 dark:bg-gray-800">
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button

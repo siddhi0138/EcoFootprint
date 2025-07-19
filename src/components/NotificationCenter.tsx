@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { useToast } from '../hooks/use-toast';
 import { useUserData } from '../contexts/UserDataContext';
 import { useNotifications } from '../contexts/NotificationsContextNew';
+import { useTheme } from '../contexts/ThemeContext';
 import { Star, Award, Leaf, BookOpen, Target, Users, Zap, Bell, ShoppingCart } from 'lucide-react';
 
 const NotificationCenter = () => {
@@ -18,6 +19,8 @@ const NotificationCenter = () => {
     clearAllNotifications 
   } = useNotifications();
   const { toast } = useToast();
+
+  const { theme } = useTheme();
 
   const handleNotificationAction = (notification) => {
     markAsRead(notification.id);
@@ -108,19 +111,41 @@ const NotificationCenter = () => {
   const getCategoryColor = (category) => {
     switch (category) {
       case 'scanning':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100';
       case 'environmental':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100';
       case 'education':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-purple-100';
       case 'recipes':
-        return 'bg-orange-100 text-orange-700';
+        return 'bg-orange-100';
       case 'community':
-        return 'bg-pink-100 text-pink-700';
+        return 'bg-pink-100';
       case 'engagement':
-        return 'bg-yellow-100 text-yellow-700';
+        return 'bg-yellow-100';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-gray-100';
+    }
+  };
+
+  const getCategoryTextColor = (category, darkMode) => {
+    if (darkMode) {
+      return 'text-white';
+    }
+    switch (category) {
+      case 'scanning':
+        return 'text-blue-700';
+      case 'environmental':
+        return 'text-green-700';
+      case 'education':
+        return 'text-purple-700';
+      case 'recipes':
+        return 'text-orange-700';
+      case 'community':
+        return 'text-pink-700';
+      case 'engagement':
+        return 'text-yellow-700';
+      default:
+        return 'text-gray-700';
     }
   };
 
@@ -214,7 +239,7 @@ const NotificationCenter = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 dark:from-background dark:to-background dark:border-border">
+      <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-800 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Bell className="w-6 h-6 text-blue-600 dark:text-foreground" />
@@ -366,19 +391,19 @@ notifications.map((notification) => (
         </TabsContent>
 
         <TabsContent value="achievements">
-          <div className="space-y-6">
+          <div className={`space-y-6 ${theme === 'dark' ? 'dark' : ''}`}>
             {/* Achievement Categories */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {['scanning', 'environmental', 'education', 'community'].map((category) => {
                 const categoryAchievements = achievements.filter(a => a.category === category);
                 const earned = categoryAchievements.filter(a => a.earned).length;
                 return (
-                  <Card key={category} className="text-center p-4">
-                    <Badge className={`mb-2 ${getCategoryColor(category)}`}>
-                      {category.charAt(0).toUpperCase() + category.slice(1)}
-                    </Badge>
-                    <p className="text-sm text-gray-600">{earned}/{categoryAchievements.length} Earned</p>
-                  </Card>
+                <Card key={category} className="text-center p-4 bg-gray-50 border border-gray-200 dark:bg-gray-900 dark:border-green-600">
+                  <Badge className={`mb-2 ${getCategoryColor(category)} ${getCategoryTextColor(category, false)} dark:bg-opacity-90 ${getCategoryTextColor(category, true)}`}>
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </Badge>
+                  <p className="text-sm text-gray-600 dark:text-green-200">{earned}/{categoryAchievements.length} Earned</p>
+                </Card>
                 );
               })}
             </div>
@@ -387,59 +412,59 @@ notifications.map((notification) => (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {achievements.map((achievement) => (
                 <Card key={achievement.id} className={`transition-all duration-300 hover:shadow-lg ${
-                  achievement.earned ? 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200' : 'bg-gray-50 border-gray-200'
+                  achievement.earned ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200 dark:from-green-800 dark:to-green-700 dark:border-green-600' : 'bg-gray-50 border-gray-200 dark:bg-gray-900 dark:border-green-600'
                 }`}>
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-4">
                       <div className={`p-3 rounded-full ${
                         achievement.earned 
-                          ? 'bg-amber-100 text-amber-600' 
-                          : 'bg-gray-200 text-gray-400'
+                          ? 'bg-green-100 text-green-600 dark:bg-green-600 dark:text-green-400' 
+                          : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                       }`}>
                         <achievement.icon className="w-6 h-6" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <h3 className={`font-semibold ${
-                            achievement.earned ? 'text-amber-800' : 'text-gray-600'
+                            achievement.earned ? 'text-green-800 dark:text-green-200' : 'text-gray-600 dark:text-green-200'
                           }`}>
                             {achievement.name}
                           </h3>
                           <div className="flex items-center space-x-2">
                             {achievement.earned && (
-                              <Badge className="bg-amber-500 hover:bg-amber-600">
+                              <Badge className="bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-500">
                                 Earned!
                               </Badge>
                             )}
-                            <Badge className={getCategoryColor(achievement.category)}>
-                              {achievement.category}
-                            </Badge>
+<Badge className={`${getCategoryColor(achievement.category)} ${getCategoryTextColor(achievement.category, false)} dark:bg-opacity-90 ${getCategoryTextColor(achievement.category, true)}`}>
+  {achievement.category}
+</Badge>
                           </div>
                         </div>
                         <p className={`text-sm ${
-                          achievement.earned ? 'text-amber-700' : 'text-gray-500'
+                          achievement.earned ? 'text-green-700 dark:text-green-200' : 'text-gray-500 dark:text-gray-400'
                         } mb-3`}>
                           {achievement.description}
                         </p>
                         {achievement.earned ? (
-                          <p className="text-xs text-amber-600">Earned on {achievement.date}</p>
+                          <p className="text-xs text-green-600 dark:text-green-200">Earned on {achievement.date}</p>
                         ) : achievement.progress !== undefined ? (
                           <div>
                             <div className="flex justify-between items-center mb-1">
-                              <span className="text-xs text-gray-600">Progress</span>
-                              <span className="text-xs text-gray-600">
+                              <span className="text-xs text-gray-600 dark:text-green-200">Progress</span>
+                              <span className="text-xs text-gray-600 dark:text-green-200">
                                 {Math.round(achievement.progress)}/{achievement.total}
                               </span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
                               <div 
-                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300 dark:bg-blue-400"
                                 style={{ width: `${Math.min((achievement.progress / achievement.total) * 100, 100)}%` }}
                               ></div>
                             </div>
                           </div>
                         ) : (
-                          <p className="text-xs text-gray-500">Complete the required actions to unlock</p>
+                          <p className="text-xs text-gray-500 dark:text-green-400">Complete the required actions to unlock</p>
                         )}
                       </div>
                     </div>
