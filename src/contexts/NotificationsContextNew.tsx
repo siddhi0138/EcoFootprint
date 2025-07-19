@@ -52,7 +52,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   useEffect(() => {
     if (isLoading) {
-      // Auth state is still loading, do not clear notifications yet
       setLoading(true);
       return;
     }
@@ -75,7 +74,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       const q = query(notificationsCollectionRef, orderBy('timestamp', 'desc'), limit(50));
 
       try {
-        // First, fetch the initial data
         const initialSnapshot = await getDocs(q);
         const initialNotifs: Notification[] = [];
         let initialUnread = 0;
@@ -86,9 +84,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         });
         setNotifications(initialNotifs);
         setUnreadCount(initialUnread);
-        setLoading(false); // Set loading to false after initial fetch
+        setLoading(false); 
 
-        // Then, set up the real-time listener
+        
         unsubscribe = onSnapshot(q, (snapshot) => {
           const notifs: Notification[] = [];
           let unread = 0;
@@ -102,7 +100,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         }, (error) => {
         if (error.code === 'permission-denied') {
           console.warn('Firestore permission denied for notifications:', error.message);
-            // Optionally clear notifications on permission error
+            
             setNotifications([]);
             setUnreadCount(0);
         } else {
@@ -113,7 +111,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       console.error('Unexpected error setting up notifications listener:', error);
       setNotifications([]);
       setUnreadCount(0);
-      setLoading(false); // Set loading to false on error
+      setLoading(false); 
     }
     };
 
@@ -131,7 +129,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     const userDocRef = doc(db, 'users', currentUser.uid);
     const notificationsCollectionRef = collection(userDocRef, 'notifications');
 
-    // Sanitize notification object to exclude unsupported fields like icon
+    
     const { icon, ...sanitizedNotification } = notification;
 
     try {
@@ -181,7 +179,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
     try {
       const snapshot = await getDocs(notificationsCollectionRef);
-      // Import writeBatch from firebase/firestore and use it here
+      
     
       const batch = writeBatch(db);
       snapshot.docs.forEach((doc) => {

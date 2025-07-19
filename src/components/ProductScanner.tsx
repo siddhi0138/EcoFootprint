@@ -394,9 +394,9 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
   };
 
   return (
-<div className="space-y-6">
+    <div className="space-y-6">
       {scannedProducts.length > 0 && (
-        <Card className="bg-white/95 dark:bg-slate-800 backdrop-blur-sm border-slate-200/50 dark:border-slate-700 shadow-lg rounded-2xl">
+        <Card className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 shadow-lg rounded-2xl">
           <CardHeader>
             <CardTitle className="text-slate-800 dark:text-slate-200">Recent Scans</CardTitle>
           </CardHeader>

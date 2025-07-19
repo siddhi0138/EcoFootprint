@@ -163,7 +163,7 @@ const CarbonTracker = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-slate-800 dark:to-slate-900 border-green-200 dark:border-slate-700">
+      <Card className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 shadow-lg rounded-2xl">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Leaf className="w-6 h-6 text-green-600 dark:text-green-400" />

@@ -16,7 +16,7 @@ interface CarbonEntry {
 }
 
 interface UserScanData {
-  timestamp: Timestamp; // Firestore Timestamp type
+  timestamp: Timestamp; 
 }
 
 interface ScannedProduct {
@@ -48,7 +48,7 @@ interface ScannedProduct {
     priceComparison: string;
     score: number;
   }[];
-  source?: string; // Added source field to identify data source
+  source?: string; 
 }
 
 export interface UserStats {
@@ -61,7 +61,7 @@ export interface UserStats {
   badges: number;
   weeklyGoal: number;
   currentWeekScans: number;
-  streakDays: number; // Assuming this tracks consecutive daily scans or similar activity
+  streakDays: number; 
   coursesCompleted: number;
   recipesViewed: number;
   transportTrips: number;
@@ -75,7 +75,7 @@ export interface UserStats {
   communityHelpCount: number;
 }
 
-// Extend UserStats interface with properties for AI Recommendations
+
 export interface UserStats {
   totalCarbonFootprint: number;
   monthlyReduction: number;
@@ -102,7 +102,6 @@ interface UserDataContextType {
   setSelectedAICategory: React.Dispatch<React.SetStateAction<string>>;
   selectedAIPriority: string;
   setSelectedAIPriority: React.Dispatch<React.SetStateAction<string>>;
-  // Properties needed by AIRecommendations
   selectedCategory: string;
   setSelectedCategory: React.Dispatch<React.SetStateAction<string>>;
   selectedPriority: string;
@@ -159,21 +158,21 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     totalCarbonFootprint: 0,
     monthlyReduction: 0,
     carbonGoal: 0,
-    maxSustainabilityScore: 1000, // Assuming a max score
-    weeklyFootprint: [0, 0, 0, 0, 0, 0, 0], // Initialize with 7 zeros
+    maxSustainabilityScore: 1000, 
+    weeklyFootprint: [0, 0, 0, 0, 0, 0, 0],
     categoryBreakdown: { transport: 0, energy: 0, food: 0, waste: 0 },
-    topCategory: 'none', // Or a default value
+    topCategory: 'none',
     monthlyTrend: 0,
-    sustainabilityScore: 0, // Assuming a current score separate from max
+    sustainabilityScore: 0, 
     achievements: [],
     communityHelpCount: 0,
   });
 
-  // New state for course progress and enrolled courses
+  
   const [enrolledCourses, setEnrolledCourses] = useState<Set<number>>(new Set());
   const [courseProgress, setCourseProgress] = useState<Map<number, number>>(new Map());
 
-  // New states for likedArticles, bookmarkedArticles, registeredWebinars
+  
   const [likedArticles, setLikedArticles] = useState<Set<number>>(new Set());
   const [bookmarkedArticles, setBookmarkedArticles] = useState<Set<number>>(new Set());
   const [registeredWebinars, setRegisteredWebinars] = useState<Set<number>>(new Set());
@@ -274,7 +273,6 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     const enrolledCoursesRef = collection(userDocRef, 'enrolledCourses');
 
     try {
-      // Clear existing enrolled courses
       const existingDocs = await getDocs(enrolledCoursesRef);
       const batch = writeBatch(db);
       existingDocs.forEach(docSnap => {
@@ -366,7 +364,6 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     const courseProgressRef = collection(userDocRef, 'courseProgress');
 
     try {
-      // Clear existing progress
       const existingDocs = await getDocs(courseProgressRef);
       const batch = writeBatch(db);
       existingDocs.forEach(docSnap => {
@@ -452,16 +449,16 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     const totalCO2Saved = carbonEntries.reduce((acc, entry) => acc + (entry.amount || 0), 0);
     const avgScore = totalScans > 0 ? Math.round(scannedProducts.reduce((acc, p) => acc + (p.sustainabilityScore || 0), 0) / totalScans) : 0;
 
-    // Calculate current week scans (assuming date is ISO string)
+    // Calculate current week scans 
     const now = new Date();
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday as start of week
+    startOfWeek.setDate(now.getDate() - now.getDay()); 
     const currentWeekScans = scannedProducts.filter(p => {
       const scanDate = new Date(p.date);
       return scanDate >= startOfWeek && scanDate <= now;
     }).length;
 
-    // Calculate streakDays (consecutive days with scans)
+    // Calculate streakDays 
     const scanDatesSet = new Set(scannedProducts.map(p => p.date.split('T')[0]));
     let streak = 0;
     for (let i = 0; i < 30; i++) {
@@ -475,10 +472,10 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    // Calculate totalPoints (example: 10 points per scan + 5 points per kg CO2 saved)
+    // Calculate totalPoints 
     const totalPoints = totalScans * 10 + totalCO2Saved * 5;
 
-    // Update userStats with recalculated values, preserving recipesViewed
+    // Update userStats with recalculated values
     setUserStats(prev => ({
       ...prev,
       totalScans,
@@ -487,7 +484,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       currentWeekScans,
       streakDays: streak,
       totalPoints,
-      recipesViewed: prev.recipesViewed, // Preserve recipesViewed to prevent reset
+      recipesViewed: prev.recipesViewed, 
     }));
 
   }, [scannedProducts, carbonEntries, currentUser]);
@@ -497,10 +494,9 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
   const [actionProgress, setActionProgress] = useState<Record<string, any>>({});
   const [selectedAICategory, setSelectedAICategory] = useState('all');
   const [selectedAIPriority, setSelectedAIPriority] = useState('all');
-  const [selectedCategory, setSelectedCategory] = useState('all'); // State for AI Recommendations
-  const [selectedPriority, setSelectedPriority] = useState('all'); // State for AI Recommendations
-  const [selectedTab, setSelectedTab] = useState('insights'); // Add selectedTab state for AIRecommendations tab persistence
-  // Fetch user data on authentication state change
+  const [selectedCategory, setSelectedCategory] = useState('all'); 
+  const [selectedPriority, setSelectedPriority] = useState('all'); 
+  const [selectedTab, setSelectedTab] = useState('insights'); 
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -510,12 +506,11 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
 
     if (!currentUser) {
       setLoading(false);
-      // Reset AI Recommendations state on logout
       setCompletedActions([]);
       setActionProgress({});
       setSelectedAICategory('all');
       setSelectedAIPriority('all');
-      setUserStats({ // Reset to default zeros when no user is logged in
+      setUserStats({ 
         totalPoints: 0,
         level: 0,
         totalScans: 0,
@@ -567,8 +562,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
           { id: 3, name: 'AI Collaborator', description: '92% recommendation accuracy', icon: Brain, color: 'blue' }
         ];
         setUserStats(prevStats => ({
-          ...prevStats, // Use previous state as base
-          // Ensure numerical fields are numbers, default to 0 if NaN, undefined, or null
+          ...prevStats, 
           totalPoints: Number(fetchedStats.totalPoints) || 0,
           level: Number(fetchedStats.level) || 0,
           totalScans: Number(fetchedStats.totalScans) || 0,
@@ -591,20 +585,19 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
           categoryBreakdown: fetchedStats.categoryBreakdown || { transport: 0, energy: 0, food: 0, waste: 0 },
           topCategory: fetchedStats.topCategory || 'none',
           monthlyTrend: Number(fetchedStats.monthlyTrend) || 0,
-          sustainabilityScore: Number(fetchedStats.sustainabilityScore) || 0, // Ensure sustainabilityScore is handled
+          sustainabilityScore: Number(fetchedStats.sustainabilityScore) || 0, 
           achievements: (Array.isArray(fetchedStats.achievements) && fetchedStats.achievements.length > 0) ? fetchedStats.achievements : defaultAchievements,
           goals: fetchedStats.goals ?? [],
         }));
       } else {
-        // Create initial user stats if not exists with a comprehensive default object
         if (currentUser) {
           const initialStatsForNewUser: UserStats = {
             totalPoints: 0,
-            level: 1, // Start at level 1
+            level: 1, 
             totalScans: 0,
             avgScore: 0,
             co2Saved: 0,
-            rank: 0, // New user, no rank yet
+            rank: 0, 
             badges: 0,
             weeklyGoal: 75,
             currentWeekScans: 0,
@@ -628,7 +621,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
             communityHelpCount: 0,
           };
           setDoc(userDocRef, initialStatsForNewUser)
-            .then(() => setUserStats(initialStatsForNewUser)) // Update local state after setting in Firestore
+            .then(() => setUserStats(initialStatsForNewUser)) 
             .catch(error => console.error("Error setting initial user stats:", error));
         } else {
           console.error("Cannot set initial user stats: no authenticated user");
@@ -657,17 +650,16 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     snapshot.docs.forEach(doc => {
       const productData = {
         ...(doc.data() as Omit<ScannedProduct, 'date'>),
-        date: doc.data().timestamp?.toDate().toISOString() || new Date().toISOString(), // Use Firestore timestamp, fallback to current date
+        date: doc.data().timestamp?.toDate().toISOString() || new Date().toISOString(),
       };
-      // Filter to only include products with source 'ProductScanner'
+      
       if (productData.source === 'ProductScanner') {
-        // Use product's actual ID for grouping, keeping the most recent scan
         if (!productsMap[productData.id] || new Date(productData.date) > new Date(productsMap[productData.id].date || 0)) {
           productsMap[productData.id] = productData;
         }
       }
     });
-    setScannedProducts(Object.values(productsMap).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())); // Sort by date
+    setScannedProducts(Object.values(productsMap).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     }, (error) => {
       console.error("Error fetching scanned products:", error);
     });
@@ -679,25 +671,20 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [currentUser]);
 
-  // Removed redundant localStorage loading on component mount as Firestore loading on login covers this
-
-  // Load AI Recommendations state from Firestore on user login
-  // Removed explicit loading of recipesViewed from getDoc on login to avoid race condition with onSnapshot listener
+  
   React.useEffect(() => {
     if (currentUser) {
-      // No explicit loading here; onSnapshot listener will handle userStats including recipesViewed
     }
   }, [currentUser]);
 
-  // Save AI Recommendations state to Firestore and localStorage whenever it changes
+  
   React.useEffect(() => {
-    // Helper function to sanitize actionProgress by removing icon fields
+    
     const sanitizeActionProgress = (progress: Record<string, any>) => {
       const sanitized: Record<string, any> = {};
       for (const key in progress) {
         if (progress.hasOwnProperty(key)) {
           const action = progress[key];
-          // Deep copy excluding icon in recommendation
           const { icon, ...restRecommendation } = action.recommendation || {};
           sanitized[key] = {
             ...action,
@@ -731,7 +718,6 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     if (currentUser) {
       const userDocRef = doc(db, 'users', currentUser.uid);
       const sanitizedActionProgress = sanitizeActionProgress(actionProgress);
-      // Replace undefined values with null in all fields before updateDoc
       const sanitizedData = replaceUndefinedWithNull({
         completedActions,
         actionProgress: sanitizedActionProgress,
@@ -758,7 +744,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('selectedTab', selectedTab);
   }, [completedActions, actionProgress, selectedAICategory, selectedAIPriority, selectedCategory, selectedPriority, selectedTab]);
   
-  // Clear in-memory and localStorage state on logout
+  
   React.useEffect(() => {
     if (!currentUser) {
       setCompletedActions([]);
@@ -776,13 +762,13 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentUser]);
 
-  // Save AI Recommendations state to localStorage whenever it changes
+  
   React.useEffect(() => {
     localStorage.setItem('completedActions', JSON.stringify(completedActions));
     localStorage.setItem('actionProgress', JSON.stringify(actionProgress));
   }, [completedActions, actionProgress]);
   
-  // Clear in-memory state on logout but keep localStorage intact
+  
   React.useEffect(() => {
     if (!currentUser) {
       setCompletedActions([]);
@@ -799,13 +785,12 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     if (currentUser) {
       const userDocRef = doc(db, 'users', currentUser.uid);
       try {
-        // Sanitize stats to remove non-serializable fields like React components (icon)
-        // Also replace undefined fields with null to avoid Firestore errors
+  
         const sanitizedStats = {
           ...stats,
           achievements: stats.achievements?.map(({ icon, ...rest }) => rest) || [],
         };
-        // Replace undefined values with null
+       
         Object.keys(sanitizedStats).forEach(key => {
           if (sanitizedStats[key] === undefined) {
             sanitizedStats[key] = null;
@@ -825,17 +810,17 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       try {
         const docRef = await addDoc(carbonCollectionRef, {
           ...entry,
-          date: new Date().toISOString() // Ensure date is stored
+          date: new Date().toISOString() 
         });
-        // Update local state with the added entry (including the new ID)
+        
         setCarbonEntries(prev => [{ id: docRef.id, ...entry, date: new Date().toISOString() }, ...prev]);
 
-        // Update user stats
+        
         const updatedStats = {
           ...userStats,
           co2Saved: (userStats.co2Saved || 0) + entry.amount,
           totalPoints: (userStats.totalPoints || 0) + Math.floor(entry.amount * 10),
-          currentWeekScans: (userStats.currentWeekScans || 0) + 1 // Assuming carbon entries also count towards weekly goal
+          currentWeekScans: (userStats.currentWeekScans || 0) + 1 
         };
         setUserStats(updatedStats);
         updateFirestoreUserStats(updatedStats);
@@ -847,21 +832,21 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
 
   const addScannedProduct = async (product: ScannedProduct) => {
     if (currentUser) {
-      // Removed skip logic for product comparison to ensure all scanned products are saved
+      
 
       const userDocRef = doc(db, 'users', currentUser.uid);
       const scannedCollectionRef = collection(userDocRef, 'scannedProducts');
 
       try {
-        // Check if a document with the same product ID already exists
+        
         const existingScanQuery = await getDocs(
           query(scannedCollectionRef, where('id', '==', product.id))
         );
 
         if (!existingScanQuery.empty) {
-          // If a scan for this product exists, update the existing document
+          
           const existingDocRef = existingScanQuery.docs[0].ref;
-          // Sanitize product to remove undefined fields
+          
           const sanitizedProduct = { ...product };
           Object.keys(sanitizedProduct).forEach(key => {
             if (sanitizedProduct[key] === undefined) {
@@ -870,19 +855,19 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
           });
           await updateDoc(existingDocRef, {
             ...sanitizedProduct,
-            alternatives: product.alternatives || [], // Ensure alternatives are saved
-            source: product.source || 'ProductScanner', // Save source field
-            timestamp: serverTimestamp(), // Update timestamp
+            alternatives: product.alternatives || [], 
+            source: product.source || 'ProductScanner', 
+            timestamp: serverTimestamp(), 
           });
-          // The onSnapshot listener will handle updating the local state
+          
         } else {
-          // If no scan for this product exists, add a new document
+          
           await addDoc(scannedCollectionRef, {
             ...product,
-            alternatives: product.alternatives || [], // Ensure alternatives are saved
-            source: product.source || 'ProductScanner', // Save source field
-            date: new Date().toISOString(), // Add a local date for display consistency before Firestore sync
-            timestamp: serverTimestamp(), // Add timestamp
+            alternatives: product.alternatives || [], 
+            source: product.source || 'ProductScanner', 
+            date: new Date().toISOString(), 
+            timestamp: serverTimestamp(), 
           });
         }
         // Update user stats
@@ -910,9 +895,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         if (userDoc.exists()) {
           const userData = userDoc.data();
           const currentCart = (userData?.cart || []) as ScannedProduct[];
-          // Add the product to the cart array
           const updatedCart = [...currentCart, product];
-          // Sanitize updatedCart to remove undefined fields
           const sanitizedCart = updatedCart.map(item => {
             const sanitizedItem = { ...item };
             Object.keys(sanitizedItem).forEach(key => {
@@ -968,13 +951,11 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     try {
       if (currentUser) {
         const userDocRef = doc(db, 'users', currentUser.uid);
-        // Update only the specific stat and totalPoints fields
         await updateDoc(userDocRef, {
           [stat]: newValue,
           totalPoints: updatedStats.totalPoints
         });
         console.log('Successfully updated user stat field in Firestore');
-        // Read back the updated document to verify
         const updatedDoc = await getDoc(userDocRef);
         if (updatedDoc.exists()) {
           console.log('Verified updated user stat in Firestore:', updatedDoc.data());
@@ -999,7 +980,6 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         recipesViewed: increment(1),
         totalPoints: increment(10)
       });
-      // Update local state optimistically
       setUserStats(prev => ({
         ...prev,
         recipesViewed: (prev.recipesViewed || 0) + 1,
@@ -1031,13 +1011,12 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       selectedAIPriority,
       setSelectedAICategory,
       setSelectedAIPriority,
-      selectedCategory, // Add these to context value
-      setSelectedCategory, // Add these to context value
-      selectedPriority, // Add these to context value
-      setSelectedPriority, // Add these to context value
-      selectedTab, // Add selectedTab to context value
-      setSelectedTab, // Add setSelectedTab to context value
-
+      selectedCategory, 
+      setSelectedCategory, 
+      selectedPriority, 
+      setSelectedPriority, 
+      selectedTab, 
+      setSelectedTab, 
       enrolledCourses,
       courseProgress,
       enrollInCourse,

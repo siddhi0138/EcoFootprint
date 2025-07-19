@@ -431,7 +431,7 @@ const AIRecommendations = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-lg rounded-2xl dark:bg-gray-800/95 dark:border-gray-700/50">
+      <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-900 dark:border-gray-700">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center justify-between text-slate-800 dark:text-slate-200">
             <div className="flex items-center space-x-3">

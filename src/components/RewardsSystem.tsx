@@ -292,12 +292,12 @@ const RewardsSystem = () => {
   return (
     <div className="space-y-6">
       {/* User-Specific Points Overview */}
-      <Card className="bg-gradient-to-r from-emerald-500 to-green-600 text-white border-0 shadow-xl dark:from-emerald-700 dark:to-green-800">
+      <Card className="bg-white text-gray-900 border border-gray-200 shadow-xl dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-3xl font-bold mb-2">{userStats.totalPoints.toLocaleString()} Points</h2>
-              <div className="flex items-center space-x-4 text-emerald-100 dark:text-emerald-300">
+              <div className="flex items-center space-x-4 text-gray-700 dark:text-gray-300">
                 <span>Level {currentLevel}</span>
                 <span>•</span>
                 <span>{getUnlockedAchievements()}/{achievements.length} achievements</span>
@@ -325,7 +325,7 @@ const RewardsSystem = () => {
             </div>
             <Progress 
               value={levelProgress} 
-              className="h-3 bg-emerald-400 dark:bg-emerald-600"
+              className="h-3 bg-blue-400 dark:bg-blue-600"
             />
           </div>
         </CardContent>
@@ -333,7 +333,7 @@ const RewardsSystem = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* User-Specific Daily Challenges */}
-        <Card className="bg-white/80 backdrop-blur-sm border-green-200 shadow-lg dark:bg-gray-900/80 dark:border-green-700">
+        <Card className="bg-white/80 backdrop-blur-sm border-gray-200 shadow-lg dark:bg-gray-900/80 dark:border-gray-700">
           <CardHeader>
             <CardTitle className="flex items-center justify-between text-green-700 dark:text-green-400">
               <div className="flex items-center space-x-2">

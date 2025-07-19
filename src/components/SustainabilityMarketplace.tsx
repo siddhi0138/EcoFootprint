@@ -375,7 +375,7 @@ Certifications: ${product.certifications?.join(', ') || 'N/A'}
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 dark:from-background dark:to-background dark:border-border">
+      <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-900 dark:border-gray-700">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
