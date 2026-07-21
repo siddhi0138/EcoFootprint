@@ -23,8 +23,7 @@ in real sustainability knowledge, and connect with a community of like-minded us
 
 EcoScope is a full-stack app: a React frontend talking to a Python/FastAPI backend that calls
 real LLM providers (🔮 Gemini / OpenRouter) for product analysis, recommendations, lifecycle
-generation, and a RAG-grounded chatbot — with a transparent, clearly-labeled heuristic fallback
-if no AI key is configured, so the app **never fabricates a score and pretends it's real**. All
+generation, and a RAG-grounded chatbot. All
 user data (carbon entries, scans, comparisons, course progress, community posts, orders, and
 more) lives in 🔥 Firebase Firestore, under rules that scope everything to its owner.
 
@@ -61,9 +60,6 @@ more) lives in 🔥 Firebase Firestore, under rules that scope everything to its
   knowledge chunks before EcoBot answers, so replies are grounded, not hallucinated.
 - 🛠️ **Function/tool calling** — the chat model can call real backend functions mid-conversation
   (carbon footprint calculation, product search) via `backend/services/tools.py`.
-- 🎯 **Heuristic fallback** — with no LLM key configured (or a failed call), a rule-based
-  estimate derived from the product's *real* data kicks in, always labeled `is_estimated: true`
-  so the UI shows an honest "Estimated" badge — never a silently invented number.
 
 ### ☁️ Data & Infra
 - 🔥 **Firebase Firestore** — primary database, explicit security rules (`firestore.rules`)
@@ -171,7 +167,7 @@ npx firebase-tools deploy --only firestore:rules --project <your-project-id>
 
 | Variable | Required | Notes |
 |---|---|---|
-| `GEMINI_API_KEY` / `OPENROUTER_API_KEY` | ✅ At least one | Both tried in order; without either, features fall back to a labeled heuristic |
+| `GEMINI_API_KEY` / `OPENROUTER_API_KEY` | ✅ At least one | Both tried in order; without either, features use a fallback estimation |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | ✅ Yes | Path to your service account JSON |
 | `FRONTEND_ORIGIN` | ✅ Yes | CORS — your frontend's URL |
 | `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` | ⭐ Optional | Non-food product search |
