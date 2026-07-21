@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import AnimatedBackground from '../components/AnimatedBackground';
-import { Leaf, ScanLine, MessageCircle, BarChart3, GitCompare, Sparkles } from 'lucide-react';
+import { Leaf, ScanLine, MessageCircle, BarChart3, GitCompare, Sparkles, GraduationCap, Users, Navigation, Package } from 'lucide-react';
 
 const features = [
   {
@@ -25,9 +25,29 @@ const features = [
     description: 'Compare products side by side with AI-generated reasoning across packaging, carbon, price, health, and recyclability - grounded in the actual data given, not templated text.',
   },
   {
+    icon: Package,
+    title: 'Product Lifecycle & Trends',
+    description: "A cradle-to-grave breakdown for any product, plus a real trend chart built from your own history of viewing it - never a fabricated curve.",
+  },
+  {
     icon: Sparkles,
     title: 'Personalized Insights',
     description: 'Recommendations and insights generated from your real scan and carbon-tracking history, not static, one-size-fits-all tips.',
+  },
+  {
+    icon: GraduationCap,
+    title: 'Education Center',
+    description: 'Real, community-contributed courses, articles, and webinars - anyone can publish one. Complete a course to get a PDF certificate emailed to you, and add webinars straight to your Google Calendar with automatic reminders.',
+  },
+  {
+    icon: Users,
+    title: 'Community Hub',
+    description: 'Posts, groups with live group chat, events, and challenges - a real, shared space, not a static demo feed.',
+  },
+  {
+    icon: Navigation,
+    title: 'Transportation Planner',
+    description: 'Real routing across walking, cycling, and driving with genuine distance, time, cost, and emissions for the specific trip you enter.',
   },
 ];
 
