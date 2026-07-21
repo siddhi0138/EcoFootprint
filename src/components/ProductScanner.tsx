@@ -20,8 +20,8 @@ import {
   ShoppingCart,
   Upload,
   Search,
-  Image as ImageIcon,
-  FileImage
+  FileImage,
+  X
 } from "lucide-react";
 import {
   collection,
@@ -29,15 +29,17 @@ import {
   setDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import { Factory, Truck, Package } from 'lucide-react';
 import { useAuth } from "../contexts/AuthContext";
 import { db } from "../firebase";
-import { getRandomProducts } from '../data/productsData';
 import { useUserData } from '../contexts/UserDataContext';
 import { useProductComparison } from '../contexts/ProductComparisonContext';
 
 import { useCart } from "../contexts/CartContext";
 import { useNotifications } from '../contexts/NotificationsContextNew';
+import { BrowserMultiFormatReader } from '@zxing/browser';
+import type { IScannerControls } from '@zxing/browser';
+import { analyzeProduct, analyzeGeneralProduct, searchProducts, type EcoAnalysis, type ProductSearchResult } from '../services/productApi';
+import { identifyImage, uploadProductImage, deleteProductImage, type ImageIdentification } from '../services/visionApi';
 
 interface ProductScannerProps {
   scannedProduct: any; // Define a more specific type if possible
@@ -55,11 +57,19 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
   const [detectedProduct, setDetectedProduct] = useState(null);
   const [scanMode, setScanMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
+  const [uploadedImageId, setUploadedImageId] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [stream, setStream] = useState(null);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [imageIdentification, setImageIdentification] = useState<ImageIdentification | null>(null);
+  const [isIdentifyingImage, setIsIdentifyingImage] = useState(false);
+  const [visionUnavailableMessage, setVisionUnavailableMessage] = useState<string | null>(null);
   const videoRef = useRef(null);
   const fileInputRef = useRef(null);
+  const scannerControlsRef = useRef<IScannerControls | null>(null);
 
   // Sync detectedProduct with scannedProduct prop and preserve on tab switch
   useEffect(() => {
@@ -92,295 +102,391 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
   // Preserve detectedProduct on tab switch by not clearing it
   // If you want to clear detectedProduct on some condition, handle it explicitly
 
-  // Cleanup camera stream when component unmounts or scan mode changes
+  // Cleanup camera stream and barcode reader when component unmounts or scan mode changes
   useEffect(() => {
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
+      scannerControlsRef.current?.stop();
     };
   }, [stream]);
 
-  const mockScan = () => {
+  const mapAnalysisToDetectedProduct = (barcode: string, offProduct: any, analysis: EcoAnalysis) => {
+    const overall = analysis.sustainability_score;
+    const name = offProduct.product_name || 'Unknown product';
+    const brand = offProduct.brands || 'Unknown brand';
+    // No fake stock-photo fallback - a mismatched product image is worse than no image, and the
+    // UI already renders a placeholder icon when `image` is falsy (see detectedProduct.image below).
+    const image = offProduct.image_url || offProduct.image_front_url || null;
+    const category = (offProduct.categories || 'Uncategorized').split(',')[0].trim();
+
+    return {
+      id: barcode,
+      barcode,
+      name,
+      brand,
+      image,
+      category,
+      origin: offProduct.countries || 'Unknown',
+      inStock: true,
+      rating: 0,
+      reviews: 0,
+      description: offProduct.generic_name || '',
+      carbon: analysis.carbon_footprint.estimated_kg_co2e ?? analysis.carbon_footprint.score,
+      water: overall,
+      packaging: offProduct.packaging || 'Unknown',
+      certifications: (offProduct.labels_tags || []).slice(0, 5),
+      materials: analysis.packaging.materials || [],
+      features: [],
+      stages: [],
+      sustainabilityScore: overall,
+      sustainability: {
+        carbon: analysis.carbon_footprint.score,
+        water: overall,
+        waste: analysis.packaging.score,
+        energy: overall,
+        ethics: analysis.health_impact.score,
+        overall,
+      },
+      alternatives: analysis.alternatives.map((alt) => ({
+        name: alt.name,
+        reason: alt.reason,
+        priceComparison: '',
+        score: alt.estimated_score ?? overall,
+      })),
+      aiAnalysis: analysis,
+    };
+  };
+
+  // Non-food products (electronics, clothing, etc. from eBay search results) have no OpenFoodFacts
+  // barcode record to look up - this maps a real eBay item + its text-based AI analysis into the
+  // same detectedProduct shape the barcode flow produces, so the rest of the UI doesn't need to care.
+  const mapGeneralAnalysisToDetectedProduct = (result: ProductSearchResult, analysis: EcoAnalysis) => {
+    const overall = analysis.sustainability_score;
+    return {
+      id: result.external_id || result.name,
+      barcode: null,
+      name: result.name,
+      brand: result.brand || 'Unknown brand',
+      image: result.image_url || null,
+      category: result.category || 'Uncategorized',
+      origin: 'Unknown',
+      inStock: true,
+      rating: 0,
+      reviews: 0,
+      description: '',
+      price: result.price ?? undefined,
+      itemUrl: result.item_url,
+      carbon: analysis.carbon_footprint.estimated_kg_co2e ?? analysis.carbon_footprint.score,
+      water: overall,
+      packaging: 'Unknown',
+      certifications: [],
+      materials: analysis.packaging.materials || [],
+      features: [],
+      stages: [],
+      sustainabilityScore: overall,
+      sustainability: {
+        carbon: analysis.carbon_footprint.score,
+        water: overall,
+        waste: analysis.packaging.score,
+        energy: overall,
+        ethics: analysis.health_impact.score,
+        overall,
+      },
+      alternatives: analysis.alternatives.map((alt) => ({
+        name: alt.name,
+        reason: alt.reason,
+        priceComparison: '',
+        score: alt.estimated_score ?? overall,
+      })),
+      aiAnalysis: analysis,
+    };
+  };
+
+  const handleGeneralProductDetected = async (result: ProductSearchResult) => {
+    if (isScanning) return;
     setIsScanning(true);
-    setTimeout(() => {
-      const randomProduct = getRandomProducts(1)[0];
-      
-      const productData = {
-        id: randomProduct.id,
-        name: randomProduct.name,
-        brand: randomProduct.brand,
-        sustainabilityScore: randomProduct.sustainabilityScore,
-        price: randomProduct.price,
-        image: `https://images.unsplash.com/${randomProduct.image}?w=400&h=400&fit=crop`,
-        carbon: randomProduct.carbonFootprint.total,
-        water: randomProduct.waterUsage,
-        packaging: randomProduct.packaging.type,
-        certifications: randomProduct.certifications,
-        materials: randomProduct.materials,
-        origin: randomProduct.origin,
-        barcode: randomProduct.barcode,
-        alternatives: randomProduct.alternatives,
-        features: randomProduct.features,
-        inStock: randomProduct.inStock,
-        rating: randomProduct.rating,
-        reviews: randomProduct.reviews,
-        description: randomProduct.description,
-        category: randomProduct.category,
-        sustainability: {
-          carbon: Math.floor(randomProduct.sustainabilityScore * 0.9),
-          water: Math.floor(randomProduct.sustainabilityScore * 0.95),
-          waste: Math.floor(randomProduct.sustainabilityScore * 0.85),
-          energy: Math.floor(randomProduct.sustainabilityScore * 0.92),
-          ethics: Math.floor(randomProduct.sustainabilityScore * 1.05),
-          overall: randomProduct.sustainabilityScore
-        },
-        stages: [
-          {
-            name: 'Raw Material Sourcing',
-            status: 'completed',
-            location: 'California, USA',
-            duration: '2 weeks',
-            impact: { co2: 1.2, water: 500, energy: 300 },
-            details: 'Sustainable sourcing of raw materials from certified farms.',
-            icon: () => <Factory className="w-6 h-6 text-white" />
-          },
-          {
-            name: 'Manufacturing',
-            status: 'active',
-            location: 'Oregon, USA',
-            duration: '4 weeks',
-            impact: { co2: 2.5, water: 800, energy: 1200 },
-            details: 'Eco-friendly manufacturing processes with renewable energy.',
-            icon: () => <Factory className="w-6 h-6 text-white" />
-          },
-          {
-            name: 'Transportation',
-            status: 'pending',
-            location: 'Distribution Center',
-            duration: '1 week',
-            impact: { co2: 0.8, water: 100, energy: 400 },
-            details: 'Low-emission transportation to retail locations.',
-            icon: () => <Truck className="w-6 h-6 text-white" />
-          },
-          {
-            name: 'Retail',
-            status: 'pending',
-            location: 'Various Stores',
-            duration: 'Ongoing',
-            impact: { co2: 0.5, water: 50, energy: 200 },
-            details: 'Sustainable retail practices and packaging.',
-            icon: () => <Package className="w-6 h-6 text-white" />
-          }
-        ]
-      };
-      
-      setDetectedProduct(productData);
-      
-      // Add notification for scanned product
+    setScanError(null);
+    try {
+      const analysis = await analyzeGeneralProduct({
+        name: result.name,
+        brand: result.brand,
+        category: result.category,
+      });
+      const mapped = mapGeneralAnalysisToDetectedProduct(result, analysis);
+      setDetectedProduct(mapped);
+
       addNotification({
         type: 'scanning',
-        title: 'Product Scanned',
-        message: `You scanned ${randomProduct.name} by ${randomProduct.brand}.`,
+        title: 'Product Analyzed',
+        message: `You analyzed ${mapped.name}.`,
         read: false,
         source: 'scanner',
         actionable: true,
         action: 'View',
       });
 
-      // Add to product comparison
       addProductToComparison({
-        id: randomProduct.id.toString(),
-        name: randomProduct.name,
-        brand: randomProduct.brand,
-        sustainabilityScore: randomProduct.sustainabilityScore,
-        category: randomProduct.category,
+        id: mapped.id.toString(),
+        name: mapped.name,
+        brand: mapped.brand,
+        sustainabilityScore: mapped.sustainabilityScore,
+        category: mapped.category,
         date: new Date().toISOString(),
-        price: randomProduct.price,
-        image: `https://images.unsplash.com/${randomProduct.image}?w=400&h=400&fit=crop`,
+        image: mapped.image,
         metrics: {
-          carbon: Math.floor(randomProduct.sustainabilityScore * 0.9),
-          water: Math.floor(randomProduct.sustainabilityScore * 0.95),
-          waste: Math.floor(randomProduct.sustainabilityScore * 0.85),
-          energy: Math.floor(randomProduct.sustainabilityScore * 0.92),
-          ethics: Math.floor(randomProduct.sustainabilityScore * 1.05),
+          carbon: mapped.sustainability.carbon,
+          water: mapped.sustainability.water,
+          waste: mapped.sustainability.waste,
+          energy: mapped.sustainability.energy,
+          ethics: mapped.sustainability.ethics,
         },
-        certifications: randomProduct.certifications || [],
-        pros: [
-          randomProduct.vegan ? 'Vegan friendly' : 'Quality materials',
-          randomProduct.packaging?.recyclable ? 'Recyclable packaging' : 'Durable design',
-          'Good sustainability score'
-        ],
-        cons: [
-          randomProduct.price > 50 ? 'Higher price point' : 'Limited color options',
-          'Consider shipping impact'
-        ],
-        rating: randomProduct.rating,
-        reviews: randomProduct.reviews,
-        inStock: randomProduct.inStock,
-        features: randomProduct.features,
+        certifications: mapped.certifications,
+        rating: mapped.rating,
+        reviews: mapped.reviews,
+        inStock: mapped.inStock,
+        features: mapped.features,
       });
+    } catch (err: any) {
+      console.error('General product analysis failed:', err);
+      if (/rate limit/i.test(err?.message || '')) {
+        setScanError('The AI service has hit its daily rate limit. Please try again later.');
+      } else {
+        setScanError('Could not analyze this product. Please try again.');
+      }
+    } finally {
       setIsScanning(false);
-    }, 2000);
+    }
+  };
+
+  const handleBarcodeDetected = async (barcode: string) => {
+    if (isScanning) return;
+    setIsScanning(true);
+    setScanError(null);
+    try {
+      const { product: offProduct, analysis } = await analyzeProduct(barcode);
+      const mapped = mapAnalysisToDetectedProduct(barcode, offProduct, analysis);
+      setDetectedProduct(mapped);
+
+      addNotification({
+        type: 'scanning',
+        title: 'Product Scanned',
+        message: `You scanned ${mapped.name} by ${mapped.brand}.`,
+        read: false,
+        source: 'scanner',
+        actionable: true,
+        action: 'View',
+      });
+
+      addProductToComparison({
+        id: mapped.id.toString(),
+        name: mapped.name,
+        brand: mapped.brand,
+        sustainabilityScore: mapped.sustainabilityScore,
+        category: mapped.category,
+        date: new Date().toISOString(),
+        image: mapped.image,
+        metrics: {
+          carbon: mapped.sustainability.carbon,
+          water: mapped.sustainability.water,
+          waste: mapped.sustainability.waste,
+          energy: mapped.sustainability.energy,
+          ethics: mapped.sustainability.ethics,
+        },
+        certifications: mapped.certifications,
+        rating: mapped.rating,
+        reviews: mapped.reviews,
+        inStock: mapped.inStock,
+        features: mapped.features,
+      });
+    } catch (err: any) {
+      console.error('Product analysis failed:', err);
+      if (err?.message?.includes('404')) {
+        setScanError('Product not found. Try a different barcode.');
+      } else if (err?.message?.includes('taking too long')) {
+        setScanError(err.message);
+      } else if (/rate limit/i.test(err?.message || '')) {
+        setScanError('The AI service has hit its daily rate limit. Please try again later.');
+      } else {
+        setScanError('Could not analyze this product. Please try again.');
+      }
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const startScanning = async () => {
+    setScanError(null);
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment' 
-        } 
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment'
+        }
       });
-      
       setStream(mediaStream);
       setScanMode(true);
-      
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-        }
-      }, 100);
     } catch (error) {
       console.error('Error accessing camera:', error);
-      alert('Unable to access camera. Please check permissions or try uploading an image instead.');
+      setScanError('Unable to access the camera. Check browser permissions, or use "Choose File" to upload a photo instead.');
     }
   };
+
+  // Attaches the stream and starts the barcode decoder only once the <video> element for
+  // scanMode is actually mounted, instead of guessing with a fixed setTimeout delay.
+  useEffect(() => {
+    if (!scanMode || !stream || !videoRef.current) return;
+
+    let cancelled = false;
+    const video = videoRef.current;
+    video.srcObject = stream;
+
+    const codeReader = new BrowserMultiFormatReader();
+    video.play().catch((err) => console.error('Video play() failed:', err));
+
+    codeReader
+      .decodeFromVideoElement(video, (result) => {
+        if (result) {
+          handleBarcodeDetected(result.getText());
+        }
+      })
+      .then((controls) => {
+        if (cancelled) {
+          controls.stop();
+        } else {
+          scannerControlsRef.current = controls;
+        }
+      })
+      .catch((err) => {
+        console.error('Barcode decoder failed to start:', err);
+        if (!cancelled) setScanError('Could not start barcode scanning on this camera stream.');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanMode, stream]);
 
   const stopScanning = () => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
+    scannerControlsRef.current?.stop();
     setScanMode(false);
     setDetectedProduct(null);
   };
 
+  const handleIdentifyImage = async (dataUrl: string) => {
+    setIsIdentifyingImage(true);
+    setImageIdentification(null);
+    setVisionUnavailableMessage(null);
+    try {
+      const [header, base64] = dataUrl.split(',');
+      const mimeMatch = header.match(/data:(.*);base64/);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      const { identification, message } = await identifyImage(base64, mimeType);
+      if (identification) {
+        setImageIdentification(identification);
+      } else {
+        setVisionUnavailableMessage(message || 'Image analysis is currently unavailable.');
+      }
+    } catch (err: any) {
+      console.error('Image identification failed:', err);
+      if (/rate limit/i.test(err?.message || '')) {
+        setVisionUnavailableMessage('The AI service has hit its daily rate limit. Please try again later.');
+      } else {
+        setVisionUnavailableMessage("Couldn't analyze this image. Please try again.");
+      }
+    } finally {
+      setIsIdentifyingImage(false);
+    }
+  };
+
+  // Selecting a file now only previews + stores it. Analysis is triggered explicitly by the
+  // "Analyze Photo" button (analyzeUploadedImage) so the user is in control and a rate-limited
+  // AI call doesn't fire silently on every file pick.
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith('image/')) {
+      setImageIdentification(null);
+      setVisionUnavailableMessage(null);
+      setScanError(null);
+      setDetectedProduct(null);
       const reader = new FileReader();
       reader.onload = (e) => {
-        setUploadedImage(e.target.result);
-        mockScan();
+        const dataUrl = e.target.result as string;
+        setUploadedImage(dataUrl);
+        setUploadedImageId(null);
+        setIsUploadingImage(true);
+        uploadProductImage(file)
+          .then(({ image_id }) => setUploadedImageId(image_id))
+          .catch((err) => console.error('Storing uploaded image failed:', err))
+          .finally(() => setIsUploadingImage(false));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      const allProducts = getRandomProducts(20);
-      const results = allProducts.filter(product => 
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.barcode.includes(searchQuery)
-      );
-      setSearchResults(results);
-    } else {
-      setSearchResults([]);
+  const analyzeUploadedImage = async () => {
+    if (!uploadedImage) return;
+    setScanError(null);
+    setImageIdentification(null);
+    setVisionUnavailableMessage(null);
+    try {
+      const codeReader = new BrowserMultiFormatReader();
+      const result = await codeReader.decodeFromImageUrl(uploadedImage);
+      handleBarcodeDetected(result.getText());
+    } catch {
+      setScanError('No barcode found - identifying the item from the photo with AI instead.');
+      handleIdentifyImage(uploadedImage);
     }
   };
 
-  const selectSearchResult = (product) => {
-    setIsScanning(true);
+  const handleRemoveUploadedImage = () => {
+    setUploadedImage(null);
+    setImageIdentification(null);
+    setVisionUnavailableMessage(null);
+    setScanError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    if (uploadedImageId) {
+      deleteProductImage(uploadedImageId).catch((err) =>
+        console.error('Deleting uploaded image failed:', err)
+      );
+      setUploadedImageId(null);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setIsSearching(true);
+    setScanError(null);
+    try {
+      const { results } = await searchProducts(searchQuery);
+      setSearchResults(results);
+    } catch (err) {
+      console.error('Product search failed:', err);
+      setSearchResults([]);
+      setScanError('Product search failed. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const selectSearchResult = (product: ProductSearchResult) => {
     setSearchResults([]);
     setSearchQuery('');
-      setTimeout(() => {
-        const productData = {
-          id: product.id,
-          name: product.name,
-          brand: product.brand,
-          sustainabilityScore: product.sustainabilityScore,
-          price: product.price,
-          image: `https://images.unsplash.com/${product.image}?w=400&h=400&fit=crop`,
-          carbon: product.carbonFootprint.total,
-          water: product.waterUsage,
-          packaging: product.packaging.type,
-          certifications: product.certifications,
-          materials: product.materials,
-          origin: product.origin,
-          barcode: product.barcode,
-          alternatives: product.alternatives,
-          features: product.features,
-          inStock: product.inStock,
-          rating: product.rating,
-          reviews: product.reviews,
-          description: product.description,
-          category: product.category,
-          sustainability: {
-            carbon: Math.floor(product.sustainabilityScore * 0.9),
-            water: Math.floor(product.sustainabilityScore * 0.95),
-            waste: Math.floor(product.sustainabilityScore * 0.85),
-            energy: Math.floor(product.sustainabilityScore * 0.92),
-            ethics: Math.floor(product.sustainabilityScore * 1.05),
-            overall: product.sustainabilityScore
-          },
-          stages: [
-            {
-              name: 'Raw Material Sourcing',
-              status: 'completed',
-              location: 'California, USA',
-              duration: '2 weeks',
-              impact: { co2: 1.2, water: 500, energy: 300 },
-              details: 'Sustainable sourcing of raw materials from certified farms.',
-              icon: () => <Factory className="w-6 h-6 text-white" />
-            },
-            {
-              name: 'Manufacturing',
-              status: 'active',
-              location: 'Oregon, USA',
-              duration: '4 weeks',
-              impact: { co2: 2.5, water: 800, energy: 1200 },
-              details: 'Eco-friendly manufacturing processes with renewable energy.',
-              icon: () => <Factory className="w-6 h-6 text-white" />
-            },
-            {
-              name: 'Transportation',
-              status: 'pending',
-              location: 'Distribution Center',
-              duration: '1 week',
-              impact: { co2: 0.8, water: 100, energy: 400 },
-              details: 'Low-emission transportation to retail locations.',
-              icon: () => <Truck className="w-6 h-6 text-white" />
-            },
-            {
-              name: 'Retail',
-              status: 'pending',
-              location: 'Various Stores',
-              duration: 'Ongoing',
-              impact: { co2: 0.5, water: 50, energy: 200 },
-              details: 'Sustainable retail practices and packaging.',
-              icon: () => <Package className="w-6 h-6 text-white" />
-            }
-          ]
-        };
-        
-        setDetectedProduct(productData);
-        // Removed automatic addScannedProduct call to prevent default saving
-        // addScannedProduct({
-        //   id: product.id.toString(),
-        //   name: product.name,
-        //   brand: product.brand,
-        //   sustainabilityScore: product.sustainabilityScore,
-        //   category: product.category,
-        //   date: new Date().toLocaleDateString(),
-        //   source: 'ProductScanner',
-        // });
-
-        // Add notification for scanned product
-        addNotification({
-          type: 'scanning',
-          title: 'Product Scanned',
-          message: `You scanned ${product.name} by ${product.brand}.`,
-          read: false,
-          source: 'scanner',
-          actionable: true,
-          action: 'View',
-        });
-
-        setIsScanning(false);
-      }, 2000);
+    if (product.source === 'ebay') {
+      handleGeneralProductDetected(product);
+    } else if (product.barcode) {
+      handleBarcodeDetected(product.barcode);
+    }
   };
 
   const triggerFileUpload = () => {
@@ -398,7 +504,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
       {scannedProducts.length > 0 && (
         <Card className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 shadow-lg rounded-2xl">
           <CardHeader>
-            <CardTitle className="text-slate-800 dark:text-slate-200">Recent Scans</CardTitle>
+            <CardTitle className="font-bold text-slate-800 dark:text-slate-200">Recent Scans</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -406,7 +512,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                 <div key={product.id} className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h3 className="font-semibold text-slate-800 dark:text-slate-200">{product.name}</h3>
+                      <h3 className="font-medium text-slate-800 dark:text-slate-200">{product.name}</h3>
                       <p className="text-sm text-slate-600 dark:text-slate-400">{product.brand}</p>
                     </div>
                     <Badge className={getScoreColor(product.sustainabilityScore)}>
@@ -415,7 +521,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-slate-500 dark:text-slate-400">{product.category}</span>
-                    <span className="text-slate-500 dark:text-slate-400">{product.date}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{new Date(product.date).toLocaleDateString()}</span>
                   </div>
                 </div>
               ))}
@@ -428,7 +534,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center justify-between text-slate-800 dark:text-slate-200">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center">
                 <Camera className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -458,33 +564,51 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                     className="flex-1"
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   />
-                  <Button onClick={handleSearch} size="sm">
+                  <Button onClick={handleSearch} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white">
                     <Search className="w-4 h-4" />
                   </Button>
                 </div>
                 
                 {/* Search Results */}
-                {searchResults.length > 0 && (
+                {isSearching && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Searching products...</p>
+                )}
+                {!isSearching && searchResults.length > 0 && (
                   <div className="max-h-60 overflow-y-auto space-y-2 mt-2">
-                    {searchResults.map((product) => (
+                    {searchResults.map((product, index) => (
                       <div
-                        key={product.id}
+                        key={product.barcode || product.external_id || index}
                         className="p-2 border border-slate-200 dark:border-slate-700 rounded cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                         onClick={() => selectSearchResult(product)}
                       >
                         <div className="flex items-center space-x-3">
-                          <img 
-                            src={`https://images.unsplash.com/${product.image}?w=40&h=40&fit=crop`}
-                            alt={product.name}
-                            className="w-8 h-8 object-cover rounded"
-                          />
+                          {product.image_url ? (
+                            <img
+                              src={product.image_url}
+                              alt={product.name}
+                              className="w-8 h-8 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                              <Search className="w-3 h-3 text-slate-400" />
+                            </div>
+                          )}
                           <div className="flex-1">
                             <h4 className="text-sm font-medium text-slate-800 dark:text-slate-200">{product.name}</h4>
-                            <p className="text-xs text-slate-600 dark:text-slate-400">{product.brand} • {product.category}</p>
+                            <p className="text-xs text-slate-600 dark:text-slate-400">
+                              {product.brand || (product.category ?? 'Unknown brand')}
+                            </p>
                           </div>
-                          <Badge className={`text-xs px-2 py-1 ${getScoreColor(product.sustainabilityScore)}`}>
-                            {product.sustainabilityScore}
-                          </Badge>
+                          {product.price != null && (
+                            <Badge variant="outline" className="text-xs px-2 py-1 text-slate-700 dark:text-slate-300">
+                              {product.price_currency === 'USD' ? '$' : `${product.price_currency} `}{product.price}
+                            </Badge>
+                          )}
+                          {product.ecoscore_grade && (
+                            <Badge className="text-xs px-2 py-1 uppercase text-green-600 bg-green-100">
+                              Eco {product.ecoscore_grade}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -515,34 +639,47 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                   className="hidden"
                 />
                 {uploadedImage && (
-                  <div className="mt-2">
-                    <img 
-                      src={uploadedImage} 
-                      alt="Uploaded product" 
+                  <div className="mt-2 relative">
+                    <img
+                      src={uploadedImage}
+                      alt="Uploaded product"
                       className="w-full h-24 object-cover rounded border border-slate-200 dark:border-slate-700"
                     />
+                    <button
+                      type="button"
+                      onClick={handleRemoveUploadedImage}
+                      aria-label="Remove uploaded image"
+                      className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-slate-900/70 text-white hover:bg-slate-900 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                    {isUploadingImage && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Saving image...</p>
+                    )}
+                    <Button
+                      onClick={analyzeUploadedImage}
+                      disabled={isScanning || isIdentifyingImage}
+                      className="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      <Zap className="w-4 h-4 mr-2" />
+                      {isScanning || isIdentifyingImage ? 'Analyzing...' : 'Analyze Photo'}
+                    </Button>
                   </div>
                 )}
               </div>
             </Card>
           </div>
 
-          <div className="bg-slate-900 rounded-xl overflow-hidden shadow-lg">
-            <div className="bg-slate-800 h-64 flex items-center justify-center relative">
+          <div className="bg-emerald-50 rounded-xl overflow-hidden shadow-lg">
+            <div className="bg-emerald-50 h-64 flex items-center justify-center relative">
               {!scanMode ? (
                 <div className="text-center">
-                  <Camera className="w-16 h-16 mx-auto mb-4 text-slate-400" />
-                  <p className="text-slate-300 mb-4">Point your camera at any product</p>
-                  <div className="flex gap-3 justify-center">
-                    <Button onClick={startScanning} className="bg-slate-700 hover:bg-slate-600 border border-slate-600">
-                      <Play className="w-4 h-4 mr-2" />
-                      Start Camera
-                    </Button>
-                    <Button onClick={triggerFileUpload} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      Take Photo
-                    </Button>
-                  </div>
+                  <Camera className="w-16 h-16 mx-auto mb-4 text-emerald-600" />
+                  <p className="text-black mb-4">Point your camera at any product</p>
+                  <Button onClick={startScanning} className="bg-emerald-600 hover:bg-emerald-700 border border-emerald-600 text-white">
+                    <Play className="w-4 h-4 mr-2" />
+                    Start Camera
+                  </Button>
                 </div>
               ) : (
                 <div className="w-full h-full relative">
@@ -560,26 +697,15 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                       <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
                       LIVE
                     </Badge>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={triggerFileUpload}
-                        className="bg-slate-800/80 border-slate-600 text-white hover:bg-slate-700"
-                      >
-                        <ImageIcon className="w-3 h-3 mr-1" />
-                        Photo
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={stopScanning}
-                        className="bg-slate-800/80 border-slate-600 text-white hover:bg-slate-700"
-                      >
-                        <Square className="w-3 h-3 mr-1" />
-                        Stop
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={stopScanning}
+                      className="bg-slate-800/80 border-slate-600 text-white hover:bg-slate-700"
+                    >
+                      <Square className="w-3 h-3 mr-1" />
+                      Stop
+                    </Button>
                   </div>
                   
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -599,32 +725,60 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                   </div>
                   
                   <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                    <Button 
-                      onClick={mockScan} 
-                      disabled={isScanning}
-                      className="bg-white/20 dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 rounded-full w-16 h-16 border-2 border-white dark:border-white/50 backdrop-blur-sm"
-                    >
-                      <Scan className="w-6 h-6 text-white" />
-                    </Button>
+                    <Badge className="bg-slate-800/80 text-white border border-slate-600 px-3 py-1.5">
+                      {isScanning ? 'Analyzing...' : 'Scanning automatically - no need to tap'}
+                    </Badge>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
+          {scanError && (
+            <div className="text-center p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-300 text-sm">
+              {scanError}
+            </div>
+          )}
+
+          {isIdentifyingImage && (
+            <div className="text-center p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 text-sm">
+              Identifying item with AI Vision...
+            </div>
+          )}
+
+          {visionUnavailableMessage && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-700 dark:text-amber-300 text-sm">
+              {visionUnavailableMessage}
+            </div>
+          )}
+
+          {imageIdentification && (
+            <div className="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-slate-800 dark:text-slate-200">{imageIdentification.item_name}</h4>
+                <Badge className={imageIdentification.recyclable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+                  {imageIdentification.recyclable ? 'Likely Recyclable' : 'Likely Not Recyclable'}
+                </Badge>
+              </div>
+              <p className="text-sm text-slate-600 dark:text-slate-400">Material: {imageIdentification.material_guess} ({imageIdentification.confidence} confidence)</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{imageIdentification.disposal_guidance}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-500">{imageIdentification.environmental_impact}</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-slate-50/80 dark:bg-slate-700 rounded-xl border border-slate-200/50 dark:border-slate-700">
-              <Zap className="w-8 h-8 mx-auto mb-2 text-slate-600 dark:text-slate-300" />
+              <Zap className="w-8 h-8 mx-auto mb-2 text-emerald-600" />
               <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-1">Instant Analysis</h3>
               <p className="text-sm text-slate-600 dark:text-slate-300">Real-time sustainability scoring</p>
             </div>
             <div className="text-center p-4 bg-slate-50/80 dark:bg-slate-700 rounded-xl border border-slate-200/50 dark:border-slate-700">
-              <Leaf className="w-8 h-8 mx-auto mb-2 text-green-600" />
+              <Leaf className="w-8 h-8 mx-auto mb-2 text-emerald-600" />
               <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-1">Impact Assessment</h3>
               <p className="text-sm text-slate-600 dark:text-slate-300">Environmental footprint analysis</p>
             </div>
             <div className="text-center p-4 bg-slate-50/80 dark:bg-slate-700 rounded-xl border border-slate-200/50 dark:border-slate-700">
-              <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-slate-600 dark:text-slate-300" />
+              <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-emerald-600" />
               <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-1">Smart Alternatives</h3>
               <p className="text-sm text-slate-600 dark:text-slate-300">Better product suggestions</p>
             </div>
@@ -635,15 +789,23 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
               <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex space-x-4">
-                    <img 
-                      src={detectedProduct.image} 
-                      alt={detectedProduct.name}
-                      className="w-20 h-20 object-cover rounded-lg"
-                    />
+                    {detectedProduct.image ? (
+                      <img
+                        src={detectedProduct.image}
+                        alt={detectedProduct.name}
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                        <Camera className="w-8 h-8 text-slate-300 dark:text-slate-500" />
+                      </div>
+                    )}
                     <div>
                       <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200">{detectedProduct.name}</h3>
                       <p className="text-slate-600 dark:text-slate-400">{detectedProduct.brand}</p>
-                      <p className="text-lg font-bold text-green-600">${detectedProduct.price}</p>
+                      {detectedProduct.price !== undefined && (
+                        <p className="text-lg font-bold text-green-600">${detectedProduct.price}</p>
+                      )}
                       <div className="flex items-center space-x-2 mt-1">
                         <div className="flex text-yellow-400">
                           {'★'.repeat(Math.floor(detectedProduct.rating))}
@@ -767,7 +929,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                     onClick={() => {
                       setScannedProduct(detectedProduct);
                       if (onTabChange) {
-                        onTabChange('lifecycle');
+                        onTabChange('analysis');
                       }
                     }}
                   >
@@ -795,7 +957,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                           sustainabilityScore: detectedProduct.sustainabilityScore,
                           category: detectedProduct.category,
                           date: new Date().toISOString(),
-                          price: detectedProduct.price,
+                          ...(detectedProduct.price !== undefined ? { price: detectedProduct.price } : {}),
                           image: detectedProduct.image,
                           metrics: {
                             carbon: detectedProduct.sustainability?.carbon || 0,
@@ -814,7 +976,9 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                         });
                       }
                       if (onTabChange) {
-                        onTabChange('comparison');
+                        // Comparison now lives inside the Marketplace ("Compare" tab) rather
+                        // than as a separate page - send the user there to view it.
+                        onTabChange('marketplace');
                       }
                     }}
                   >

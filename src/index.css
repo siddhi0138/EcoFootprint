@@ -14,8 +14,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 161 94% 30%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
@@ -33,6 +33,20 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
 
+    /* Sage palette (muted green-grey). These were referenced by tailwind (sage-50..900) but
+       never defined, so every `border-sage-*` / `text-sage-*` fell back to currentColor -
+       rendering as a hard black outline on cards. Defining them here fixes that app-wide. */
+    --sage-50: 140 20% 97%;
+    --sage-100: 140 17% 93%;
+    --sage-200: 140 15% 86%;
+    --sage-300: 140 13% 75%;
+    --sage-400: 140 12% 60%;
+    --sage-500: 140 13% 48%;
+    --sage-600: 140 15% 38%;
+    --sage-700: 140 17% 30%;
+    --sage-800: 140 19% 22%;
+    --sage-900: 140 21% 15%;
+
     --radius: 0.5rem;
   }
 
@@ -46,8 +60,8 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -64,6 +78,18 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
+    /* Dark-mode sage: lighter text shades, darker surface/border shades. */
+    --sage-50: 140 15% 12%;
+    --sage-100: 140 14% 16%;
+    --sage-200: 140 13% 22%;
+    --sage-300: 140 12% 30%;
+    --sage-400: 140 12% 45%;
+    --sage-500: 140 13% 58%;
+    --sage-600: 140 15% 68%;
+    --sage-700: 140 18% 78%;
+    --sage-800: 140 20% 86%;
+    --sage-900: 140 22% 93%;
   }
 }
 

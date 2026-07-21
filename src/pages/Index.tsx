@@ -7,7 +7,6 @@ import { Badge } from '../components/ui/badge';
 import { Search, Sparkles } from 'lucide-react';
 
 // Import components
-import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
 import Features from '../components/Features';
 import Footer from '../components/Footer';
@@ -23,32 +22,31 @@ import EducationCenter from '../components/EducationCenter';
 import NotificationCenter from '../components/NotificationCenter';
 import UserProfile from '../components/UserProfile';
 import AIRecommendations from '../components/AIRecommendations';
-/* Removed import of EnvironmentalAlerts as it was deleted */
-// import EnvironmentalAlerts from '../components/EnvironmentalAlerts';
-import RewardsSystem from '../components/RewardsSystem';
-import ProductLifecycle from '../components/ProductLifecycle';
-import SustainabilityChallenges from '../components/SustainabilityChallenges';
-import SocialImpactHub from '../components/SocialImpactHub';
-import SmartInsights from '../components/SmartInsights';
-import LiveEvents from '../components/LiveEvents';
-import TransportationPlanner from '../components/TransportationPlanner';
-import { EcoRecipeFinder } from '../components/EcoRecipeFinder';
+import LifestyleHub from '../components/LifestyleHub';
 import EcoChatbot from '../components/EcoChatbot';
 import AuthModal from '../components/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
 import { UserDataProvider } from '../contexts/UserDataContext';
-import { CartProvider, useCart } from '../contexts/CartContext';
+import { CartProvider } from '../contexts/CartContext';
 import { useUserData } from '../contexts/UserDataContext';
 import Checkout from './Checkout';
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 
-const Index = () => {
+interface IndexProps {
+  // Supplied by Layout, which owns tab state since tab-only features (scanner, marketplace, ...)
+  // have no route of their own - Layout drives navigation for all pages, this component just renders.
+  activeTab?: string;
+  onNavigate?: (tab: string) => void;
+}
+
+const Index: React.FC<IndexProps> = ({ activeTab: activeTabProp, onNavigate }) => {
   const { user } = useAuth();
   const { addScannedProduct } = useUserData();
 
-  const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
-  const [activeTab, setActiveTab] = useState('home');
+  const [internalActiveTab, setInternalActiveTab] = useState('home');
+  const activeTab = activeTabProp ?? internalActiveTab;
+  const setActiveTab = onNavigate ?? setInternalActiveTab;
   const [searchQuery, setSearchQuery] = useState('');
   const [scannedProduct, setScannedProductState] = useState<any>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -98,10 +96,6 @@ const Index = () => {
     setIsLoginModalOpen(true);
   };
 
-  const toggleLoginForm = () => {
-    setIsLoginModalOpen(!isLoginModalOpen);
-  };
-
   const handleLoginSuccess = () => {
     setIsLoginModalOpen(false);
     setActiveTab('scanner');
@@ -120,22 +114,9 @@ const Index = () => {
     fetchRecentScans();
   }, [user]);
 
-  const handleNavigation = (tab) => {
-    setActiveTab(tab);
-  };
-
   if (activeTab === 'home') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <Navbar
-          onNavigate={handleNavigation}
-          activeTab={activeTab}
-          toggleLoginForm={toggleLoginForm}
-          cartItems={cartItems}
-          updateCartItem={updateQuantity}
-          removeFromCart={removeFromCart}
-          clearCart={clearCart}
-        />
+      <>
         <Hero onGetStarted={handleGetStarted} />
         <Features />
         <AuthModal
@@ -143,22 +124,12 @@ const Index = () => {
           onClose={() => setIsLoginModalOpen(false)}
           onSuccess={handleLoginSuccess}
         />
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden">
-      <Navbar
-        onNavigate={handleNavigation}
-        activeTab={activeTab}
-        toggleLoginForm={toggleLoginForm}
-        cartItems={cartItems}
-        updateCartItem={updateQuantity}
-        removeFromCart={removeFromCart}
-        clearCart={clearCart}
-      />
-      <div className="pt-20">
+    <div className="relative z-10 pt-20">
         <div className="container mx-auto px-6 py-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsContent value="scanner" className="mt-6">
@@ -233,7 +204,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="analysis" className="mt-4">
-              <ProductAnalysis product={scannedProduct} />
+              <ProductAnalysis product={scannedProduct} onBack={() => setActiveTab('scanner')} />
             </TabsContent>
 
 <TabsContent value="comparison" className="mt-4">
@@ -261,7 +232,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="notifications" className="mt-4">
-              <NotificationCenter />
+              <NotificationCenter onNavigate={setActiveTab} />
             </TabsContent>
 
             <TabsContent value="profile" className="mt-4">
@@ -272,40 +243,8 @@ const Index = () => {
               <AIRecommendations />
             </TabsContent>
 
-            <TabsContent value="environmental-alerts" className="mt-4">
-  {/* EnvironmentalAlerts component removed as per user request */}
-            </TabsContent>
-
-            <TabsContent value="rewards" className="mt-4">
-              <RewardsSystem />
-            </TabsContent>
-
-            <TabsContent value="lifecycle" className="mt-4">
-              <ProductLifecycle product={scannedProduct} />
-            </TabsContent>
-
-            <TabsContent value="challenges" className="mt-4">
-              <SustainabilityChallenges />
-            </TabsContent>
-
-            <TabsContent value="social-impact" className="mt-4">
-              <SocialImpactHub />
-            </TabsContent>
-
-            <TabsContent value="smart-insights" className="mt-4">
-              <SmartInsights />
-            </TabsContent>
-
-            <TabsContent value="live-events" className="mt-4">
-              <LiveEvents />
-            </TabsContent>
-
-            <TabsContent value="transportation-planner" className="mt-4">
-              <TransportationPlanner />
-            </TabsContent>
-
-            <TabsContent value="recipe-finder" className="mt-4">
-              <EcoRecipeFinder />
+            <TabsContent value="lifestyle" className="mt-4">
+              <LifestyleHub product={scannedProduct} />
             </TabsContent>
 
             <TabsContent value="checkout" className="mt-6">
@@ -313,15 +252,14 @@ const Index = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
     </div>
   );
 };
 
-const IndexWithUserDataProvider = () => (
+const IndexWithUserDataProvider: React.FC<IndexProps> = (props) => (
   <UserDataProvider>
     <CartProvider>
-      <Index />
+      <Index {...props} />
     </CartProvider>
   </UserDataProvider>
 );

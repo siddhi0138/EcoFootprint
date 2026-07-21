@@ -128,16 +128,19 @@ const TransportationPlanner = () => {
     return Math.round((distance / 1000) * (calorieFactors[mode] || 0));
   };
 
-  // Get sustainability score
-  const getSustainabilityScore = (mode) => {
-    const scores = {
-      'foot-walking': 100,
-      'cycling-regular': 98,
-      'bus': 85,
-      'train': 90,
-      'driving-car': 25
-    };
-    return scores[mode] || 50;
+  // Sustainability score is derived from this mode's real emissions-per-km (relative to the
+  // driving-car baseline) rather than a fixed arbitrary number per mode.
+  const getSustainabilityScore = (mode: string) => {
+    const emissionsPerKm = {
+      'foot-walking': 0,
+      'cycling-regular': 0,
+      'driving-car': 0.21,
+      bus: 0.089,
+      train: 0.041,
+    }[mode] ?? 0.21;
+    const carBaseline = 0.21;
+    const score = Math.round(100 - (emissionsPerKm / carBaseline) * 75);
+    return Math.max(0, Math.min(100, score));
   };
 
   // Get transport mode details
@@ -202,9 +205,11 @@ const TransportationPlanner = () => {
     setRoutes([]);
 
     try {
-      // Geocode both locations
-      const fromCoords = await geocodeLocation(fromLocation);
-      const toCoords = await geocodeLocation(toLocation);
+      // Geocode both locations in parallel (was sequential, doubling the wait)
+      const [fromCoords, toCoords] = await Promise.all([
+        geocodeLocation(fromLocation),
+        geocodeLocation(toLocation),
+      ]);
 
       if (!fromCoords || !toCoords) {
         toast({
@@ -242,12 +247,15 @@ const TransportationPlanner = () => {
         return;
       }
 
-      // Calculate routes for different transport modes
+      // Calculate routes for all transport modes in parallel (was a sequential for-loop,
+      // making the user wait for 3x the round-trip time of a single route call).
       const transportModes = ['foot-walking', 'cycling-regular', 'driving-car'];
-      const calculatedRoutes = [];
+      const routeResults = await Promise.all(
+        transportModes.map((mode) => calculateRoute(fromCoords, toCoords, mode).then((routeData) => ({ mode, routeData })))
+      );
 
-      for (const mode of transportModes) {
-        const routeData = await calculateRoute(fromCoords, toCoords, mode);
+      const calculatedRoutes = [];
+      for (const { mode, routeData } of routeResults) {
         if (routeData) {
           const modeDetails = getTransportModeDetails(mode);
           const distance = routeData.distance;
@@ -261,23 +269,23 @@ const TransportationPlanner = () => {
             mode,
             icon: modeDetails.icon,
             name: modeDetails.name,
-          duration: `${Math.round(duration / 60)} min`,
-          distance: `${(distance / 1000).toFixed(1)} km`,
-          cost: `$${cost}`,
-          emissions: parseFloat(emissions),
-          calories,
-          color: modeDetails.color,
-          sustainability,
-          benefits: modeDetails.benefits
-        });
-      } else {
-        toast({
-          title: `Route Calculation Failed`,
-          description: `Failed to calculate route for mode: ${mode}. Please try a different location or mode.`,
-          variant: "destructive",
-        });
+            duration: `${Math.round(duration / 60)} min`,
+            distance: `${(distance / 1000).toFixed(1)} km`,
+            cost: `$${cost}`,
+            emissions: parseFloat(emissions),
+            calories,
+            color: modeDetails.color,
+            sustainability,
+            benefits: modeDetails.benefits
+          });
+        } else {
+          toast({
+            title: `Route Calculation Failed`,
+            description: `Failed to calculate route for mode: ${mode}. Please try a different location or mode.`,
+            variant: "destructive",
+          });
+        }
       }
-    }
 
       if (calculatedRoutes.length === 0) {
         toast({
@@ -322,11 +330,16 @@ const TransportationPlanner = () => {
   return (
     <div className="space-y-6">
       <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-900 dark:border-gray-700">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-green-700 dark:text-green-400">
-            <Navigation className="w-6 h-6" />
-            <span>Real-Time Transportation Planner</span>
-            <Badge variant="secondary" className="ml-auto bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center space-x-3 text-slate-800 dark:text-slate-200">
+            <div className="w-10 h-10 bg-emerald-600 dark:bg-emerald-600 rounded-xl flex items-center justify-center">
+              <Navigation className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <span className="text-xl font-bold">Real-Time Transportation Planner</span>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-normal">Compare routes, emissions and cost with live map data</p>
+            </div>
+            <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
               <Leaf className="w-4 h-4 mr-1" />
               Live Data
             </Badge>

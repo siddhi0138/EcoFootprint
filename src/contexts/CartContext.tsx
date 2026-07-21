@@ -8,15 +8,15 @@ import { useUserData } from '@/contexts/UserDataContext';
 interface CartItem {
   brand: any;
   id: string;
-  quantity: number; 
-  name: string; 
-  price: number; 
+  quantity: number;
+  name: string;
+  price: number | null;
   image?: string;
 }
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: { id: string; name: string; price?: number; image?: string; brand?: string | null }) => Promise<void>;
+  addToCart: (product: { id: string; name: string; price?: number | null; image?: string; brand?: string | null }) => Promise<void>;
   removeFromCart: (productId: string) => Promise<void>;
   updateQuantity: (productId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -94,7 +94,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
 
   const addToCart = async (product: {
-    price: number; id: string; name: string; image?: string; brand?: string | null; 
+    price?: number | null; id: string; name: string; image?: string; brand?: string | null;
 }) => {
     if (!user || !user.uid) {
       toast({
@@ -126,7 +126,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         updatedCart = [...currentCartItems];
         updatedCart[existingItemIndex].quantity += 1;
       } else {
-        updatedCart = [...currentCartItems, { id: product.id, quantity: 1, name: product.name, price: product.price, image: product.image, brand: null }];
+        updatedCart = [...currentCartItems, { id: product.id, quantity: 1, name: product.name, price: product.price ?? null, image: product.image, brand: null }];
       }
 
       await setDoc(userCartDocRef, { items: updatedCart }, { merge: true });

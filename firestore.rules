@@ -1,0 +1,386 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Top-level rule for 'savedRoutes' collection to fix permission error
+    match /savedRoutes/{routeId} {
+      allow read, write: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Rules for the 'users' collection and its subcollections
+    match /users/{userId} {
+      allow create, read, update: if request.auth != null && request.auth.uid == userId;
+
+      // 'savedRoutes' subcollection for user-specific saved routes
+      match /savedRoutes/{routeId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'posts' subcollection for user-specific posts
+      match /posts/{postId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'groups' subcollection for user-specific groups
+      match /groups/{groupId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'events' subcollection for user-specific events
+      match /events/{eventId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'challenges' subcollection for user-specific challenges
+      match /challenges/{challengeId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'profile' subcollection and 'data' document for user-specific marketplace data
+      match /profile/data {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'recipeData' subcollection and all documents (added to fix permission error)
+      match /recipeData/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'recentScans' subcollection
+      match /recentScans/{scanId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'scannedProducts' subcollection
+      match /scannedProducts/{productId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'carbonEntries' subcollection
+      match /carbonEntries/{carbonEntryId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'redeemedRewards' subcollection - record of rewards a user has redeemed with points
+      match /redeemedRewards/{redemptionId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'chatMessages' subcollection - EcoBot chat history (persists across sessions until New Chat)
+      match /chatMessages/{messageId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'chatFeedback' subcollection - thumbs up/down feedback on bot replies
+      match /chatFeedback/{feedbackId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'chatMeta' subcollection - marks the current chat session boundary (New Chat / Delete buttons)
+      match /chatMeta/{docId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'aiMemory' subcollection - notes the AI chatbot saves about the user (backend writes via Admin SDK,
+      // which bypasses these rules, but this covers any future direct client reads)
+      match /aiMemory/{memoryId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Added rule for 'enrolledCourses' subcollection (fix for permission error)
+      match /enrolledCourses/{docId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Added rule for 'courseProgress' subcollection (fix for permission error)
+      match /courseProgress/{docId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'aiRecommendations' subcollection
+      match /aiRecommendations/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'userInsights' subcollection
+      match /userInsights/{documentId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'userRewards' subcollection
+      match /userRewards/{userRewardId} {
+        allow read, create: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'reminders' subcollection
+      match /reminders/{reminderId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'goals' subcollection
+      match /goals/{goalId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'productComparison' subcollection
+      match /productComparison/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+
+        match /products/{productId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+
+      // Corrected rule for the 'items' document within the 'cart' subcollection
+      match /cart/items {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'orders' subcollection - permanent purchase history, written on checkout confirm
+      match /orders/{orderId} {
+        allow read, create: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'productAnalysis' / 'productAnalysisHistory' subcollections - the Deep Analysis page's
+      // current snapshot and real per-view score history (migrated here from the Realtime
+      // Database, which had no security rules covering it at all).
+      match /productAnalysis/{productId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /productAnalysisHistory/{productId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Added rule for 'productLifecycleViewedProducts' subcollection
+      match /productLifecycleViewedProducts/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Added rule for 'savedProductLifecycles' subcollection
+      match /savedProductLifecycles/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Added rule for 'transportationRoutes' subcollection
+      match /transportationRoutes/{routeId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Added rule for 'favorites' subcollection (fix for permission error)
+      match /favorites/{favoriteId} {
+        allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Added rule for 'educationCenterData' subcollection (fix for permission error)
+      match /educationCenterData/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Added rule for 'notifications' subcollection under users
+      match /notifications/{notificationId} {
+        allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'events' and 'challenges' subcollections - user-specific
+      match /events/{eventId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /challenges/{challengeId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Added rules for new subcollections for EducationCenter persistence
+      match /likedArticles/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /bookmarkedArticles/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'bookmarkedCourses' - separate from bookmarkedArticles since courses and articles share
+      // the same small numeric id space.
+      match /bookmarkedCourses/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /registeredWebinars/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'sustainabilityScores' subcollection
+      match /sustainabilityScores/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'achievements' subcollection
+      match /achievements/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 'quickActions' subcollection
+      match /quickActions/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // TOP-LEVEL COLLECTIONS - Moved from users subcollections
+
+    // Rules for the 'posts' collection (moved to top-level)
+    // Disabled root-level posts collection to enforce posts only under users/{userId}/posts
+    // match /posts/{postId} {
+    //   allow read: if request.auth != null;
+    //   allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+    //   allow update, delete: if request.auth != null && (
+    //     resource.data.authorId == request.auth.uid ||
+    //     // Allow updates to likes, liked, bookmarked fields by any authenticated user
+    //     (request.resource.data.keys().hasOnly(['likes', 'liked', 'bookmarked']) &&
+    //      request.auth != null)
+    //   );
+    // }
+
+    // Rules for the 'events' collection (top-level)
+    match /events/{eventId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.organizerId == request.auth.uid;
+      // Any authenticated user may register/unregister (attendeeIds) without being the
+      // organizer; only the organizer may change the event's own details, or delete it.
+      allow update: if request.auth != null && (
+        resource.data.organizerId == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendeeIds'])
+      );
+      allow delete: if request.auth != null && resource.data.organizerId == request.auth.uid;
+    }
+
+    // Rules for the 'groups' collection (moved to top-level)
+    match /groups/{groupId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.creatorId == request.auth.uid;
+      // Any authenticated user may join/leave (memberIds) without being the creator;
+      // only the creator may change the group's own details, or delete it.
+      allow update: if request.auth != null && (
+        resource.data.creatorId == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
+      );
+      allow delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
+
+      // 'messages' subcollection - the group's live chat/discussion feed. Any authenticated
+      // member of the community can read and post; messages are never edited or deleted once
+      // sent (like a real chat log).
+      match /messages/{messageId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+      }
+    }
+
+    // Rules for the 'carbonFootprints' collection
+    match /carbonFootprints/{footprintId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Rules for the 'products' collection
+    match /products/{productId} {
+      allow create, update: if request.auth != null;
+      allow read: if true; // Publicly readable
+    }
+
+    // Rules for the 'liveEvents' collection
+    match /liveEvents/{eventId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.organizerId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.organizerId == request.auth.uid;
+    }
+
+    // Rules for the 'communityPosts' collection
+    match /communityPosts/{postId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.authorId == request.auth.uid;
+      allow update: if request.auth != null && (
+        resource.data.authorId == request.auth.uid ||
+        // Any authenticated user can like/comment/bookmark without being the author -
+        // scoped to only these fields so post content/authorship can't be tampered with.
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likedBy', 'likes', 'commentList', 'comments', 'bookmarkedBy'])
+      );
+      allow delete: if request.auth != null && resource.data.authorId == request.auth.uid;
+    }
+
+    // Rules for the 'challenges' collection
+    match /challenges/{challengeId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.creatorId == request.auth.uid;
+      // Any authenticated user may join/leave (participantIds) without being the creator;
+      // only the creator may change the challenge's own details, or delete it.
+      allow update: if request.auth != null && (
+        resource.data.creatorId == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participantIds'])
+      );
+      allow delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
+    }
+
+    // Rules for the 'courses', 'articles', 'webinars' collections - real, user-creatable
+    // Education Center content (same top-level pattern as groups/events/challenges). No field
+    // on these docs is mutated by anyone other than the creator (likes/bookmarks/progress all
+    // live in each user's own subcollections instead), so unlike groups/challenges there's no
+    // "any authenticated user may update this one field" carve-out needed.
+    match /courses/{courseId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.creatorId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
+    }
+
+    match /articles/{articleId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.creatorId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
+    }
+
+    match /webinars/{webinarId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.creatorId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
+    }
+
+    // Rules for the 'leaderboard' collection - public mirror of each user's points/level
+    // (the 'users' collection itself is locked to self-read only, so the leaderboard can't
+    // query it directly; this is a separate doc per user containing only public fields).
+    match /leaderboard/{userId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Rules for the 'rewards' collection
+    match /rewards/{rewardId} {
+      allow read: if true;
+    }
+
+    // Rules for the 'notifications' collection
+    match /notifications/{notificationId} {
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Rules for the 'ecoRecipes' collection
+    match /ecoRecipes/{recipeId} {
+      allow read: if request.auth != null;
+    }
+
+    // Rules for the 'achievements' collection
+    match /achievements/{achievementId} {
+      allow read: if request.auth != null; // Or if true; if you want them public
+    }
+
+    // Rules for the 'dailyChallenges' collection
+    match /dailyChallenges/{challengeId} {
+      allow read: if request.auth != null; // Or if true; if you want them public
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

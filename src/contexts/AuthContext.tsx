@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   GoogleAuthProvider,
   signInWithPopup,
+  reauthenticateWithPopup,
+  linkWithPopup,
   createUserWithEmailAndPassword,
   updateProfile,
   signInWithEmailAndPassword,
@@ -21,12 +23,22 @@ interface User {
 }
 interface AuthContextType {
   currentUser: User | null;
-  user: User | null; 
+  user: User | null;
   login: (email: string, password: string) => Promise<string | null>;
   register: (name: string, email: string, password: string) => Promise<string | null>;
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
+  // One-time consent for Google Calendar write access, requested only when the user actually
+  // clicks "Add to Calendar" - deliberately NOT requested at login, since asking for it there
+  // once broke sign-in entirely for anyone not allow-listed as a test user in Google Cloud.
+  // Returns true once an access token is available (freshly granted, or already in sessionStorage).
+  requestCalendarAccess: () => Promise<boolean>;
+  // True until the initial onAuthStateChanged callback fires. currentUser is null both while
+  // this is true (unknown yet) and after it's false (genuinely logged out) - callers that need
+  // to tell "still checking" apart from "logged out" (e.g. redirect-if-not-authed guards) must
+  // wait for this to become false before trusting currentUser === null.
+  authChecked: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,6 +46,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
 const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -113,7 +126,7 @@ const login = async (email: string, password: string) => {
                 uid: firebaseUser.uid,
                 name,
                 email: firebaseUser.email,
-              });
+              }, { merge: true });
               console.log('Firestore write successful on attempt', attempt);
               return;
             } else {
@@ -190,19 +203,10 @@ const login = async (email: string, password: string) => {
       
       const userDocRef = doc(db, 'users', firebaseUser.uid);
 
-      const subcollectionsInit = async () => {
-        const batchPromises = [];
-
-        
-        batchPromises.push(setDoc(doc(userDocRef, 'profile', 'data'), {}));
-
-        batchPromises.push(setDoc(doc(userDocRef, 'cart', 'items'), { items: [] }));
-
-
-        await Promise.all(batchPromises);
-      };
-
-      await subcollectionsInit();
+      // Only seed the cart placeholder the CartContext expects. (The old empty 'profile/data'
+      // doc was pure clutter - the user document itself IS the profile, so a separate empty
+      // 'profile' subcollection served no purpose and just made the data model confusing.)
+      await setDoc(doc(userDocRef, 'cart', 'items'), { items: [] }, { merge: true });
 
       setCurrentUser(appUser);
       localStorage.setItem('user', JSON.stringify(appUser));
@@ -214,11 +218,45 @@ const login = async (email: string, password: string) => {
   };
 
 
+  const requestCalendarAccess = async (): Promise<boolean> => {
+    if (sessionStorage.getItem('googleCalendarAccessToken')) return true;
+    const user = auth.currentUser;
+    if (!user) return false;
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.addScope('https://www.googleapis.com/auth/calendar.events');
+      // Use reauthenticate/link on the CURRENT user instead of a bare signInWithPopup(auth, ...)
+      // - a bare popup sign-in would switch which account the whole app is logged in as if the
+      // user picks a different Google account than they're currently using. These two calls
+      // grant the extra scope while keeping the app's logged-in identity untouched.
+      const alreadyLinkedWithGoogle = user.providerData.some((p) => p.providerId === 'google.com');
+      const result = alreadyLinkedWithGoogle
+        ? await reauthenticateWithPopup(user, provider)
+        : await linkWithPopup(user, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        sessionStorage.setItem('googleCalendarAccessToken', credential.accessToken);
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      if (error?.code === 'auth/credential-already-in-use') {
+        console.error('That Google account is already linked to a different EcoScope account:', error);
+      } else if (error?.code === 'auth/user-mismatch') {
+        console.error('Must approve calendar access as the same Google account you are logged in with:', error);
+      } else {
+        console.error('Calendar access request failed:', error);
+      }
+      return false;
+    }
+  };
+
   const logout = async () => {
     try {
       await signOut(auth);
       setCurrentUser(null);
       localStorage.removeItem('user');
+      sessionStorage.removeItem('googleCalendarAccessToken');
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -239,13 +277,14 @@ const login = async (email: string, password: string) => {
         setCurrentUser(null);
         localStorage.removeItem('user');
       }
+      setAuthChecked(true);
     });
     return () => unsubscribe();
   }, []);
 
   return (
     <AuthContext.Provider
- value={{ currentUser, user: currentUser, login, register, loginWithGoogle, logout, isLoading }} 
+ value={{ currentUser, user: currentUser, login, register, loginWithGoogle, logout, isLoading, authChecked, requestCalendarAccess }}
     >
       {children}
     </AuthContext.Provider>

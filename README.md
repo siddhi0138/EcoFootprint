@@ -1,237 +1,215 @@
-# 🌱 EcoFootprint
+<div align="center">
 
-A comprehensive web application designed to help users track and reduce their environmental impact through personalized insights, community engagement, and sustainable lifestyle tools.
+# 🌿 EcoScope
+
+### *AI-powered sustainability, grounded in real data*
+
+Scan or search any product for a real AI-generated environmental analysis, track your personal
+carbon footprint, compare products, plan lower-carbon trips, chat with an AI assistant grounded
+in real sustainability knowledge, and connect with a community of like-minded users. 🌍✨
+
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black&style=flat-square)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white&style=flat-square)
+![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white&style=flat-square)
+![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?logo=fastapi&logoColor=white&style=flat-square)
+![Firebase](https://img.shields.io/badge/Firebase-Firestore%20%2B%20Auth-FFCA28?logo=firebase&logoColor=black&style=flat-square)
+![Tailwind](https://img.shields.io/badge/TailwindCSS-3-06B6D4?logo=tailwindcss&logoColor=white&style=flat-square)
+
+</div>
+
+---
 
 ## 📖 Overview
 
-EcoFootprint empowers users to make informed and eco-friendly decisions in their daily lives. The application combines carbon tracking, sustainability challenges, product analysis, community features, and educational resources into one integrated platform.
+EcoScope is a full-stack app: a React frontend talking to a Python/FastAPI backend that calls
+real LLM providers (🔮 Gemini / OpenRouter) for product analysis, recommendations, lifecycle
+generation, and a RAG-grounded chatbot — with a transparent, clearly-labeled heuristic fallback
+if no AI key is configured, so the app **never fabricates a score and pretends it's real**. All
+user data (carbon entries, scans, comparisons, course progress, community posts, orders, and
+more) lives in 🔥 Firebase Firestore, under rules that scope everything to its owner.
 
-## 🎯 Target Audience
+---
 
-- **Eco-conscious individuals** interested in monitoring and reducing their carbon footprint
-- **Sustainability enthusiasts** seeking to engage in challenges and earn rewards
-- **Conscious consumers** looking for eco-friendly product recommendations and alternatives
-- **Environmental communities** aiming to connect and share sustainability efforts
-- **Lifelong learners** wanting access to sustainability education and resources
+## 🛠️ Tech Stack
 
-## ✨ Core Features
+### 🎨 Frontend
+| | |
+|---|---|
+| ⚛️ **React 18** + **TypeScript** + **Vite** | Fast, type-safe UI |
+| 💨 **Tailwind CSS** + **shadcn/ui** | Utility-first styling on Radix primitives |
+| 🧭 **React Router** | Page navigation |
+| 📊 **Recharts** | Carbon trends, product analysis, radar/bar breakdowns |
+| 📄 **jsPDF** | Real generated PDFs — checkout receipts, course certificates |
+| 📝 **react-markdown** | Renders AI chat replies & article content as formatted markdown |
+| 🔥 **Firebase SDK** | Auth (Google + email/password) and Firestore (client) |
 
-### 🏠 User Dashboard
-- **Personal Metrics Overview**: Real-time display of your carbon footprint, points earned, and sustainability progress
-- **Quick Stats**: Weekly/monthly summaries of your environmental impact
-- **Goal Tracking**: Visual progress indicators for personal sustainability goals
-- **Recent Activity Feed**: Latest actions, achievements, and community updates
+### ⚙️ Backend
+| | |
+|---|---|
+| 🚀 **FastAPI** (Python) + **Pydantic** | Typed request/response schemas throughout |
+| 🌐 **httpx** | External API calls |
+| 🤖 **OpenAI SDK** | Client for both Gemini and OpenRouter (OpenAI-compatible endpoints) |
+| 🧠 **ChromaDB** + **sentence-transformers** | Vector store + embeddings for EcoBot's RAG pipeline |
+| 🔐 **firebase-admin** | Server-side Firestore access for maintenance/seed scripts |
 
-### 📊 Carbon Tracker
-- **Emissions Logging**: Track daily carbon emissions from transportation, energy use, and consumption
-- **Category Breakdown**: Detailed analysis across different emission sources
-- **Historical Data**: View trends and patterns in your carbon footprint over time
-- **Impact Visualization**: Interactive charts and graphs showing your environmental impact
+### ✨ GenAI, specifically
+- 🔁 **Dual LLM providers with fallback** (Gemini → OpenRouter) for analysis, comparisons,
+  recommendations, chat, and lifecycle generation — one provider hitting its free-tier limit
+  never takes a feature down.
+- 📸 **Vision analysis** — photo-based product identification via a vision-capable model.
+- 📚 **RAG (Retrieval-Augmented Generation)** — `backend/rag/retriever.py` retrieves relevant
+  knowledge chunks before EcoBot answers, so replies are grounded, not hallucinated.
+- 🛠️ **Function/tool calling** — the chat model can call real backend functions mid-conversation
+  (carbon footprint calculation, product search) via `backend/services/tools.py`.
+- 🎯 **Heuristic fallback** — with no LLM key configured (or a failed call), a rule-based
+  estimate derived from the product's *real* data kicks in, always labeled `is_estimated: true`
+  so the UI shows an honest "Estimated" badge — never a silently invented number.
 
-### 🏆 Sustainability Challenges
-- **Daily Challenges**: Quick, achievable tasks to build sustainable habits
-- **Weekly Campaigns**: More comprehensive challenges focusing on specific areas
-- **Long-term Goals**: Extended challenges for significant lifestyle changes
-- **Community Challenges**: Participate in group activities and competitions
-- **Challenge Progress**: Track completion rates and streak counters
+### ☁️ Data & Infra
+- 🔥 **Firebase Firestore** — primary database, explicit security rules (`firestore.rules`)
+- 🌐 **Firebase Hosting** — frontend deployment target
+- 🔑 **Firebase Auth** — Google Sign-In + email/password
+- 🍃 **OpenFoodFacts** (product data/search, legacy→newer-API fallback), **DummyJSON**
+  (marketplace catalog), **Nominatim** + **OpenRouteService** (routing)
+- ➕ Optional: **eBay** (non-food search), **Gmail API / Resend** (transactional email, no
+  personal password used)
 
-### 📱 Product Scanner
-- **Barcode Scanning**: Scan products to instantly get sustainability ratings
-- **Sustainability Scores**: Comprehensive ratings based on environmental impact
-- **Alternative Recommendations**: Discover eco-friendly alternatives to scanned products
-- **Product Database**: Access detailed information about product lifecycle and impact
-- **Comparison Tools**: Compare multiple products side-by-side
+---
 
-### 🎁 Rewards System
-- **Points Accumulation**: Earn points for completing challenges and sustainable actions
-- **Achievement Levels**: Progress through different tiers based on your eco-efforts
-- **Reward Catalog**: Redeem points for eco-friendly products, discounts, and experiences
-- **Milestone Rewards**: Special bonuses for reaching significant environmental goals
+## ✨ Features
 
-### 🤝 Community Hub
-- **Social Feed**: Share updates, tips, and achievements with the community
-- **Interest Groups**: Join specialized groups focused on specific sustainability topics
-- **Event Calendar**: Discover and attend local environmental events and meetups
-- **Discussion Forums**: Engage in conversations about sustainability practices
-- **User Profiles**: Connect with like-minded individuals and sustainability champions
+| | |
+|---|---|
+| 📷 **AI Scanner** | Barcode scan, photo upload, or text search → real sustainability analysis |
+| 🔍 **Product Analysis** | Real metrics breakdown, a genuine trend chart built from your own history (never fabricated), embedded Lifecycle tab, comparison, AI suggestions |
+| ⚖️ **Product Comparison** | Side-by-side scoring with derived pros/cons + AI recommendation |
+| 🛒 **Marketplace** | Real product catalog — favorite, compare, add to cart |
+| 🌍 **Carbon Tracker** | Log emissions by category, AI-assisted estimation from plain text |
+| 💡 **AI Recommendations** | Personalized suggestions from your real usage stats |
+| 🤖 **EcoBot** | RAG-grounded chat assistant with tool-calling + persistent history |
+| 🎓 **Education Center** | Real course content, per-lesson tracking, PDF certificates emailed on completion, one-click calendar add, independent course/article bookmarking |
+| 🤝 **Community Hub** | Posts, groups with live group chat, events, challenges |
+| 🚴 **Transportation Planner** | Real routing across walking/cycling/driving with real cost & emissions |
+| 🧾 **Checkout** | Real PDF receipts, emailed on request, permanent order history |
+| 👤 **Profile, Goals & Notifications** | Fully wired to real Firestore-backed state |
 
-### 🤖 AI Recommendations
-- **Personalized Tips**: Receive AI-powered suggestions based on your usage patterns
-- **Smart Insights**: Data-driven recommendations for reducing your environmental impact
-- **Behavioral Analysis**: Understand your habits and get targeted improvement suggestions
-- **Trend Predictions**: Forecast your future environmental impact based on current patterns
+---
 
-### 🎓 Education Center
-- **Sustainability Courses**: Comprehensive learning modules on environmental topics
-- **Resource Library**: Articles, guides, and research papers on sustainability
-- **Interactive Webinars**: Live and recorded sessions with sustainability experts
-- **Learning Paths**: Structured educational journeys for different experience levels
-- **Certification Programs**: Earn credentials for completed sustainability courses
+## 📁 Project Structure
 
-### 🚗 Transportation Planner
-- **Route Optimization**: Plan eco-friendly routes with minimal environmental impact
-- **Multi-modal Planning**: Compare car, public transport, cycling, and walking options
-- **Emissions Calculator**: Real-time carbon footprint calculation for planned trips
-- **Cost Analysis**: Compare financial costs alongside environmental impact
-- **Alternative Suggestions**: Recommendations for more sustainable transportation options
+```
+EcoFootprint/
+├── src/                     # React frontend
+│   ├── components/          # Feature components (Scanner, Marketplace, EducationCenter, ...)
+│   ├── contexts/             # Auth, Cart, UserData, ProductComparison, Notifications
+│   ├── services/              # Typed API clients calling the FastAPI backend
+│   └── pages/                  # Routed pages (Checkout, Goals, About, ...)
+├── backend/
+│   ├── app.py                # FastAPI entrypoint
+│   ├── routes/                 # product, carbon, chat, recommendations, insights, rag, email
+│   ├── services/                # llm.py (provider fallback), barcode.py, gmail/email, tools.py
+│   ├── prompts/                   # LLM prompt builders
+│   ├── rag/                        # retriever.py - Chroma-backed retrieval for EcoBot
+│   └── scripts/                     # one-time setup helpers (e.g. Gmail OAuth token)
+├── firestore.rules            # Firestore security rules
+└── firebase.json               # Hosting + Firestore config
+```
 
-### 🍽️ Sustainable Recipes
-- **Eco-friendly Recipe Collection**: Discover recipes with low environmental impact
-- **Seasonal Ingredients**: Recipes featuring locally-sourced, seasonal produce
-- **Plant-based Options**: Extensive collection of vegetarian and vegan recipes
-- **Carbon Footprint Rating**: Each recipe includes its environmental impact score
-- **Ingredient Substitutions**: Suggestions for more sustainable ingredient alternatives
-- **Meal Planning**: Create weekly meal plans with sustainable recipes
-- **Shopping Lists**: Generate eco-friendly shopping lists from selected recipes
-- **Community Recipes**: Share and discover recipes from other community members
-
-### 🛒 Sustainability Marketplace
-- **Eco-product Discovery**: Browse curated selection of sustainable products
-- **Vendor Partnerships**: Direct links to trusted eco-friendly retailers
-- **Product Reviews**: Community ratings and reviews for sustainable products
-- **Price Comparisons**: Find the best deals on environmentally-friendly alternatives
-- **Wishlist Management**: Save and track products you're interested in purchasing
-
-### 🔔 Notification Center
-- **Achievement Alerts**: Get notified when you unlock new badges or reach milestones
-- **Challenge Reminders**: Stay on track with personalized challenge notifications
-- **Community Updates**: Receive updates from groups and friends you follow
-- **Educational Content**: Get notified about new courses, articles, and resources
-- **Goal Progress**: Regular updates on your progress toward sustainability goals
-
-## 🏅 Gamification Features
-
-### Badges and Achievements
-- **Progress Milestones**: Visual indicators for reaching specific environmental goals
-- **Category Expertise**: Specialized badges for mastering different sustainability areas
-- **Community Recognition**: Badges for active participation in community features
-- **Challenge Completion**: Recognition for completing various sustainability challenges
-
-### Progress Tracking
-- **Visual Progress Bars**: Track completion of goals, challenges, and learning modules
-- **Streak Counters**: Monitor consecutive days of sustainable actions
-- **Level System**: Advance through different user levels based on overall engagement
-- **Leaderboards**: Compare your progress with friends and community members
-
-## 🗺️ Interactive Features
-
-### Data Visualization
-- **Interactive Maps**: Visualize transportation routes and their environmental impact
-- **Dynamic Charts**: Real-time updating graphs showing your carbon footprint trends
-- **Comparison Views**: Side-by-side analysis of different time periods or categories
-- **Export Options**: Download your data and visualizations for personal records
-
-### Community Engagement
-- **Social Interactions**: Like, comment, and share content within the community
-- **Group Management**: Create, join, and manage sustainability-focused groups
-- **Event Organization**: Host and promote local environmental events
-- **Mentorship Programs**: Connect experienced users with newcomers for guidance
-
-## 🛠️ Technical Stack
-
-### Frontend
-- **Vite** - Fast build tool and development server
-- **TypeScript** - Type-safe JavaScript for better development experience
-- **React** - Modern UI library for building interactive components
-- **shadcn-ui** - High-quality, accessible component library
-- **Tailwind CSS** - Utility-first CSS framework for responsive design
-- **Lucide React Icons** - Beautiful, customizable icons
-
-### Backend & Services
-- **Firebase Firestore** - NoSQL database for real-time data storage
-- **Firebase Authentication** - Secure user authentication and authorization
+---
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- **Node.js** (version 16 or higher)
-- **npm** or **yarn** package manager
+### ✅ Prerequisites
+- **Node.js** 18+ and npm
+- **Python** 3.10+
+- A **Firebase project** (Firestore + Auth enabled)
 
-> 💡 **Tip**: Use [nvm](https://github.com/nvm-sh/nvm#installing-and-updating) to easily manage Node.js versions
+### 1️⃣ Frontend setup
 
-### Installation
+```bash
+npm install
+cp .env.example .env      # fill in your Firebase client config (see table below)
+npm run dev                # → http://localhost:8080
+```
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/siddhi0138/EcoFootprint.git
-   ```
+### 2️⃣ Backend setup
 
-2. **Navigate to project directory**
-   ```bash
-   cd EcoFootprint
-   ```
+```bash
+cd backend
+python -m venv venv
+./venv/Scripts/activate     # Windows; use `source venv/bin/activate` on macOS/Linux
+pip install -r requirements.txt
+cp .env.example .env         # fill in at least one LLM key (see table below)
+```
 
-3. **Install dependencies**
-   ```bash
-   npm install
-   ```
+Place a Firebase **service account key** at `backend/secrets/serviceAccountKey.json` (Firebase
+Console → Project Settings → Service Accounts → Generate new private key), then:
 
-4. **Start development server**
-   ```bash
-   npm run dev
-   ```
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+```
 
-5. **Open in browser**
-   - Navigate to `http://localhost:3000` to view the application
-   - The development server includes hot-reloading for instant preview of changes
+### 3️⃣ Firestore rules
 
-## 🔧 Development
+```bash
+npx firebase-tools deploy --only firestore:rules --project <your-project-id>
+```
 
-### Available Scripts
-- `npm run dev` - Start development server with hot-reloading
-- `npm run build` - Create production build
-- `npm run preview` - Preview production build locally
-- `npm run lint` - Run ESLint for code quality checks
-- `npm run type-check` - Run TypeScript type checking
+---
 
-### Development Options
-- **Local Development**: Clone the repository and use your preferred IDE
-- **GitHub Web Editor**: Edit files directly on GitHub via the web interface
-- **GitHub Codespaces**: Use integrated cloud development environment
+## 🔑 Environment Variables
+
+**Frontend (`.env`)**
+
+| Variable | Required | Notes |
+|---|---|---|
+| `VITE_FIREBASE_*` (7 keys) | ✅ Yes | Firebase client config — safe to expose, protected by Firestore rules |
+| `VITE_OPEN_ROUTE_SERVICE_API_KEY` | ✅ For Transportation Planner | Free tier at openrouteservice.org |
+| `VITE_API_BASE_URL` | ✅ Yes | Points at the backend, e.g. `http://localhost:8000` |
+
+**Backend (`backend/.env`)**
+
+| Variable | Required | Notes |
+|---|---|---|
+| `GEMINI_API_KEY` / `OPENROUTER_API_KEY` | ✅ At least one | Both tried in order; without either, features fall back to a labeled heuristic |
+| `FIREBASE_SERVICE_ACCOUNT_PATH` | ✅ Yes | Path to your service account JSON |
+| `FRONTEND_ORIGIN` | ✅ Yes | CORS — your frontend's URL |
+| `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` | ⭐ Optional | Non-food product search |
+| `GMAIL_*` / `RESEND_*` | ⭐ Optional | Transactional email — see `.env.example` comments for setup |
+
+---
+
+## 🔧 Available Scripts
+
+- `npm run dev` — 🖥️ start the frontend dev server (port 8080)
+- `npm run build` — 📦 production build
+- `npm run preview` — 👀 preview the production build locally
+- `npm run lint` — 🧹 ESLint
+
+Backend: `uvicorn app:app --reload` (from `backend/`, with the venv active).
+
+---
 
 ## 🚀 Deployment
 
-### Hosting Options
-- **Vercel** - Recommended for seamless integration with the tech stack
-- **Netlify** - Great for static site hosting with CI/CD
-- **Firebase Hosting** - Integrates well with existing Firebase services
-- **GitHub Pages** - Free hosting for open-source projects
+- **Frontend** → `npm run build` then `npx firebase-tools deploy --only hosting`
+- **Firestore rules** → `npx firebase-tools deploy --only firestore:rules`
+- **Backend** → any host that runs a long-lived Python ASGI process (Cloud Run, Render,
+  Railway, a VM, etc.) — no Firebase-specific hosting requirement
 
-### Custom Domain
-Connect a custom domain through your hosting provider's DNS settings for a professional appearance.
+---
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! Here's how you can help:
+1. 🍴 Fork the repo and create a feature branch off `main`
+2. ✏️ Make your changes with clear commit messages
+3. ✅ Run `npm run build` and `npx tsc --noEmit` before opening a PR
+4. 📬 Open a Pull Request describing what changed and why
 
-### Getting Started
-1. **Fork the repository** to your GitHub account
-2. **Create a feature branch** from `main`:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-3. **Make your changes** with clear, descriptive commit messages
-4. **Test your changes** thoroughly before submitting
-5. **Push to your fork**:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-6. **Open a Pull Request** with a detailed description of your changes
+<div align="center">
 
-### Contribution Guidelines
-- Follow the existing code style and conventions
-- Write clear commit messages describing your changes
-- Add tests for new features when applicable
-- Update documentation for any new functionality
-- Ensure all existing tests pass before submitting
+---
 
-### Areas for Contribution
-- **Feature Development**: Add new sustainability tracking tools
-- **UI/UX Improvements**: Enhance user interface and experience
-- **Performance Optimization**: Improve application speed and efficiency
-- **Documentation**: Help improve guides and documentation
-- **Bug Fixes**: Identify and resolve issues
-- **Testing**: Add automated tests and quality assurance
+**🌱 Made for a more sustainable tomorrow.**
 
-
-**Start your sustainability journey today with EcoFootprint! 🌍**
+</div>

@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-
   Leaf,
   Menu,
   X,
   Scan,
-  BarChart3,
   Users,
-  Award,
   ChevronDown,
   ShoppingCart,
   MessageCircle,
@@ -19,23 +15,9 @@ import {
   Bell,
   User,
   Brain,
-  Gift,
-  Search,
-  Calendar,
-  Heart,
-  TrendingUp,
-  Building2,
   Navigation,
-  ChefHat,
   Bot,
-  Sparkles,
-  Eye,
   Package,
-  Zap,
-  AlertTriangle,
-  Settings,
-  Sun,
-  Moon,
   LogOut,
   Plus,
   Minus,
@@ -66,7 +48,6 @@ const Navbar = ({
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
-  const { theme, toggleTheme } = useTheme();
   const { unreadCount } = useNotifications();
   const { user, logout } = useAuth();
 
@@ -77,47 +58,26 @@ const Navbar = ({
     return total + (itemPrice * item.quantity);
   }, 0);
 
+  // Ordered as the user's journey: Scan a product (discover) -> track your footprint ->
+  // get AI guidance -> ask the assistant anything. The Explore menu continues the story:
+  // shop better -> live greener -> learn -> connect with the community.
   const quickAccess = [
     { id: 'scanner', label: 'AI Scanner', icon: Scan },
-    { id: 'chatbot', label: 'EcoBot Assistant', icon: Bot },
     { id: 'carbon-tracker', label: 'Carbon Tracker', icon: Target },
-    { id: 'ai-recommendations', label: 'AI Recommendations', icon: Brain }
+    { id: 'ai-recommendations', label: 'AI Recommendations', icon: Brain },
+    { id: 'chatbot', label: 'EcoBot Assistant', icon: Bot },
   ];
 
   const mainNavItems = [
     { id: 'marketplace', label: 'Marketplace', icon: ShoppingCart },
-    { id: 'community', label: 'Community', icon: MessageCircle },
+    { id: 'lifestyle', label: 'Lifestyle', icon: Navigation },
     { id: 'education', label: 'Education', icon: BookOpen },
-    { id: 'rewards', label: 'Rewards', icon: Gift }
-  ];
-
-  const smartToolsItems = [
-    { id: 'smart-insights', label: 'Smart Insights', icon: TrendingUp },
-    { id: 'comparison', label: 'Product Comparison', icon: Package }
-  ];
-
-  const lifestyleItems = [
-    { id: 'recipe-finder', label: 'Eco Recipes', icon: ChefHat },
-    { id: 'transportation-planner', label: 'Transport Planner', icon: Navigation },
-    { id: 'lifecycle', label: 'Product Lifecycle', icon: Package },
+    { id: 'community', label: 'Community', icon: MessageCircle },
   ];
 
   const handleLogout = () => {
     logout();
     setUserMenuOpen(false);
-  };
-
-  // Handle navigation functions for buttons
-  const handleViewDetailedAnalysis = () => {
-    onNavigate('lifecycle');
-    setCartOpen(false);
-    setActiveDropdown(null);
-  };
-
-  const handleCompareProducts = () => {
-    onNavigate('comparison');
-    setCartOpen(false);
-    setActiveDropdown(null);
   };
 
   const handleCartClick = () => {
@@ -203,51 +163,6 @@ const Navbar = ({
               </Button>
             ))}
 
-            {/* Smart Tools Dropdown */}
-            <div className="relative dropdown-container">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="px-3 py-2 text-sm text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 h-9 transition-all duration-200 dark:text-gray-300 dark:hover:text-emerald-400 dark:hover:bg-emerald-900/20"
-                onMouseEnter={() => setActiveDropdown('smart-tools')}
-                onMouseLeave={() => setActiveDropdown(null)}
-              >
-                Smart Tools
-                <ChevronDown className="w-3 h-3 ml-1" />
-              </Button>
-
-              {activeDropdown === 'smart-tools' && (
-                <div
-                  className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 animate-fade-in dark:bg-gray-800 dark:border-gray-700"
-                  onMouseEnter={() => setActiveDropdown('smart-tools')}
-                  onMouseLeave={() => setActiveDropdown(null)}
-                >
-                  <div className="p-3 space-y-1">
-                    {smartToolsItems.map((item) => (
-                      <Button
-                        key={item.id}
-                        variant="ghost"
-                        size="sm"
-                        className={`w-full justify-start px-3 py-2 text-sm h-9 transition-all duration-200 rounded-lg ${
-                          activeTab === item.id
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-emerald-400'
-                        }`}
-                        onClick={() => {
-                          onNavigate(item.id);
-                          setActiveDropdown(null);
-                        }}
-                      >
-                        <item.icon className="w-4 h-4 mr-3" />
-                        {item.label}
-                      </Button>
-                    ))}
-                     {/* Removed the duplicate "View Detailed Analysis" button here */}
-                     {/* Removed the duplicate "Compare Products" button here */}
-                  </div>
-                </div>
-              )}
-            </div>
 
             {/* More Dropdown */}
             <div className="relative dropdown-container">
@@ -258,7 +173,7 @@ const Navbar = ({
                 onMouseEnter={() => setActiveDropdown('more')}
                 onMouseLeave={() => setActiveDropdown(null)}
               >
-                More
+                Explore
                 <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
 
@@ -271,10 +186,7 @@ const Navbar = ({
                   <div className="p-3">
                     {/* Main nav items */}
                     <div className="mb-4">
-                      <div className="px-3 py-2 text-xs font-semibold text-emerald-700 uppercase tracking-wide border-b border-emerald-100 dark:text-emerald-400 dark:border-emerald-800">
-                        Main Features
-                      </div>
-                      <div className="mt-2 space-y-1">
+                      <div className="space-y-1">
                         {mainNavItems.map((item) => (
                           <Button
                             key={item.id}
@@ -296,35 +208,6 @@ const Navbar = ({
                         ))}
                       </div>
                     </div>
-
-                    {/* Lifestyle */}
-                    <div className="mb-4">
-                      <div className="px-3 py-2 text-xs font-semibold text-emerald-700 uppercase tracking-wide border-b border-emerald-100 dark:text-emerald-400 dark:border-emerald-800">
-                        Lifestyle
-                      </div>
-                      <div className="mt-2 space-y-1">
-                        {lifestyleItems.map((item) => (
-                          <Button
-                            key={item.id}
-                            variant={activeTab === item.id ? "default" : "ghost"}
-                            size="sm"
-                            className={`w-full justify-start pl-6 transition-all duration-200 rounded-lg ${
-                              activeTab === item.id
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-emerald-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-emerald-400'
-                            }`}
-                            onClick={() => {
-                              onNavigate(item.id);
-                              setActiveDropdown(null);
-                            }}
-                          >
-                            <item.icon className="w-4 h-4 mr-3" />
-                            {item.label}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-
                   </div>
                 </div>
               )}
@@ -476,16 +359,6 @@ const Navbar = ({
               )}
  </Button>
 
-            {/* Theme Toggle */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20"
-              onClick={toggleTheme}
-            >
-              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </Button>
-
             {/* User Profile/Login */}
             {user ? (
               <div className="relative dropdown-container">
@@ -580,16 +453,6 @@ const Navbar = ({
                 </span>
               )}
             </Button>
-            {/* Theme Toggle */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20"
-              onClick={toggleTheme}
-            >
-              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </Button>
-
             {/* Profile Icon */}
             {user ? (
               <Button
@@ -674,56 +537,11 @@ const Navbar = ({
 
               {/* Main Navigation */}
               <div className="mb-4">
-                <div className="px-4 py-2 text-xs font-semibold text-emerald-700 uppercase tracking-wide border-b border-emerald-100 dark:text-emerald-400 dark:border-emerald-800">
-                  Main Features
-                </div>
                 {mainNavItems.map((item) => (
                   <Button
                     key={item.id}
                     variant={activeTab === item.id ? "default" : "ghost"}
                     className="w-full justify-start transition-all duration-200"
-                    onClick={() => {
-                      onNavigate(item.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    <item.icon className="w-4 h-4 mr-3" />
-                    {item.label}
-                  </Button>
-                ))}
-              </div>
-
-              {/* Smart Tools */}
-              <div className="mb-4">
-                <div className="px-4 py-2 text-xs font-semibold text-emerald-700 uppercase tracking-wide border-b border-emerald-100 dark:text-emerald-400 dark:border-emerald-800">
-                  Smart Tools
-                </div>
-                {smartToolsItems.map((item) => (
-                  <Button
-                    key={item.id}
-                    variant={activeTab === item.id ? "default" : "ghost"}
-                    className="w-full justify-start pl-6 transition-all duration-200"
-                    onClick={() => {
-                      onNavigate(item.id);
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    <item.icon className="w-4 h-4 mr-3" />
-                    {item.label}
-                  </Button>
-                ))}
-              </div>
-
-              {/* Lifestyle */}
-              <div className="mb-4">
-                <div className="px-4 py-2 text-xs font-semibold text-emerald-700 uppercase tracking-wide border-b border-emerald-100 dark:text-emerald-400 dark:border-emerald-800">
-                  Lifestyle
-                </div>
-                {lifestyleItems.map((item) => (
-                  <Button
-                    key={item.id}
-                    variant={activeTab === item.id ? "default" : "ghost"}
-                    className="w-full justify-start pl-6 transition-all duration-200"
                     onClick={() => {
                       onNavigate(item.id);
                       setIsMobileMenuOpen(false);

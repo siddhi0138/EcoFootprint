@@ -35,6 +35,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { useNotificationHelper } from '@/hooks/useNotificationHelper';
+import { fetchRecipes } from '@/services/recipeApi';
 
 interface Recipe {
   id: number;
@@ -113,119 +114,37 @@ export const EcoRecipeFinder = () => {
     return () => unsubscribeRecipeData();
   }, [user]);
 
-  const recipes: Recipe[] = [ // Specify type
-    {
-      id: 1,
-      name: 'Rainbow Quinoa Buddha Bowl',
-      image: 'photo-1512621776951-a57141f2eefd',
-      sustainabilityScore: 95,
-      carbonFootprint: '0.8 kg CO₂',
-      waterUsage: '250L',
-      cookTime: '25 min',
-      servings: 4,
-      difficulty: 'Easy',
-      tags: ['Vegan', 'Gluten-Free', 'Local'],
-      ingredients: [
-        '1 cup quinoa (locally sourced)',
-        '2 cups seasonal vegetables',
-        '1/2 cup chickpeas',
-        'Tahini dressing',
-        'Mixed greens',
-      ],
-      instructions: [
-        'Cook quinoa according to package directions',
-        'Roast seasonal vegetables with olive oil',
-        'Prepare tahini dressing',
-        'Assemble bowl with all ingredients',
-      ],
-      nutrition: {
-        calories: 420,
-        protein: '18g',
-        carbs: '52g',
-        fat: '16g',
-      },
-      sustainability: {
-        seasonal: true,
-        local: true,
-        organic: true,
-        lowWaste: true,
-      },
-    },
-    {
-      id: 2,
-      name: 'Plant-Based Lentil Shepherd\'s Pie',
-      image: 'photo-1574484284002-952d92456975',
-      sustainabilityScore: 92,
-      carbonFootprint: '1.2 kg CO₂',
-      waterUsage: '180L',
-      cookTime: '45 min',
-      servings: 6,
-      difficulty: 'Medium',
-      tags: ['Vegan', 'Protein-Rich', 'Comfort Food'],
-      ingredients: [
-        '2 cups green lentils',
-        '3 lbs local potatoes',
-        'Seasonal root vegetables',
-        'Vegetable broth',
-        'Fresh herbs',
-      ],
-      instructions: [
-        'Cook lentils with vegetables and herbs',
-        'Prepare mashed potato topping',
-        'Layer in baking dish',
-        'Bake until golden brown',
-      ],
-      nutrition: {
-        calories: 385,
-        protein: '16g',
-        carbs: '58g',
-        fat: '12g',
-      },
-      sustainability: {
-        seasonal: true,
-        local: true,
-        organic: false,
-        lowWaste: true,
-      },
-    },
-    {
-      id: 3,
-      name: 'Zero-Waste Vegetable Broth',
-      image: 'photo-1547592180-85f173990554',
-      sustainabilityScore: 98,
-      carbonFootprint: '0.2 kg CO₂',
-      waterUsage: '50L',
-      cookTime: '60 min',
-      servings: 8,
-      difficulty: 'Easy',
-      tags: ['Zero-Waste', 'Vegan', 'Base Recipe'],
-      ingredients: [
-        'Vegetable scraps and peels',
-        'Herb stems',
-        'Onion skins',
-        'Mushroom stems',
-        'Bay leaves',
-      ],
-      instructions: [
-        'Collect vegetable scraps in freezer',
-        'Simmer scraps in water for 1 hour',
-        'Strain and store broth',
-        'Compost remaining solids',
-      ],
-      nutrition: {
-        calories: 15,
-        protein: '1g',
-        carbs: '3g',
-        fat: '0g',
-      },
-      sustainability: {
-        seasonal: true,
-        local: true,
-        organic: true,
-        lowWaste: true,
-      },
-    },
-  ];
+  // Real recipes are fetched from the backend (TheMealDB), replacing the old hardcoded list.
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [isLoadingRecipes, setIsLoadingRecipes] = useState(true);
+  const [recipesError, setRecipesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoadingRecipes(true);
+    setRecipesError(null);
+    // Debounce so typing in the search box doesn't fire a request per keystroke.
+    const handle = setTimeout(() => {
+      fetchRecipes(searchQuery)
+        .then((res) => {
+          if (cancelled) return;
+          setRecipes(res.recipes as unknown as Recipe[]);
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          console.error('Failed to fetch recipes:', err);
+          setRecipesError('Could not load recipes right now. Please try again in a moment.');
+          setRecipes([]);
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoadingRecipes(false);
+        });
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [searchQuery]);
 
   const sustainabilityTips = [
     {
@@ -360,6 +279,10 @@ export const EcoRecipeFinder = () => {
 
   const generateMealPlan = async () => { // Make async
     if (!user) return;
+    if (recipes.length === 0) {
+      toast({ title: 'No recipes loaded', description: 'Wait for recipes to load (or search) before generating a plan.' });
+      return;
+    }
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const newMealPlan: MealPlanEntry[] = days.map(day => ({ // Specify type
@@ -398,12 +321,17 @@ export const EcoRecipeFinder = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-green-700 dark:text-green-400">
-            <ChefHat className="w-6 h-6" />
-            <span>Eco-Friendly Recipe Finder</span>
-            <Badge variant="secondary" className="ml-auto bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
+      <Card className="bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700 shadow-lg rounded-2xl">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center space-x-3 text-slate-800 dark:text-slate-200">
+            <div className="w-10 h-10 bg-emerald-600 dark:bg-emerald-600 rounded-xl flex items-center justify-center">
+              <ChefHat className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <span className="text-xl font-bold">Eco-Friendly Recipe Finder</span>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-normal">Discover sustainable recipes with real ingredients and eco scores</p>
+            </div>
+            <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400">
               <Leaf className="w-4 h-4 mr-1" />
               Sustainable Cooking
             </Badge>
@@ -435,13 +363,28 @@ export const EcoRecipeFinder = () => {
                 </Button>
               </div>
 
+              {isLoadingRecipes && (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">Loading real recipes...</div>
+              )}
+              {recipesError && !isLoadingRecipes && (
+                <div className="text-center py-8 px-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl mb-4">
+                  <p className="text-red-600 dark:text-red-400 text-sm">{recipesError}</p>
+                </div>
+              )}
+              {!isLoadingRecipes && !recipesError && recipes.length === 0 && (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                  No recipes found{searchQuery ? ` for "${searchQuery}"` : ''}. Try a different search.
+                </div>
+              )}
+
               {/* Recipe Grid */}
+              {!isLoadingRecipes && recipes.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {recipes.map((recipe) => (
                   <div key={recipe.id} className="bg-white/80 rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow dark:bg-gray-900/80 dark:border-gray-700">
                     <div className="h-48 bg-gray-200 relative dark:bg-gray-800">
                       <img
-                        src={`https://images.unsplash.com/${recipe.image}?w=400&h=300&fit=crop`}
+                        src={recipe.image}
                         alt={recipe.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
@@ -530,7 +473,7 @@ export const EcoRecipeFinder = () => {
                           <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <img
-                                src={`https://images.unsplash.com/${recipe.image}?w=600&h=400&fit=crop`}
+                                src={recipe.image}
                                 alt={recipe.name}
                                 className="w-full h-64 object-cover rounded-lg"
                                 onError={(e) => {
@@ -566,24 +509,26 @@ export const EcoRecipeFinder = () => {
                                   ))}
                                 </div>
 
-                                <div className="grid grid-cols-4 gap-2 p-3 bg-green-50 rounded-lg text-center text-xs dark:bg-green-900">
-                                  <div>
-                                    <div className="font-semibold text-green-700 dark:text-green-400">{recipe.nutrition.calories}</div>
-                                    <div className="text-green-600 dark:text-green-300">Calories</div>
+                                {recipe.nutrition && recipe.nutrition.calories > 0 && (
+                                  <div className="grid grid-cols-4 gap-2 p-3 bg-green-50 rounded-lg text-center text-xs dark:bg-green-900">
+                                    <div>
+                                      <div className="font-semibold text-green-700 dark:text-green-400">{recipe.nutrition.calories}</div>
+                                      <div className="text-green-600 dark:text-green-300">Calories</div>
+                                    </div>
+                                    <div>
+                                      <div className="font-semibold text-green-700 dark:text-green-400">{recipe.nutrition.protein}</div>
+                                      <div className="text-green-600 dark:text-green-300">Protein</div>
+                                    </div>
+                                    <div>
+                                      <div className="font-semibold text-green-700 dark:text-green-400">{recipe.nutrition.carbs}</div>
+                                      <div className="text-green-600 dark:text-green-300">Carbs</div>
+                                    </div>
+                                    <div>
+                                      <div className="font-semibold text-green-700 dark:text-green-400">{recipe.nutrition.fat}</div>
+                                      <div className="text-green-600 dark:text-green-300">Fat</div>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <div className="font-semibold text-green-700 dark:text-green-400">{recipe.nutrition.protein}</div>
-                                    <div className="text-green-600 dark:text-green-300">Protein</div>
-                                  </div>
-                                  <div>
-                                    <div className="font-semibold text-green-700 dark:text-green-400">{recipe.nutrition.carbs}</div>
-                                    <div className="text-green-600 dark:text-green-300">Carbs</div>
-                                  </div>
-                                  <div>
-                                    <div className="font-semibold text-green-700 dark:text-green-400">{recipe.nutrition.fat}</div>
-                                    <div className="text-green-600 dark:text-green-300">Fat</div>
-                                  </div>
-                                </div>
+                                )}
                               </div>
                             </div>
 
@@ -649,6 +594,7 @@ export const EcoRecipeFinder = () => {
                   </div>
                 ))}
               </div>
+              )}
             </TabsContent>
 
             <TabsContent value="tips" className="space-y-4 mt-6">
@@ -698,7 +644,7 @@ export const EcoRecipeFinder = () => {
                               </Badge>
                             </div>
                             <img
-                              src={`https://images.unsplash.com/${recipe.image}?w=300&h=200&fit=crop`}
+                              src={recipe.image}
                               alt={recipe.name}
                               className="w-full h-32 object-cover rounded mb-2"
                               onError={(e) => {

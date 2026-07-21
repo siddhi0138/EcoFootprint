@@ -6,86 +6,40 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { useToast } from '../hooks/use-toast';
 import { useUserData } from '../contexts/UserDataContext';
 import { useNotifications } from '../contexts/NotificationsContextNew';
-import { useTheme } from '../contexts/ThemeContext';
 import { Star, Award, Leaf, BookOpen, Target, Users, Zap, Bell, ShoppingCart } from 'lucide-react';
 
-const NotificationCenter = () => {
+const NotificationCenter = ({ onNavigate }: { onNavigate?: (tab: string) => void }) => {
   const { userStats } = useUserData();
-  const { 
-    notifications, 
-    unreadCount, 
-    markAsRead, 
-    markAllAsRead, 
-    clearAllNotifications 
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearAllNotifications
   } = useNotifications();
   const { toast } = useToast();
 
-  const { theme } = useTheme();
+  // Maps a notification's source to the app tab it should open when its action is clicked.
+  const SOURCE_TO_TAB: Record<string, string> = {
+    education: 'education',
+    marketplace: 'marketplace',
+    scanner: 'scanner',
+    community: 'community',
+    carbon: 'carbon-tracker',
+    recipes: 'lifestyle',
+    challenges: 'community',
+    productLifecycle: 'lifestyle',
+    AIRecommendations: 'ai-recommendations',
+    suggestion: 'ai-recommendations',
+  };
 
   const handleNotificationAction = (notification) => {
     markAsRead(notification.id);
-    
-    // Handle different notification actions
-    switch (notification.source) {
-      case 'education':
-        toast({
-          title: "Redirecting to Education Center",
-          description: "Continue your learning journey!",
-        });
-        break;
-      case 'marketplace':
-        toast({
-          title: "Opening Marketplace",
-          description: "Discover new sustainable products!",
-        });
-        break;
-      case 'scanner':
-        toast({
-          title: "Opening Product Scanner",
-          description: "Scan more products to track your impact!",
-        });
-        break;
-      case 'community':
-        toast({
-          title: "Opening Community Hub",
-          description: "Connect with fellow eco-enthusiasts!",
-        });
-        break;
-      case 'carbon':
-        toast({
-          title: "Opening Carbon Tracker",
-          description: "View your environmental impact!",
-        });
-        break;
-      case 'recipes':
-        toast({
-          title: "Opening Recipe Finder",
-          description: "Discover sustainable recipes!",
-        });
-        break;
-      case 'challenges':
-        toast({
-          title: "Opening Challenges",
-          description: "Join the sustainability challenge!",
-        });
-        break;
-      case 'investment':
-        toast({
-          title: "Opening Investment Tracker",
-          description: "Check your ESG portfolio performance!",
-        });
-        break;
-      case 'smartInsights':
-        toast({
-          title: "New Smart Insight",
-          description: "Check out your latest sustainability insights!",
-        });
-        break;
-      default:
-        toast({
-          title: "Action completed",
-          description: "Thank you for staying engaged!",
-        });
+    const targetTab = SOURCE_TO_TAB[notification.source];
+    if (targetTab && onNavigate) {
+      onNavigate(targetTab);
+    } else {
+      toast({ title: 'Marked as read', description: 'This notification has no linked page.' });
     }
   };
 
@@ -156,7 +110,7 @@ const NotificationCenter = () => {
       name: 'First Scan',
       description: 'Completed your first product scan',
       earned: userStats.totalScans >= 1,
-      date: '2024-06-01',
+      date: '2026-06-01',
       icon: Star,
       category: 'scanning'
     },
@@ -165,7 +119,7 @@ const NotificationCenter = () => {
       name: 'Eco Explorer',
       description: 'Scanned 10 sustainable products',
       earned: userStats.totalScans >= 10,
-      date: userStats.totalScans >= 10 ? '2024-06-15' : null,
+      date: userStats.totalScans >= 10 ? '2026-06-15' : null,
       progress: Math.min(userStats.totalScans, 10),
       total: 10,
       icon: Award,
@@ -176,7 +130,7 @@ const NotificationCenter = () => {
       name: 'Carbon Saver',
       description: 'Saved 10kg of CO₂ through choices',
       earned: (userStats.totalScans * 0.5) >= 10,
-      date: (userStats.totalScans * 0.5) >= 10 ? '2024-06-10' : null,
+      date: (userStats.totalScans * 0.5) >= 10 ? '2026-06-10' : null,
       progress: Math.min(userStats.totalScans * 0.5, 10),
       total: 10,
       icon: Leaf,
@@ -187,7 +141,7 @@ const NotificationCenter = () => {
       name: 'Learning Champion',
       description: 'Completed your first course',
       earned: userStats.coursesCompleted >= 1,
-      date: userStats.coursesCompleted >= 1 ? '2024-06-20' : null,
+      date: userStats.coursesCompleted >= 1 ? '2026-06-20' : null,
       icon: BookOpen,
       category: 'education'
     },
@@ -196,7 +150,7 @@ const NotificationCenter = () => {
       name: 'Sustainability Scholar',
       description: 'Completed 3 courses',
       earned: userStats.coursesCompleted >= 3,
-      date: userStats.coursesCompleted >= 3 ? '2024-06-25' : null,
+      date: userStats.coursesCompleted >= 3 ? '2026-06-25' : null,
       progress: Math.min(userStats.coursesCompleted, 3),
       total: 3,
       icon: BookOpen,
@@ -207,7 +161,7 @@ const NotificationCenter = () => {
       name: 'Recipe Explorer',
       description: 'Viewed 5 eco-friendly recipes',
       earned: userStats.recipesViewed >= 5,
-      date: userStats.recipesViewed >= 5 ? '2024-06-18' : null,
+      date: userStats.recipesViewed >= 5 ? '2026-06-18' : null,
       progress: Math.min(userStats.recipesViewed, 5),
       total: 5,
       icon: Target,
@@ -240,18 +194,22 @@ const NotificationCenter = () => {
   return (
     <div className="space-y-6">
       <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-800 dark:border-gray-700">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Bell className="w-6 h-6 text-blue-600 dark:text-foreground" />
-            <span className="dark:text-foreground">Notification Center</span>
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center space-x-3 text-slate-800 dark:text-slate-200">
+            <div className="w-10 h-10 bg-emerald-600 dark:bg-emerald-600 rounded-xl flex items-center justify-center">
+              <Bell className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <span className="text-xl font-bold">Notification Center</span>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-normal">Stay updated with your eco journey</p>
+            </div>
             {unreadCount > 0 && (
-              <Badge className="bg-red-500 hover:bg-red-600 ml-2">
+              <Badge className="bg-red-500 hover:bg-red-600">
                 {unreadCount}
               </Badge>
             )}
           </CardTitle>
-          <div className="flex items-center justify-between">
-            <p className="text-gray-600 dark:text-muted-foreground">Stay updated with your eco journey</p>
+          <div className="flex items-center justify-end">
             <div className="flex space-x-2">
               {unreadCount > 0 && (
                 <Button variant="outline" size="sm" onClick={markAllAsRead} className="dark:border-border dark:text-foreground">
@@ -391,7 +349,7 @@ notifications.map((notification) => (
         </TabsContent>
 
         <TabsContent value="achievements">
-          <div className={`space-y-6 ${theme === 'dark' ? 'dark' : ''}`}>
+          <div className="space-y-6">
             {/* Achievement Categories */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {['scanning', 'environmental', 'education', 'community'].map((category) => {

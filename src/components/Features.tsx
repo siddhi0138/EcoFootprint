@@ -26,7 +26,7 @@ const Features = () => {
     {
       icon: Brain,
       title: 'AI Nature Intelligence',
-      description: 'Advanced machine learning models analyze products through the lens of natural ecosystems with 98% accuracy.',
+      description: 'AI models reason over real product data - OpenFoodFacts lookups, ingredients, packaging - to generate grounded sustainability analysis instead of static scores.',
       badge: 'Core Feature',
       gradient: 'from-emerald-500 to-green-500'
     },
@@ -91,7 +91,7 @@ const Features = () => {
   ];
 
   return (
-    <section className="py-24 bg-gradient-to-br from-sage-50 via-emerald-50 to-green-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
+    <section className="pt-32 pb-24 bg-gradient-to-br from-sage-50 via-emerald-50 to-green-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
       {/* Nature Pattern Background */}
       <div className="absolute inset-0 opacity-5">
         <TreePine className="absolute top-20 left-10 w-32 h-32 text-emerald-600 animate-pulse" />
@@ -102,13 +102,13 @@ const Features = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Main Features */}
-        <div className="text-center mb-20">
+        <div className="text-center mb-20 scroll-mt-28">
           <Badge className="mb-6 bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 dark:bg-gradient-to-r dark:from-emerald-700 dark:to-green-700 dark:text-emerald-200 border-emerald-200 px-6 py-2 text-lg">
             🌱 Powerful Features
           </Badge>
-          <h2 className="text-5xl md:text-6xl font-bold mb-8 text-slate-800 dark:text-slate-200">
+          <h2 className="text-5xl md:text-6xl font-bold mb-8 leading-[1.2] text-slate-800 dark:text-slate-200">
             Everything You Need for
-            <span className="bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent block mt-2">
+            <span className="bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent block mt-2 pb-2 leading-[1.2]">
               Harmonious Living
             </span>
           </h2>
@@ -120,17 +120,17 @@ const Features = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-24">
           {features.map((feature, index) => (
-            <Card key={index} className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/80 backdrop-blur-sm overflow-hidden">
+            <Card key={index} className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm overflow-hidden">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between mb-6">
                   <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 shadow-lg`}>
                     <feature.icon className="w-8 h-8 text-white" />
                   </div>
-                <Badge variant="outline" className="text-xs bg-white/70 dark:bg-gray-700/70 border-emerald-200 text-emerald-700 dark:text-emerald-300">
+                <Badge variant="outline" className="text-xs bg-white/70 dark:bg-gray-700/70 border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300">
                   {feature.badge}
                 </Badge>
               </div>
-              <CardTitle className="text-2xl group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors duration-300">
+              <CardTitle className="text-2xl text-slate-800 dark:text-slate-200 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors duration-300">
                 {feature.title}
               </CardTitle>
             </CardHeader>
@@ -144,7 +144,7 @@ const Features = () => {
         </div>
 
         {/* Scan Methods with Nature Theme */}
-        <div className="bg-gradient-to-r from-emerald-100/80 to-green-100/80 backdrop-blur-sm rounded-3xl p-16 border border-emerald-200">
+        <div className="bg-gradient-to-r from-emerald-100/80 to-green-100/80 dark:from-emerald-900/40 dark:to-green-900/40 backdrop-blur-sm rounded-3xl p-16 border border-emerald-200 dark:border-emerald-700">
           <div className="text-center mb-16">
             <h3 className="text-4xl font-bold mb-6 text-slate-800 dark:text-slate-200">
               Multiple Paths to Wisdom
@@ -157,14 +157,14 @@ const Features = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {scanMethods.map((method, index) => (
-              <div key={index} className="text-center p-8 bg-white/90 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 group border border-white/50">
+              <div key={index} className="text-center p-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 group border border-white/50 dark:border-gray-700/50">
                 <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-green-600 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 shadow-lg">
                   <method.icon className="w-10 h-10 text-white" />
                 </div>
-                <h4 className="font-bold text-xl mb-3 text-slate-800">
+                <h4 className="font-bold text-xl mb-3 text-slate-800 dark:text-slate-200">
                   {method.title}
                 </h4>
-                <p className="text-slate-600 leading-relaxed">
+                <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                   {method.description}
                 </p>
               </div>

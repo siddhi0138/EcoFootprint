@@ -22,11 +22,21 @@ import {
   Filter,
   BarChart3,
   Calendar,
-  Users
+  Users,
+  ShoppingCart,
+  Activity,
+  PieChart,
 } from 'lucide-react';
-import { productsData, searchProducts } from '../data/productsData';
 import { useUserData } from '../contexts/UserDataContext';
 import { useNotifications } from '../contexts/NotificationsContextNew';
+import { fetchRecommendations } from '../services/recommendationsApi';
+
+const CATEGORY_ICONS: Record<string, any> = {
+  Products: Leaf,
+  Habits: Target,
+  Carbon: BarChart3,
+  Goals: Star,
+};
 
 interface Recommendation {
   id: number;
@@ -41,12 +51,9 @@ interface Recommendation {
   timeToImplement: string;
   difficulty: string;
   carbonSaving: string;
-  actionType: string;
-  actionData: any;
 }
 
 interface ActionProgress {
-  type: string;
   status: string;
   data: any;
   recommendation: Recommendation;
@@ -67,6 +74,11 @@ const AIRecommendations = () => {
   const { addNotification } = useNotifications();
 
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [recommendationsEstimated, setRecommendationsEstimated] = useState(false);
+  const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
+  const [trendsPeriod, setTrendsPeriod] = useState<'month' | 'year'>('month');
+  const [learnMoreRec, setLearnMoreRec] = useState<Recommendation | null>(null);
 
   // Use selectedTab from context instead of local state
   const { selectedTab, setSelectedTab } = useUserData();
@@ -77,127 +89,60 @@ const AIRecommendations = () => {
     }
   }, [selectedTab]);
 
-  const generateRecommendations = (): Recommendation[] => {
-    const recommendations: Recommendation[] = [];
-    
-    if (scannedProducts.length > 0) {
-      const avgScore = userStats.avgScore;
-      const lastScannedProduct = scannedProducts[0];
-      
-      if (avgScore < 70) {
-        recommendations.push({
-          id: 1,
-          type: 'product',
-          title: 'Improve Product Choices',
-          description: `Your average sustainability score is ${avgScore}. Focus on products with bamboo or recycled packaging to boost your score by 25-30 points.`,
-          impact: `+${Math.floor((80 - avgScore) * 0.8)} points potential`,
-          confidence: 92,
-          category: 'Product Selection',
-          icon: Leaf,
-          priority: 'high',
-          timeToImplement: '2 minutes per product',
-          difficulty: 'Easy',
-          carbonSaving: `${((80 - avgScore) * 0.05).toFixed(1)}kg CO₂/month`,
-          actionType: 'product_search',
-          actionData: { query: 'sustainable packaging', category: lastScannedProduct.category }
-        });
-      }
-      
-      const categoryCount = scannedProducts.reduce((acc, product) => {
-        acc[product.category] = (acc[product.category] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      const mostScannedCategory = Object.entries(categoryCount).sort(([,a], [,b]) => b - a)[0];
-      
-      if (mostScannedCategory) {
-        recommendations.push({
-          id: 2,
-          type: 'behavior',
-          title: `Optimize ${mostScannedCategory[0]} Choices`,
-          description: `You've scanned ${mostScannedCategory[1]} ${mostScannedCategory[0]} products. Consider exploring eco-certified brands in this category.`,
-          impact: `+${mostScannedCategory[1] * 5} points`,
-          confidence: 88,
-          category: mostScannedCategory[0],
-          icon: Target,
-          priority: 'medium',
-          timeToImplement: '5 minutes research',
-          difficulty: 'Easy',
-          carbonSaving: `${(mostScannedCategory[1] * 0.3).toFixed(1)}kg CO₂/month`,
-          actionType: 'habit_tracker',
-          actionData: { habit: `eco_${mostScannedCategory[0]}`, target: 'weekly' }
-        });
-      }
-    }
-    
-    if (carbonEntries.length === 0) {
-      recommendations.push({
-        id: 3,
-        type: 'lifestyle',
-        title: 'Start Carbon Tracking',
-        description: 'Begin tracking your daily carbon footprint to identify reduction opportunities. Studies show tracking reduces emissions by 15% on average.',
-        impact: 'Up to 15% reduction',
-        confidence: 95,
-        category: 'Carbon Tracking',
-        icon: BarChart3,
-        priority: 'high',
-        timeToImplement: '3 minutes daily',
-        difficulty: 'Easy',
-        carbonSaving: '4.2kg CO₂/month',
-        actionType: 'habit_tracker',
-        actionData: { habit: 'daily_carbon_tracking', target: 'daily' }
-      });
-    } else {
-      const avgDailyCarbon = carbonEntries.reduce((acc, entry) => acc + entry.amount, 0) / carbonEntries.length;
-      if (avgDailyCarbon > 10) {
-        recommendations.push({
-          id: 4,
-          type: 'optimization',
-          title: 'Reduce Daily Carbon Footprint',
-          description: `Your average daily carbon footprint is ${avgDailyCarbon.toFixed(1)}kg. Consider public transport or walking for trips under 2 miles.`,
-          impact: `-${(avgDailyCarbon * 0.2).toFixed(1)}kg CO₂/day`,
-          confidence: 89,
-          category: 'Transportation',
-          icon: TrendingUp,
-          priority: 'medium',
-          timeToImplement: 'Planning required',
-          difficulty: 'Medium',
-          carbonSaving: `${(avgDailyCarbon * 0.2 * 30).toFixed(1)}kg CO₂/month`,
-          actionType: 'action_plan',
-          actionData: { steps: ['Map nearby public transport', 'Plan walking routes', 'Set weekly targets'] }
-        });
-      }
-    }
-    
-    if (userStats.streakDays < 7) {
-      recommendations.push({
-        id: 5,
-        type: 'engagement',
-        title: 'Build Your Green Streak',
-        description: `You're at ${userStats.streakDays} day streak. Reach 7 days to unlock bonus rewards and improve your sustainability habits.`,
-        impact: '+100 bonus points',
-        confidence: 94,
-        category: 'Engagement',
-        icon: Star,
-        priority: 'medium',
-        timeToImplement: 'Daily commitment',
-        difficulty: 'Medium',
-        carbonSaving: '2.1kg CO₂/week',
-        actionType: 'habit_tracker',
-        actionData: { habit: 'daily_eco_action', target: 'daily' }
-      });
-    }
-    
-    return recommendations;
-  };
-
   useEffect(() => {
-    setRecommendations(generateRecommendations());
+    let cancelled = false;
+    setIsLoadingRecommendations(true);
+    setRecommendationsError(null);
+    fetchRecommendations(scannedProducts, carbonEntries, userStats)
+      .then(({ recommendations: items, is_estimated }) => {
+        if (cancelled) return;
+        setRecommendations(items.map((item, index) => ({
+          id: index + 1,
+          type: item.category.toLowerCase(),
+          title: item.title,
+          description: item.description,
+          impact: item.impact,
+          confidence: item.confidence,
+          category: item.category,
+          icon: CATEGORY_ICONS[item.category] || Sparkles,
+          priority: item.priority,
+          timeToImplement: item.timeToImplement,
+          difficulty: item.difficulty,
+          carbonSaving: item.carbonSaving,
+        })));
+        setRecommendationsEstimated(is_estimated);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch recommendations:', err);
+        if (!cancelled) {
+          setRecommendations([]);
+          const message = /rate limit/i.test(err?.message || '')
+            ? "The AI service has hit its rate limit for now. Please try again later."
+            : "Couldn't reach the AI service right now. Please try again in a moment.";
+          setRecommendationsError(message);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingRecommendations(false);
+      });
+    return () => { cancelled = true; };
   }, [userStats, scannedProducts, carbonEntries]);
 
   // Dynamic insights based on user data
   const generateInsights = () => {
     const insights = [];
+
+    // Total points insight - a real, ever-present headline metric (earned from carbon entries,
+    // scans, completed actions, etc.) so the Insights tab always has genuine numbers to show
+    // even for users who track carbon but rarely scan products.
+    insights.push({
+      title: 'Total Points',
+      value: `${userStats.totalPoints}`,
+      trend: userStats.totalPoints > 500 ? 'Eco champion!' : userStats.totalPoints > 100 ? 'Great progress' : 'Just getting started',
+      icon: Award,
+      change: userStats.totalPoints > 500 ? 'positive' : userStats.totalPoints > 100 ? 'neutral' : 'negative',
+      description: 'Points earned across all eco activities'
+    });
 
     // Daily streak insight
     insights.push({
@@ -296,97 +241,24 @@ const AIRecommendations = () => {
 
   const handleTakeAction = (recommendation: Recommendation) => {
     const actionId = `action_${recommendation.id}`;
-    
-    switch (recommendation.actionType) {
-      case 'product_search':
-        const relevantProducts = searchProducts(recommendation.actionData.query).slice(0, 5);
-        setActionProgress(prev => ({
-          ...prev,
-          [actionId]: {
-            type: 'product_search',
-            status: 'in_progress',
-            data: relevantProducts,
-            recommendation
-          }
-        }));
-        addPoints(10);
-        addNotification({
-          type: 'suggestion',
-          title: 'New Product Search Recommendation',
-          message: `You started a product search for "${recommendation.actionData.query}".`,
-          read: false,
-          source: 'AIRecommendations',
-          actionable: true,
-          action: 'View',
-        });
-        break;
-        
-      case 'habit_tracker':
-        setActionProgress(prev => ({
-          ...prev,
-          [actionId]: {
-            type: 'habit_tracker',
-            status: 'started',
-            data: {
-              habit: recommendation.actionData.habit,
-              target: recommendation.actionData.target,
-              startDate: new Date().toISOString(),
-              progress: 0
-            },
-            recommendation
-          }
-        }));
-        addPoints(25);
-        addNotification({
-          type: 'suggestion',
-          title: 'Habit Tracker Started',
-          message: `You started tracking the habit "${recommendation.actionData.habit}".`,
-          read: false,
-          source: 'AIRecommendations',
-          actionable: true,
-          action: 'View',
-        });
-        break;
-        
-      case 'action_plan':
-        setActionProgress(prev => ({
-          ...prev,
-          [actionId]: {
-            type: 'action_plan',
-            status: 'created',
-            data: {
-              steps: recommendation.actionData.steps,
-              completedSteps: [],
-              createdDate: new Date().toISOString()
-            },
-            recommendation
-          }
-        }));
-        addPoints(15);
-        addNotification({
-          type: 'suggestion',
-          title: 'Action Plan Created',
-          message: `You created a new action plan.`,
-          read: false,
-          source: 'AIRecommendations',
-          actionable: true,
-          action: 'View',
-        });
-        break;
-        
-      default:
-        setCompletedActions(prev => [...prev, recommendation.id]);
-        addPoints(20);
-        addNotification({
-          type: 'suggestion',
-          title: 'Action Completed',
-          message: `You completed the recommendation "${recommendation.title}".`,
-          read: false,
-          source: 'AIRecommendations',
-          actionable: true,
-          action: 'View',
-        });
-    }
+    setActionProgress(prev => ({
+      ...prev,
+      [actionId]: {
+        status: 'in_progress',
+        data: { startedDate: new Date().toISOString() },
+        recommendation,
+      },
+    }));
+    addPoints(10);
+    addNotification({
+      type: 'suggestion',
+      title: 'Action Started',
+      message: `You started working on "${recommendation.title}".`,
+      read: false,
+      source: 'AIRecommendations',
+      actionable: true,
+      action: 'View',
+    });
   };
 
   const markActionComplete = (recommendationId: number) => {
@@ -428,6 +300,139 @@ const AIRecommendations = () => {
   const categories = [...new Set(recommendations.map(r => r.category))];
   const priorities = [...new Set(recommendations.map(r => r.priority))];
   const insights = generateInsights();
+  // "Your Insights" = the user's current lifetime standing (points, total impact, this-week
+  // activity, product quality). The Trends tab is the time-scoped historical breakdown (this
+  // month vs this year, top products, category mix) - same domain, different framing, and this
+  // set always surfaces real non-zero numbers for however the user actually uses the app.
+  const headlineInsightTitles = ['Total Points', 'Carbon Impact', 'Weekly Scanning Activity', 'Avg Sustainability Score'];
+  const headlineInsights = headlineInsightTitles
+    .map(title => insights.find(i => i.title === title))
+    .filter((i): i is NonNullable<typeof i> => Boolean(i));
+
+  // --- Trends tab (merged in from the former standalone Smart Insights page) ---
+  const getBestCategory = (products: typeof scannedProducts) => {
+    const categories: Record<string, { count: number; totalScore: number }> = {};
+    products.forEach(p => {
+      const category = p.category || 'Other';
+      if (!categories[category]) categories[category] = { count: 0, totalScore: 0 };
+      categories[category].count++;
+      categories[category].totalScore += p.sustainabilityScore || 0;
+    });
+    let bestCategory = 'None';
+    let bestScore = 0;
+    Object.entries(categories).forEach(([cat, data]) => {
+      const avgScore = data.totalScore / data.count;
+      if (avgScore > bestScore) {
+        bestScore = avgScore;
+        bestCategory = cat;
+      }
+    });
+    return bestCategory;
+  };
+
+  const calculateScanStreak = (products: typeof scannedProducts) => {
+    if (products.length === 0) return 0;
+    const dates = products.map(p => new Date(p.date).toDateString());
+    const uniqueDates = [...new Set(dates)].sort();
+    let streak = 1;
+    for (let i = 1; i < uniqueDates.length; i++) {
+      const diffDays = Math.ceil(Math.abs(new Date(uniqueDates[i]).getTime() - new Date(uniqueDates[i - 1]).getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) streak++;
+      else break;
+    }
+    return streak;
+  };
+
+  const getTopProducts = (products: typeof scannedProducts) =>
+    [...products]
+      .sort((a, b) => (b.sustainabilityScore || 0) - (a.sustainabilityScore || 0))
+      .slice(0, 3)
+      .map(p => ({ name: p.name || 'Unknown Product', score: p.sustainabilityScore || 0 }));
+
+  const getCategoryBreakdown = (products: typeof scannedProducts) => {
+    const categories: Record<string, number> = {};
+    products.forEach(p => {
+      const category = p.category || 'Other';
+      categories[category] = (categories[category] || 0) + 1;
+    });
+    return Object.entries(categories).map(([name, count]) => ({ name, count }));
+  };
+
+  const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const MONTH_NAMES_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const getMonthlyBreakdown = (products: typeof scannedProducts) => {
+    const monthlyData: Record<string, number> = {};
+    products.forEach(p => {
+      const month = MONTH_NAMES_SHORT[new Date(p.date).getMonth()];
+      monthlyData[month] = (monthlyData[month] || 0) + 1;
+    });
+    return MONTH_NAMES_SHORT.map(month => ({ month, scans: monthlyData[month] || 0 }));
+  };
+
+  const calculateYearlyTrend = (products: typeof scannedProducts) => {
+    if (products.length < 2) return 0;
+    const firstHalf = products.filter(p => new Date(p.date).getMonth() < 6);
+    const secondHalf = products.filter(p => new Date(p.date).getMonth() >= 6);
+    if (firstHalf.length === 0 || secondHalf.length === 0) return 0;
+    const firstHalfAvg = firstHalf.reduce((sum, p) => sum + (p.sustainabilityScore || 0), 0) / firstHalf.length;
+    const secondHalfAvg = secondHalf.reduce((sum, p) => sum + (p.sustainabilityScore || 0), 0) / secondHalf.length;
+    return Math.round(((secondHalfAvg - firstHalfAvg) / firstHalfAvg) * 100);
+  };
+
+  const getBestMonth = (products: typeof scannedProducts) => {
+    const monthlyScores: Record<string, { total: number; count: number }> = {};
+    products.forEach(p => {
+      const month = MONTH_NAMES_FULL[new Date(p.date).getMonth()];
+      if (!monthlyScores[month]) monthlyScores[month] = { total: 0, count: 0 };
+      monthlyScores[month].total += p.sustainabilityScore || 0;
+      monthlyScores[month].count++;
+    });
+    let bestMonth = 'None';
+    let bestAvg = 0;
+    Object.entries(monthlyScores).forEach(([month, data]) => {
+      const avg = data.total / data.count;
+      if (avg > bestAvg) {
+        bestAvg = avg;
+        bestMonth = month;
+      }
+    });
+    return bestMonth;
+  };
+
+  const getUniqueCategories = (products: typeof scannedProducts) =>
+    new Set(products.map(p => p.category || 'Other')).size;
+
+  const now = new Date();
+  const monthlyScans = scannedProducts.filter(p => {
+    const d = new Date(p.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const monthlyCarbonEntries = carbonEntries.filter(e => {
+    const d = new Date(e.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const monthlyAnalytics = {
+    totalScans: monthlyScans.length,
+    avgSustainabilityScore: monthlyScans.length > 0 ? Math.round(monthlyScans.reduce((sum, p) => sum + (p.sustainabilityScore || 0), 0) / monthlyScans.length) : 0,
+    totalCarbonSaved: monthlyCarbonEntries.reduce((sum, e) => sum + (e.amount || 0), 0),
+    bestCategory: getBestCategory(monthlyScans),
+    scanStreak: calculateScanStreak(monthlyScans),
+    topProducts: getTopProducts(monthlyScans),
+    categoryBreakdown: getCategoryBreakdown(monthlyScans),
+  };
+
+  const yearlyScans = scannedProducts.filter(p => new Date(p.date).getFullYear() === now.getFullYear());
+  const yearlyCarbonEntries = carbonEntries.filter(e => new Date(e.date).getFullYear() === now.getFullYear());
+  const yearlyAnalytics = {
+    totalScans: yearlyScans.length,
+    avgSustainabilityScore: yearlyScans.length > 0 ? Math.round(yearlyScans.reduce((sum, p) => sum + (p.sustainabilityScore || 0), 0) / yearlyScans.length) : 0,
+    totalCarbonSaved: yearlyCarbonEntries.reduce((sum, e) => sum + (e.amount || 0), 0),
+    monthlyBreakdown: getMonthlyBreakdown(yearlyScans),
+    yearlyTrend: calculateYearlyTrend(yearlyScans),
+    bestMonth: getBestMonth(yearlyScans),
+    totalCategories: getUniqueCategories(yearlyScans),
+  };
 
   return (
     <div className="space-y-6">
@@ -435,7 +440,7 @@ const AIRecommendations = () => {
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center justify-between text-slate-800 dark:text-slate-200">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-slate-800 dark:bg-slate-700 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-emerald-600 dark:bg-emerald-600 rounded-xl flex items-center justify-center">
                 <Brain className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -445,22 +450,22 @@ const AIRecommendations = () => {
             </div>
             <Badge variant="outline" className="border-slate-300 text-slate-700 bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:bg-slate-800">
               <Sparkles className="w-3 h-3 mr-1" />
-              Live Data
+              {recommendationsEstimated ? 'Estimated' : 'Live Data'}
             </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+          <Tabs value={selectedTab === 'progress' ? 'insights' : selectedTab} onValueChange={setSelectedTab} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="insights">Your Insights</TabsTrigger>
               <TabsTrigger value="recommendations">Smart Recommendations</TabsTrigger>
+              <TabsTrigger value="trends">Trends</TabsTrigger>
               <TabsTrigger value="actions">Active Actions</TabsTrigger>
-              <TabsTrigger value="progress">Progress Tracking</TabsTrigger>
             </TabsList>
 
             <TabsContent value="insights" className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {insights.slice(0, 4).map((insight, index) => {
+                {headlineInsights.map((insight, index) => {
                   const trendColors = {
                     positive: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
                     neutral: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
@@ -471,13 +476,27 @@ const AIRecommendations = () => {
                     neutral: <ArrowRight className="w-4 h-4 text-amber-600" />,
                     negative: <ArrowRight className="w-4 h-4 -rotate-45 text-red-600" />,
                   };
+                  const valueColors = {
+                    positive: 'text-green-700 dark:text-green-400',
+                    neutral: 'text-amber-700 dark:text-amber-400',
+                    negative: 'text-red-700 dark:text-red-400',
+                  };
+                  // Each insight card gets its own identity color (icon tile + card wash) so the
+                  // four cards read as distinct at a glance, independent of the trend badge color.
+                  const cardThemes = [
+                    { icon: 'bg-orange-500', wash: 'bg-orange-50/60 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800' },
+                    { icon: 'bg-blue-500', wash: 'bg-blue-50/60 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800' },
+                    { icon: 'bg-green-500', wash: 'bg-green-50/60 dark:bg-green-900/10 border-green-200 dark:border-green-800' },
+                    { icon: 'bg-purple-500', wash: 'bg-purple-50/60 dark:bg-purple-900/10 border-purple-200 dark:border-purple-800' },
+                  ];
+                  const theme = cardThemes[index % cardThemes.length];
                   return (
-                    <div key={index} className="bg-slate-50/90 dark:bg-slate-800/90 rounded-2xl p-5 border border-slate-300 dark:border-slate-700 hover:shadow-xl transition-shadow duration-300">
+                    <div key={index} className={`${theme.wash} rounded-2xl p-5 border hover:shadow-xl transition-shadow duration-300`}>
                       <div className="flex items-center justify-between mb-4">
-                        <div className="w-10 h-10 bg-slate-700 dark:bg-slate-600 rounded-lg flex items-center justify-center">
+                        <div className={`w-10 h-10 ${theme.icon} rounded-lg flex items-center justify-center`}>
                           <insight.icon className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-3xl font-extrabold text-slate-900 dark:text-slate-200">{insight.value}</span>
+                        <span className={`text-2xl font-bold ${valueColors[insight.change] || 'text-slate-900 dark:text-slate-200'}`}>{insight.value}</span>
                       </div>
                       <h3 className="font-semibold text-slate-900 dark:text-slate-200 text-base mb-1">{insight.title}</h3>
                       <div className="flex items-center space-x-2 mb-2">
@@ -524,6 +543,17 @@ const AIRecommendations = () => {
             </TabsContent>
 
             <TabsContent value="recommendations" className="space-y-6">
+              {isLoadingRecommendations && recommendations.length === 0 && (
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                  Generating personalized recommendations...
+                </div>
+              )}
+              {recommendationsError && !isLoadingRecommendations && (
+                <div className="text-center py-8 px-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl">
+                  <h3 className="text-lg font-semibold text-red-700 dark:text-red-400 mb-2">Couldn't load recommendations</h3>
+                  <p className="text-red-600 dark:text-red-400 text-sm">{recommendationsError}</p>
+                </div>
+              )}
               {/* Filters */}
               <div className="flex flex-wrap gap-4 p-4 bg-slate-50/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
                 <div className="flex items-center space-x-2">
@@ -550,18 +580,18 @@ const AIRecommendations = () => {
 
               {/* Recommendations List */}
               <div className="space-y-4">
-                {filteredRecommendations.length === 0 ? (
+                {filteredRecommendations.length === 0 && !recommendationsError && !isLoadingRecommendations ? (
                   <div className="text-center py-8">
                     <Brain className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-600 mb-2">Great job! You're on track</h3>
                     <p className="text-gray-500">Keep scanning products and tracking your carbon footprint to get personalized recommendations.</p>
                   </div>
-                ) : (
+                ) : filteredRecommendations.length > 0 && (
                   filteredRecommendations.map((rec) => (
                     <div key={rec.id} className={`border-l-4 ${getPriorityColor(rec.priority)} rounded-xl p-6 hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800 border border-slate-200/50 dark:border-slate-700/50`}>
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center space-x-3 flex-1">
-                          <div className="w-10 h-10 bg-slate-700 dark:bg-slate-600 rounded-xl flex items-center justify-center">
+                          <div className="w-10 h-10 bg-emerald-600 dark:bg-emerald-600 rounded-xl flex items-center justify-center">
                             <rec.icon className="w-5 h-5 text-white" />
                           </div>
                           <div className="flex-1">
@@ -601,12 +631,17 @@ const AIRecommendations = () => {
                       </div>
                       
                       <div className="flex items-center justify-between">
-                        <Button variant="outline" size="sm" className="border-slate-300 hover:bg-slate-50 text-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-slate-300 hover:bg-slate-50 text-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                          onClick={() => setLearnMoreRec(rec)}
+                        >
                           Learn More
                         </Button>
-                        <Button 
-                          size="sm" 
-                          className="bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600"
+                        <Button
+                          size="sm"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-700 dark:hover:bg-emerald-600"
                           onClick={() => handleTakeAction(rec)}
                           disabled={completedActions.includes(rec.id)}
                         >
@@ -620,7 +655,262 @@ const AIRecommendations = () => {
               </div>
             </TabsContent>
 
-            
+            <TabsContent value="trends" className="space-y-6">
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  size="sm"
+                  variant={trendsPeriod === 'month' ? 'default' : 'outline'}
+                  onClick={() => setTrendsPeriod('month')}
+                >
+                  This Month
+                </Button>
+                <Button
+                  size="sm"
+                  variant={trendsPeriod === 'year' ? 'default' : 'outline'}
+                  onClick={() => setTrendsPeriod('year')}
+                >
+                  This Year
+                </Button>
+              </div>
+
+              {trendsPeriod === 'month' ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card className="bg-blue-50/60 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Total Scans</p>
+                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{monthlyAnalytics.totalScans}</p>
+                          </div>
+                          <ShoppingCart className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-amber-50/60 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Avg Score</p>
+                            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{monthlyAnalytics.avgSustainabilityScore}</p>
+                          </div>
+                          <Award className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-green-50/60 dark:bg-green-900/10 border border-green-200 dark:border-green-800">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Carbon Saved</p>
+                            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{monthlyAnalytics.totalCarbonSaved.toFixed(1)} kg</p>
+                          </div>
+                          <Leaf className="w-8 h-8 text-green-600 dark:text-green-400" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-purple-50/60 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Scan Streak</p>
+                            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{monthlyAnalytics.scanStreak} days</p>
+                          </div>
+                          <Activity className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="dark:bg-slate-800">
+                      <CardHeader>
+                        <CardTitle className="text-lg text-slate-800 dark:text-slate-200">Top Sustainable Products</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {monthlyAnalytics.topProducts.map((product, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                              <span className="font-medium text-slate-800 dark:text-slate-200">{product.name}</span>
+                              <Badge variant="outline" className="text-green-600 dark:text-green-400 border-green-600 dark:border-green-400">
+                                {product.score}
+                              </Badge>
+                            </div>
+                          ))}
+                          {monthlyAnalytics.topProducts.length === 0 && (
+                            <p className="text-slate-500 dark:text-slate-400 text-center py-4">No products scanned this month</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="dark:bg-slate-800">
+                      <CardHeader>
+                        <CardTitle className="text-lg text-slate-800 dark:text-slate-200">Category Breakdown</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {monthlyAnalytics.categoryBreakdown.map((category, index) => (
+                            <div key={index} className="flex items-center justify-between">
+                              <span className="text-slate-700 dark:text-slate-300">{category.name}</span>
+                              <div className="flex items-center space-x-2">
+                                <div className="w-20 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                  <div
+                                    className="bg-indigo-500 dark:bg-indigo-400 h-2 rounded-full"
+                                    style={{ width: `${Math.min((category.count / monthlyAnalytics.totalScans) * 100, 100)}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm text-slate-600 dark:text-slate-400 w-8">{category.count}</span>
+                              </div>
+                            </div>
+                          ))}
+                          {monthlyAnalytics.categoryBreakdown.length === 0 && (
+                            <p className="text-slate-500 dark:text-slate-400 text-center py-4">No categories to display</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card className="dark:bg-slate-800">
+                    <CardHeader>
+                      <CardTitle className="text-lg text-slate-800 dark:text-slate-200">Monthly Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Best Performing Category</h4>
+                          <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{monthlyAnalytics.bestCategory}</p>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Highest average sustainability score</p>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">Carbon Entries</h4>
+                          <p className="text-2xl font-bold text-green-600 dark:text-green-400">{monthlyCarbonEntries.length}</p>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Total tracking entries this month</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card className="bg-blue-50/60 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Total Scans</p>
+                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{yearlyAnalytics.totalScans}</p>
+                          </div>
+                          <BarChart3 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-amber-50/60 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Avg Score</p>
+                            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{yearlyAnalytics.avgSustainabilityScore}</p>
+                          </div>
+                          <TrendingUp className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-green-50/60 dark:bg-green-900/10 border border-green-200 dark:border-green-800">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Carbon Saved</p>
+                            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{yearlyAnalytics.totalCarbonSaved.toFixed(1)} kg</p>
+                          </div>
+                          <Leaf className="w-8 h-8 text-green-600 dark:text-green-400" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-purple-50/60 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Categories</p>
+                            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{yearlyAnalytics.totalCategories}</p>
+                          </div>
+                          <PieChart className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card className="dark:bg-slate-800">
+                    <CardHeader>
+                      <CardTitle className="text-lg text-slate-800 dark:text-slate-200">Monthly Activity Breakdown</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {yearlyAnalytics.monthlyBreakdown.map((month, index) => {
+                          const maxScans = Math.max(...yearlyAnalytics.monthlyBreakdown.map(m => m.scans), 1);
+                          return (
+                            <div key={index} className="flex items-center space-x-4">
+                              <div className="w-12 text-sm font-medium text-slate-600 dark:text-slate-400">{month.month}</div>
+                              <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-3">
+                                <div
+                                  className="bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-400 dark:to-purple-400 h-3 rounded-full"
+                                  style={{ width: `${Math.min((month.scans / maxScans) * 100, 100)}%` }}
+                                ></div>
+                              </div>
+                              <div className="w-16 text-sm text-slate-600 dark:text-slate-400">{month.scans} scans</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="dark:bg-slate-800">
+                      <CardHeader>
+                        <CardTitle className="text-lg text-slate-800 dark:text-slate-200">Year Performance</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                          <span className="font-medium text-slate-800 dark:text-slate-200">Best Month</span>
+                          <span className="font-bold text-green-700 dark:text-green-400">{yearlyAnalytics.bestMonth}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                          <span className="font-medium text-slate-800 dark:text-slate-200">Yearly Trend</span>
+                          <Badge variant="outline" className={yearlyAnalytics.yearlyTrend >= 0 ? 'text-green-600 border-green-600 dark:text-green-400 dark:border-green-400' : 'text-red-600 border-red-600 dark:text-red-400 dark:border-red-400'}>
+                            {yearlyAnalytics.yearlyTrend >= 0 ? '+' : ''}{yearlyAnalytics.yearlyTrend}%
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                          <span className="font-medium text-slate-800 dark:text-slate-200">Carbon Entries</span>
+                          <span className="text-purple-700 dark:text-purple-400 font-bold">{yearlyCarbonEntries.length}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="dark:bg-slate-800">
+                      <CardHeader>
+                        <CardTitle className="text-lg text-slate-800 dark:text-slate-200">Achievement Summary</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="text-center p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                          <Award className="w-12 h-12 mx-auto mb-2 text-orange-500 dark:text-orange-400" />
+                          <h4 className="font-semibold text-slate-800 dark:text-slate-200">Sustainability Champion</h4>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{yearlyAnalytics.totalScans} products scanned this year</p>
+                        </div>
+                        <div className="text-center p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                          <Leaf className="w-12 h-12 mx-auto mb-2 text-emerald-500 dark:text-emerald-400" />
+                          <h4 className="font-semibold text-slate-800 dark:text-slate-200">Carbon Reducer</h4>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{yearlyAnalytics.totalCarbonSaved.toFixed(1)} kg CO2 saved</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
             <TabsContent value="actions" className="space-y-6">
               <div className="space-y-4">
                 {Object.entries(actionProgress).map(([actionId, action]) => (
@@ -632,43 +922,21 @@ const AIRecommendations = () => {
                       </Badge>
                     </div>
                     
-                    {action.type === 'product_search' && action.data && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Recommended products:</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {action.data.slice(0, 3).map((product: any) => (
-                            <div key={product.id} className="p-3 border rounded-lg bg-gray-50 dark:bg-gray-800">
-                              <h4 className="font-medium text-sm">{product.name}</h4>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">{product.brand} - Score: {product.sustainabilityScore}</p>
-                              <p className="text-sm font-semibold text-green-600 dark:text-green-400">${product.price}</p>
-                            </div>
-                          ))}
-                        </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{action.recommendation.description}</p>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center space-x-1">
+                          <Leaf className="w-3.5 h-3.5 text-green-500" />
+                          <span>{action.recommendation.carbonSaving}</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{action.recommendation.timeToImplement}</span>
+                        </span>
+                        <span>Started {new Date(action.data.startedDate).toLocaleDateString()}</span>
                       </div>
-                    )}
-                    
-                    {action.type === 'habit_tracker' && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Tracking: {action.data.habit}</p>
-                        <Progress value={action.data.progress} className="h-2" />
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Target: {action.data.target}</p>
-                      </div>
-                    )}
-                    
-                    {action.type === 'action_plan' && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Action steps:</p>
-                        <div className="space-y-1">
-                          {action.data.steps.map((step: string, index: number) => (
-                            <div key={index} className="flex items-center space-x-2 text-sm">
-                              <CheckCircle className="w-4 h-4 text-gray-400 dark:text-gray-600" />
-                              <span>{step}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
+                    </div>
+
                     {action.status !== 'completed' && (
                       <Button 
                         size="sm" 
@@ -688,79 +956,61 @@ const AIRecommendations = () => {
                 )}
               </div>
             </TabsContent>
-
-            <TabsContent value="progress" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-slate-200/50 dark:border-slate-700/50">
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center space-x-2">
-                    <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    <span>Your Progress</span>
-                  </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Recommendations Followed</span>
-                        <span className="text-sm text-slate-600 dark:text-slate-400">{completedActions.length}/{recommendations.length}</span>
-                      </div>
-                      <Progress value={recommendations.length > 0 ? (completedActions.length / recommendations.length) * 100 : 0} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Weekly Scan Goal</span>
-                        <span className="text-sm text-slate-600 dark:text-slate-400">{userStats.currentWeekScans}/{userStats.weeklyGoal}</span>
-                      </div>
-                      <Progress value={(userStats.currentWeekScans / userStats.weeklyGoal) * 100} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Sustainability Score</span>
-                        <span className="text-sm text-slate-600 dark:text-gray-400">{userStats.avgScore}/100</span>
-                      </div>
-                      <Progress value={userStats.avgScore} className="h-2" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-slate-200/50 dark:border-slate-700/50">
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center space-x-2">
-                    <Award className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                    <span>Achievements</span>
-                  </h3>
-                  <div className="space-y-3">
-                    {userStats.streakDays >= 7 && (
-                      <div className="flex items-center space-x-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200/50 dark:border-yellow-700/30">
-                        <Star className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                        <div>
-                          <p className="font-medium text-yellow-800 dark:text-yellow-300">Week Streak Master</p>
-                          <p className="text-xs text-yellow-600 dark:text-yellow-400">{userStats.streakDays} consecutive days</p>
-                        </div>
-                      </div>
-                    )}
-                    {userStats.co2Saved >= 10 && (
-                      <div className="flex items-center space-x-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200/50 dark:border-green-700/30">
-                        <Leaf className="w-5 h-5 text-green-600 dark:text-green-400" />
-                        <div>
-                          <p className="font-medium text-green-800 dark:text-green-300">Carbon Reducer</p>
-                          <p className="text-xs text-green-600 dark:text-green-400">Saved {userStats.co2Saved.toFixed(1)}kg CO₂</p>
-                        </div>
-                      </div>
-                    )}
-                    {userStats.avgScore >= 80 && (
-                      <div className="flex items-center space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200/50 dark:border-blue-700/30">
-                        <Brain className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        <div>
-                          <p className="font-medium text-blue-800 dark:text-blue-300">Sustainability Expert</p>
-                          <p className="text-xs text-blue-600 dark:text-blue-400">Average score: {userStats.avgScore}/100</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+
+      <Dialog open={learnMoreRec !== null} onOpenChange={(open) => !open && setLearnMoreRec(null)}>
+        <DialogContent className="max-w-lg">
+          {learnMoreRec && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <learnMoreRec.icon className="w-4 h-4 text-white" />
+                  </div>
+                  <span>{learnMoreRec.title}</span>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{learnMoreRec.description}</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <Clock className="w-4 h-4 text-slate-500" />
+                    <span className="text-slate-600 dark:text-slate-400">{learnMoreRec.timeToImplement}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Leaf className="w-4 h-4 text-green-500" />
+                    <span className="text-slate-600 dark:text-slate-400">{learnMoreRec.carbonSaving}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Target className="w-4 h-4 text-blue-500" />
+                    <span className="text-slate-600 dark:text-slate-400">{learnMoreRec.impact}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Award className="w-4 h-4 text-amber-500" />
+                    <span className="text-slate-600 dark:text-slate-400">{learnMoreRec.confidence}% confident</span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge variant="outline">{learnMoreRec.category}</Badge>
+                  <Badge className={getDifficultyColor(learnMoreRec.difficulty)}>{learnMoreRec.difficulty}</Badge>
+                </div>
+                <Button
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                  disabled={completedActions.includes(learnMoreRec.id)}
+                  onClick={() => {
+                    handleTakeAction(learnMoreRec);
+                    setLearnMoreRec(null);
+                  }}
+                >
+                  {completedActions.includes(learnMoreRec.id) ? 'Completed' : 'Take Action'}
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

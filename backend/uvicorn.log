@@ -1,0 +1,442 @@
+INFO:     Will watch for changes in these directories: ['C:\\Users\\Siddhi\\EcoFootprint\\backend']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [12648] using WatchFiles
+INFO:     Started server process [20048]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:55938 - "GET /health HTTP/1.1" 200 OK
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|##########| 103/103 [00:00<00:00, 6378.75it/s]
+INFO:     127.0.0.1:55997 - "POST /api/chat/message HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55881 - "POST /api/product/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55708 - "POST /api/product/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55984 - "POST /api/product/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56301 - "POST /api/product/identify-image HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56660 - "POST /api/product/compare HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59574 - "OPTIONS /api/chat/message/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59574 - "POST /api/chat/message/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59375 - "OPTIONS /api/product/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56553 - "OPTIONS /api/product/search?query=toy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56553 - "GET /api/product/search?query=toy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51151 - "GET /api/product/search?query=toy HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59268 - "POST /api/product/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56979 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56979 - "POST /api/recommendations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56979 - "POST /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: 1 validation error for _RecommendationsSchema
+recommendations
+  Field required [type=missing, input_value={'recommendation1': {'tit...ies', 'confidence': 78}}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing
+INFO:     127.0.0.1:63131 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:60914 - "POST /api/recommendations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49179 - "POST /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: 1 validation error for _RecommendationsSchema
+recommendations
+  Field required [type=missing, input_value={'rec1': {'title': 'Scan ...ies', 'confidence': 70}}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing
+INFO:     127.0.0.1:63735 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:63131 - "POST /api/recommendations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56979 - "POST /api/recommendations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53558 - "POST /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: 1 validation error for _RecommendationsSchema
+recommendations
+  Field required [type=missing, input_value={'title': 'Increase produ...ries', 'confidence': 80}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing
+LLM API call failed: 1 validation error for _RecommendationsSchema
+recommendations
+  Field required [type=missing, input_value={'rec1': {'title': 'Scan ...ies', 'confidence': 78}}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.13/v/missing
+INFO:     127.0.0.1:61383 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:57836 - "POST /api/recommendations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53342 - "POST /api/recommendations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50504 - "POST /api/recommendations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55196 - "POST /api/recommendations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52686 - "POST /api/recommendations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54885 - "POST /api/recommendations HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56230 - "POST /api/product/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56515 - "GET /health HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64440 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64440 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49795 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49795 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49795 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49795 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49795 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49795 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:63773 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:61877 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:61877 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:61877 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:61877 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:63773 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:63773 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:63773 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:55397 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:50279 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60639 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60639 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60639 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60639 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60639 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:52626 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:51594 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:55841 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:55841 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:55841 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:55841 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:64494 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64494 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64494 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:53926 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:53926 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:53520 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:53520 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:50356 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56871 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:50145 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:58457 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:65114 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:50597 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:57284 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:57284 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:57284 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:57284 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:64411 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64411 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64411 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60466 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60466 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:53070 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:53070 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:53070 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:53070 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:51686 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:63735 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:62844 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:62844 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:62844 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:63735 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:63735 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49777 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:64502 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64502 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:59008 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:59008 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:59008 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:59008 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:55142 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:55142 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:61233 - "OPTIONS /api/insights/explain HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61233 - "OPTIONS /api/insights/explain HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:61233 - "POST /api/insights/explain HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64254 - "POST /api/insights/explain HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:57874 - "POST /api/insights/explain HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:58357 - "POST /api/insights/explain HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:55399 - "OPTIONS /api/chat/message/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55399 - "POST /api/chat/message/stream HTTP/1.1" 200 OK
+LLM API call failed during stream: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:62689 - "OPTIONS /api/chat/message/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62689 - "POST /api/chat/message/stream HTTP/1.1" 200 OK
+LLM API call failed during stream: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56270 - "POST /api/chat/message/stream HTTP/1.1" 200 OK
+LLM API call failed during stream: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60487 - "OPTIONS /api/chat/message/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60487 - "POST /api/chat/message/stream HTTP/1.1" 200 OK
+LLM API call failed during stream: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:61047 - "POST /api/chat/message/stream HTTP/1.1" 200 OK
+LLM API call failed during stream: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:63509 - "OPTIONS /api/chat/message/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63509 - "POST /api/chat/message/stream HTTP/1.1" 200 OK
+LLM API call failed during stream: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:52506 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60058 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:62300 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:62300 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:64878 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64878 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64878 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64878 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64878 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64878 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64878 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:55080 - "OPTIONS /api/insights/explain HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55080 - "OPTIONS /api/insights/explain HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:55080 - "POST /api/insights/explain HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:65027 - "POST /api/insights/explain HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:64127 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58094 - "OPTIONS /api/product/identify-image HTTP/1.1" 200 OK
+Vision API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:58094 - "POST /api/product/identify-image HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:52853 - "OPTIONS /api/product/identify-image HTTP/1.1" 200 OK
+Vision API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:52853 - "POST /api/product/identify-image HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:60847 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60847 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60847 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60847 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60847 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:60847 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:54087 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:58051 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:58051 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:65221 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:65221 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:65221 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:65221 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:65221 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:64437 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64437 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49399 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49399 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49399 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:52468 - "OPTIONS /api/insights/explain HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:52468 - "POST /api/insights/explain HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56401 - "POST /api/insights/explain HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:49328 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49328 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49328 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49328 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49328 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49328 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49328 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:49328 - "OPTIONS /api/insights/explain HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49328 - "POST /api/insights/explain HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56039 - "POST /api/insights/explain HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56604 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:50972 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:50972 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56604 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56604 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56604 - "POST /api/insights/explain HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:63460 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:63460 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64028 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:59211 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:59211 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:59211 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:58990 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49253 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49253 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49253 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49253 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49253 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:59346 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56358 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56358 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56358 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56358 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56358 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56358 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:56358 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:55687 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:55687 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:55687 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:62974 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:62974 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:64734 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49949 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:57076 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:59250 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:50811 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:50811 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:63352 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:50086 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:59136 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:59136 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:63110 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:61054 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:61710 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:62834 - "OPTIONS /api/product/search?query=shampoo HTTP/1.1" 200 OK
+OpenFoodFacts search failed: Server error '502 Bad Gateway' for url 'https://search.openfoodfacts.org/search?q=shampoo&page_size=10&fields=code%2Cproduct_name%2Cbrands%2Cecoscore_grade%2Cnutriscore_grade%2Cpackaging%2Ccategories%2Cimage_url%2Cimage_front_url'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502
+INFO:     127.0.0.1:62834 - "GET /api/product/search?query=shampoo HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:62607 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:51263 - "OPTIONS /api/recommendations HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:51263 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:51263 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:51263 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:51263 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:51263 - "POST /api/recommendations HTTP/1.1" 502 Bad Gateway
+INFO:     127.0.0.1:49289 - "OPTIONS /api/product/analyze HTTP/1.1" 200 OK
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:49289 - "POST /api/product/analyze HTTP/1.1" 502 Bad Gateway
+LLM API call failed: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '50', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1784419200000'}, 'provider_name': None}}, 'user_id': 'user_38GK3yjVcBkkGO69291shFBxbEU'}
+INFO:     127.0.0.1:50545 - "POST /api/product/analyze HTTP/1.1" 502 Bad Gateway
+WARNING:  WatchFiles detected changes in 'routes\product.py'. Reloading...
+ INFO:     127.0.0.1:60019 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60117 - "POST /api/product/upload-image HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60120 - "GET /uploads/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60121 - "DELETE /api/product/upload-image/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60122 - "GET /uploads/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60124 - "DELETE /api/product/upload-image/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60126 - "DELETE /api/product/upload-image/../../app.py HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60382 - "POST /api/product/upload-image HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60383 - "GET /uploads/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60384 - "DELETE /api/product/upload-image/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60385 - "GET /uploads/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60386 - "DELETE /api/product/upload-image/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60387 - "DELETE /api/product/upload-image/../../app.py HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60388 - "POST /api/product/upload-image HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60480 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49988 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50130 - "POST /api/product/upload-image HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50132 - "GET /uploads/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50133 - "DELETE /api/product/upload-image/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50134 - "GET /uploads/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50135 - "DELETE /api/product/upload-image/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50136 - "DELETE /api/product/upload-image/../../app.py HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50137 - "POST /api/product/upload-image HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50160 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56370 - "GET /health HTTP/1.1" 200 OK

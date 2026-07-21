@@ -11,6 +11,7 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { useToast } from '../components/ui/use-toast';
 import Navbar from '../components/Navbar';
+import AnimatedBackground from '../components/AnimatedBackground';
 import {
   ArrowLeft,
   Plus,
@@ -438,7 +439,9 @@ const Goals = () => {
   return (
     <>
       <Navbar onNavigate={handleNavigation} activeTab="goals" />
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-black dark:to-purple-950 pt-32 p-6 z-10">
+      <div className="relative min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900 pt-32 p-6 overflow-hidden">
+        <AnimatedBackground />
+        <div className="relative z-10">
         <Card className="mb-6 shadow-xl border-indigo-200 border bg-white dark:border-indigo-700 dark:bg-gray-800">
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -933,6 +936,7 @@ const Goals = () => {
             </div>
           </>
         )}
+        </div>
       </div>
     </>
   );

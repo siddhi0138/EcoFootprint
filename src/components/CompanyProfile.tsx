@@ -9,6 +9,7 @@ import { Building, TrendingUp, TrendingDown, Award, Users, Globe, Search } from 
 import { db } from '../firebase'; // Adjust the path if necessary
 import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext'; // Import useAuth
+import { useToast } from '../hooks/use-toast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 const CompanyProfile = () => {
@@ -90,25 +91,33 @@ const CompanyProfile = () => {
   const [following, setFollowing] = useState<string[]>([]); // Initialize as string array
 
   const { currentUser } = useAuth(); // Get currentUser from useAuth context
+  const { toast } = useToast();
 
   const handleFollowToggle = async () => { // Define the async function
-    if (!currentUser) return; // Ensure user is authenticated
+    if (!currentUser) {
+      toast({ title: 'Login Required', description: 'Please log in to follow companies.', variant: 'destructive' });
+      return;
+    }
 
     const userDocRef = doc(db, 'users', currentUser.uid);
+    const wasFollowing = following.includes(selectedCompany);
     try {
-      if (following.includes(selectedCompany)) {
+      if (wasFollowing) {
         // Unfollow
         await updateDoc(userDocRef, {
           following: arrayRemove(selectedCompany)
         });
+        toast({ title: 'Unfollowed', description: `You unfollowed ${company.name}.` });
       } else {
         // Follow
         await updateDoc(userDocRef, {
           following: arrayUnion(selectedCompany)
         });
+        toast({ title: 'Following!', description: `You're now following ${company.name}.` });
       }
     } catch (error) {
       console.error("Error toggling follow:", error);
+      toast({ title: 'Action Failed', description: 'Could not update follow status. Please try again.', variant: 'destructive' });
     }
   };
 

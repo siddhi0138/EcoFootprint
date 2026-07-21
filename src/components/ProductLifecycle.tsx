@@ -10,8 +10,10 @@ import {
 } from 'lucide-react';
 import { db } from '../firebase';
 import { doc, setDoc, getDocs, getDoc, collection } from 'firebase/firestore';
+import { fetchProductLifecycle } from '../services/productApi';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationsContextNew';
+import { useToast } from '../hooks/use-toast';
 
 interface ProductLifecycleProps {
   product?: any;
@@ -20,6 +22,7 @@ interface ProductLifecycleProps {
 const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduct }) => {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
+  const { toast } = useToast();
   const [viewedProducts, setViewedProducts] = useState<{ [key: string]: any }>({});
   const [savedProduct, setSavedProduct] = React.useState<any>(null);
   const location = useLocation();
@@ -40,9 +43,15 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
     Globe,
   };
 
-  // Load product from props, location state, or localStorage
+  // A genuinely fresh product (just scanned/compared and passed in) must always win over
+  // whatever Firestore/localStorage last remembered - otherwise navigating here with a NEW
+  // product while an OLD one is still cached in `savedProduct` state silently ignores it.
+  const freshProduct = propProduct || location.state?.product;
+
+  // Load product from localStorage only as a last resort (e.g. a hard refresh with no fresh
+  // product and nothing loaded from Firestore yet).
   const storedProductJSON = localStorage.getItem('persistedProductLifecycle');
-  let initialProduct = propProduct || location.state?.product;
+  let initialProduct = freshProduct;
   if (!initialProduct && storedProductJSON) {
     try {
       initialProduct = JSON.parse(storedProductJSON);
@@ -58,8 +67,8 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
       initialProduct = null;
     }
   }
-  // Prioritize savedProduct over initialProduct
-  const product = savedProduct || initialProduct;
+  // Fresh product always wins; savedProduct (Firestore) only fills in when there's no fresh one.
+  const product = freshProduct || savedProduct || initialProduct;
 
   useEffect(() => {
     const fetchViewedProducts = async () => {
@@ -87,7 +96,7 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
     const fetchSavedProduct = async () => {
       if (user) {
         try {
-          let productIdToFetch = product?.id || savedProduct?.id;
+          let productIdToFetch = freshProduct?.id;
           let data = null;
           if (productIdToFetch) {
             const productRef = doc(db, `users/${user.uid}/savedProductLifecycles`, productIdToFetch.toString());
@@ -135,9 +144,71 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
       }
     };
     fetchSavedProduct();
-  }, [user, product?.id]);
+  }, [user, freshProduct?.id]);
 
-  const displayProduct = savedProduct || product;
+  const displayProduct = product;
+
+  // Real lifecycle stages are generated on demand by the backend LLM (cradle-to-grave, with
+  // per-stage CO2/water/energy estimates) whenever the loaded product doesn't already carry
+  // stages - replacing the previous empty/placeholder timeline.
+  const [generatedStages, setGeneratedStages] = React.useState<any[]>([]);
+  const [isLoadingLifecycle, setIsLoadingLifecycle] = React.useState(false);
+  const [lifecycleError, setLifecycleError] = React.useState<string | null>(null);
+
+  const hasOwnStages = Array.isArray(displayProduct?.stages) && displayProduct.stages.length > 0;
+
+  // Cache generated stages per product so a refresh paints them instantly instead of showing 0
+  // and re-hitting the (rate-limited) LLM every time.
+  const lifecycleCacheKey = (p: any) => `ecoscope_lifecycle_${(p?.id ?? p?.name ?? 'unknown')}`;
+  const restoreIcons = (stages: any[]) => stages.map((s) => ({ ...s, icon: iconMap[s.iconName] || null }));
+
+  React.useEffect(() => {
+    if (!displayProduct || hasOwnStages) return;
+    let cancelled = false;
+
+    // 1) Use cached stages immediately if we have them for this product.
+    try {
+      const cached = localStorage.getItem(lifecycleCacheKey(displayProduct));
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length) {
+          setGeneratedStages(restoreIcons(parsed));
+          setIsLoadingLifecycle(false);
+          setLifecycleError(null);
+          return () => { cancelled = true; };
+        }
+      }
+    } catch { /* ignore cache read errors */ }
+
+    // 2) Otherwise generate and cache the result.
+    setIsLoadingLifecycle(true);
+    setLifecycleError(null);
+    setGeneratedStages([]);
+    fetchProductLifecycle({
+      name: displayProduct.name,
+      brand: displayProduct.brand ?? null,
+      category: displayProduct.category ?? null,
+      sustainability_score: displayProduct.sustainabilityScore ?? null,
+    })
+      .then((res) => {
+        if (cancelled) return;
+        const stages = res.stages || [];
+        setGeneratedStages(restoreIcons(stages));
+        try { localStorage.setItem(lifecycleCacheKey(displayProduct), JSON.stringify(stages)); } catch { /* ignore */ }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('Failed to generate product lifecycle:', err);
+        setLifecycleError('Could not generate a lifecycle analysis for this product right now.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingLifecycle(false);
+      });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayProduct?.name, displayProduct?.id, hasOwnStages]);
+
+  const effectiveStages = hasOwnStages ? displayProduct.stages : generatedStages;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -167,10 +238,14 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
   };
 
   if (!product) {
-    return <div>No product data available.</div>;
+    return (
+      <div className="pt-20 text-center text-sage-600 dark:text-gray-400">
+        No product data available.
+      </div>
+    );
   }
 
-  const totalImpact = (displayProduct.stages ?? []).reduce((acc: { co2: number; water: number; energy: number }, stage: any) => ({
+  const totalImpact = (effectiveStages ?? []).reduce((acc: { co2: number; water: number; energy: number }, stage: any) => ({
     co2: acc.co2 + (stage.impact?.co2 || 0),
     water: acc.water + (stage.impact?.water || 0),
     energy: acc.energy + (stage.impact?.energy || 0)
@@ -178,7 +253,7 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
 
   const saveProductLifecycle = async () => {
     if (!user) {
-      alert('You must be logged in to save lifecycle data.');
+      toast({ title: 'Login Required', description: 'You must be logged in to save lifecycle data.', variant: 'destructive' });
       return;
     }
     try {
@@ -217,6 +292,7 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
         category: product.category,
         sustainability: product.sustainability,
         stages: sanitizedStages,
+        savedAt: new Date(),
       };
 
       const productRef = doc(db, `users/${user.uid}/savedProductLifecycles`, product.id.toString());
@@ -224,7 +300,7 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
       setSavedProduct(sanitizedProduct);
       // Persist to localStorage
       localStorage.setItem('persistedProductLifecycle', JSON.stringify(sanitizedProduct));
-      alert('Product lifecycle data saved successfully.');
+      toast({ title: 'Lifecycle Saved', description: `Lifecycle data for "${product.name}" was saved successfully.` });
 
       // Add notification for saved product lifecycle
       addNotification({
@@ -239,18 +315,23 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
 
     } catch (error) {
       console.error('Error saving product lifecycle data:', error);
-      alert('Failed to save product lifecycle data.');
+      toast({ title: 'Save Failed', description: 'Failed to save product lifecycle data.', variant: 'destructive' });
     }
   };
 
   return (
     <div className="space-y-6">
-      <Card className="bg-white/80 backdrop-blur-sm border-sage-200 dark:bg-gray-900 dark:border-gray-700">
-        <CardHeader>
+      <Card className="bg-white/80 backdrop-blur-sm border-sage-200 dark:bg-gray-900 dark:border-gray-700 shadow-lg rounded-2xl">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2 text-sage-700 dark:text-gray-200">
-              <Package className="w-6 h-6" />
-              <span>Product Lifecycle Tracking</span>
+            <CardTitle className="flex items-center space-x-3 text-slate-800 dark:text-slate-200">
+              <div className="w-10 h-10 bg-emerald-600 dark:bg-emerald-600 rounded-xl flex items-center justify-center">
+                <Package className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <span className="text-xl font-bold">Product Lifecycle Tracking</span>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-normal">Cradle-to-grave impact, generated for each product</p>
+              </div>
             </CardTitle>
             <Button onClick={saveProductLifecycle} className="bg-emerald-500 hover:bg-emerald-600 text-white dark:bg-emerald-700 dark:hover:bg-emerald-600">
               Save
@@ -300,8 +381,16 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
             </TabsList>
 
             <TabsContent value="timeline" className="space-y-6 dark:text-gray-200" onPointerEnter={() => displayProduct.id && addViewedProduct(displayProduct.id)}>
+              {isLoadingLifecycle && (
+                <div className="text-center py-10 text-sage-600 dark:text-gray-400">Generating a real lifecycle analysis for this product...</div>
+              )}
+              {lifecycleError && !isLoadingLifecycle && (
+                <div className="text-center py-6 px-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-xl">
+                  <p className="text-red-600 dark:text-red-400 text-sm">{lifecycleError}</p>
+                </div>
+              )}
               <div className="space-y-4">
-                {(displayProduct.stages ?? []).map((stage: any) => (
+                {(effectiveStages ?? []).map((stage: any) => (
                   <div key={stage.name} className={`p-6 rounded-xl border-2 ${getStatusColor(stage.status)} transition-all duration-300 dark:border-gray-700 dark:bg-gray-800`}>
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
@@ -344,15 +433,6 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
                       </div>
                     </div>
                     <p className="text-sage-700 dark:text-gray-300">{stage.details}</p>
-                    {stage.status === 'active' && (
-                      <div className="mt-4">
-                        <div className="flex justify-between text-sm text-sage-600 dark:text-gray-400 mb-2">
-                          <span>Progress through use phase</span>
-                          <span>2.3 / 3+ years</span>
-                        </div>
-                        <Progress value={76} className="h-2" />
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -365,68 +445,57 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
                     <CardTitle className="text-sage-700">Environmental Impact</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Carbon Footprint</span>
-                          <span>{totalImpact.co2.toFixed(1)} kg CO₂</span>
-                        </div>
-                        <Progress value={65} className="h-2" />
-                        <p className="text-xs text-sage-500 mt-1">35% lower than industry average</p>
+                    <p className="text-xs text-sage-500 dark:text-gray-400">
+                      Totals across all lifecycle stages (category-level estimates).
+                    </p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/10">
+                        <div className="text-xl font-bold text-red-600 dark:text-red-400">{totalImpact.co2.toFixed(1)}</div>
+                        <div className="text-xs text-sage-600 dark:text-gray-400">kg CO₂</div>
                       </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Water Usage</span>
-                          <span>{totalImpact.water} L</span>
-                        </div>
-                        <Progress value={45} className="h-2" />
-                        <p className="text-xs text-sage-500 mt-1">55% lower than conventional cotton</p>
+                      <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/10">
+                        <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{totalImpact.water}</div>
+                        <div className="text-xs text-sage-600 dark:text-gray-400">L Water</div>
                       </div>
-                      <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Energy Consumption</span>
-                          <span>{totalImpact.energy} kWh</span>
-                        </div>
-                        <Progress value={40} className="h-2" />
-                        <p className="text-xs text-sage-500 mt-1">60% from renewable sources</p>
+                      <div className="text-center p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/10">
+                        <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">{totalImpact.energy}</div>
+                        <div className="text-xs text-sage-600 dark:text-gray-400">kWh Energy</div>
                       </div>
                     </div>
+                    {displayProduct.sustainabilityScore != null && (
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Overall Sustainability</span>
+                          <span>{displayProduct.sustainabilityScore}/100</span>
+                        </div>
+                        <Progress value={displayProduct.sustainabilityScore} className="h-2" />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-                <Card className="border-sage-200">
+                <Card className="border-sage-200 dark:border-gray-700">
                   <CardHeader>
-                    <CardTitle className="text-sage-700">Sustainability Certifications</CardTitle>
+                    <CardTitle className="text-sage-700 dark:text-gray-200">Labels & Certifications</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                          <CheckCircle className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-sage-800">GOTS Certified</p>
-                          <p className="text-xs text-sage-600">Global Organic Textile Standard</p>
-                        </div>
+                    {Array.isArray(displayProduct.certifications) && displayProduct.certifications.length > 0 ? (
+                      <div className="space-y-3">
+                        {displayProduct.certifications.map((cert: string, i: number) => (
+                          <div key={i} className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                              <CheckCircle className="w-5 h-5 text-white" />
+                            </div>
+                            <p className="font-medium text-sage-800 dark:text-gray-200 capitalize">
+                              {cert.replace(/^en:/, '').replace(/-/g, ' ')}
+                            </p>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                          <CheckCircle className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-sage-800">Fair Trade</p>
-                          <p className="text-xs text-sage-600">Ethical labor practices</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                          <CheckCircle className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-sage-800">Cradle to Cradle</p>
-                          <p className="text-xs text-sage-600">Bronze level certification</p>
-                        </div>
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="text-sm text-sage-500 dark:text-gray-400">
+                        No verified certifications or eco-labels are recorded for this product.
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               </div>

@@ -1,0 +1,11 @@
+fastapi
+python-multipart
+uvicorn[standard]
+python-dotenv
+pydantic
+pydantic-settings
+openai
+firebase-admin
+httpx
+chromadb
+sentence-transformers

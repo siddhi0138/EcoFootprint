@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Trash2, Plus, Minus } from 'lucide-react';
 import { useCart } from '../contexts/CartContext'; // Import useCart hook
 import { Skeleton } from './ui/skeleton'; // Import Skeleton for loading state
+import { useToast } from '../hooks/use-toast';
 
 // Define the CartItem interface, assuming it's not defined elsewhere globally
 // If it's defined in CartContext or another file, you should update it there
@@ -18,6 +19,7 @@ interface CartItem {
 const Cart = ({ setActiveTab }: { setActiveTab: (tab: string) => void }) => {
   // Use the cart context
   const { cartItems, updateQuantity, removeFromCart, clearCart, loadingCart } = useCart();
+  const { toast } = useToast();
 
   // Calculate total price from context cartItems
   const totalPrice = cartItems.reduce((sum, item) => {
@@ -56,7 +58,7 @@ const Cart = ({ setActiveTab }: { setActiveTab: (tab: string) => void }) => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {console.log('Update quantity:', item.id, item.quantity - 1); updateQuantity(item.id, item.quantity - 1)}}
+                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
                   >
                     <Minus className="w-4 h-4" />
                   </Button>
@@ -64,12 +66,20 @@ const Cart = ({ setActiveTab }: { setActiveTab: (tab: string) => void }) => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {console.log('Update quantity:', item.id, item.quantity + 1); updateQuantity(item.id, item.quantity + 1)}}
+                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
-                <Button size="sm" variant="destructive" onClick={() => {console.log('Remove item:', item.id); removeFromCart(item.id)}} className="ml-4">
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => {
+                    removeFromCart(item.id);
+                    toast({ title: 'Removed from Cart', description: `${item.name} was removed from your cart.` });
+                  }}
+                  className="ml-4"
+                >
                   <Trash2 className="w-5 h-5" />
                 </Button>
               </li>
@@ -78,12 +88,20 @@ const Cart = ({ setActiveTab }: { setActiveTab: (tab: string) => void }) => {
 
           <div className="mt-6 flex justify-between items-center">
             <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">Total: ${totalPrice.toFixed(2)}</span>
-            <Button variant="destructive" onClick={() => clearCart()}>Clear Cart</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                clearCart();
+                toast({ title: 'Cart Cleared', description: 'All items were removed from your cart.' });
+              }}
+            >
+              Clear Cart
+            </Button>
           </div>
 
           <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 justify-end">
             <Button variant="outline" onClick={() => setActiveTab('marketplace')}>Continue Shopping</Button>
-            <Button onClick={() => alert('Proceed to Checkout (Not implemented)')}>Checkout</Button>
+            <Button onClick={() => setActiveTab('checkout')}>Checkout</Button>
           </div>
         </>
       )}

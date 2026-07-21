@@ -32,6 +32,7 @@ interface ProductComparisonContextType {
   comparisonProducts: ScannedProduct[];
   setComparisonProducts: React.Dispatch<React.SetStateAction<ScannedProduct[]>>;
   addProductToComparison: (product: ScannedProduct) => void;
+  removeProductFromComparison: (productId: string) => void;
   clearComparison: () => void;
 }
 
@@ -40,8 +41,13 @@ const ProductComparisonContext = createContext<ProductComparisonContextType | un
 export const ProductComparisonProvider = ({ children }: { children: ReactNode }) => {
   const { currentUser } = useAuth();
   const [comparisonProducts, setComparisonProducts] = useState<ScannedProduct[]>([]);
+  // Guards the save effect from firing before the Firestore snapshot has loaded. Without it,
+  // the empty initial state ([]) was written straight back to Firestore on every refresh,
+  // wiping the saved comparison before the listener could load it.
+  const hasLoadedRef = React.useRef(false);
 
   useEffect(() => {
+    hasLoadedRef.current = false;
     if (!currentUser) {
       setComparisonProducts([]);
       return;
@@ -52,31 +58,25 @@ export const ProductComparisonProvider = ({ children }: { children: ReactNode })
 
     // Subscribe to Firestore document changes
     const unsubscribe = onSnapshot(comparisonDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data && data.products) {
-          setComparisonProducts(data.products);
-        } else {
-          setComparisonProducts([]);
-        }
-      } else {
-        setComparisonProducts([]);
-      }
+      const data = docSnap.exists() ? docSnap.data() : null;
+      setComparisonProducts(data?.products ?? []);
+      hasLoadedRef.current = true;
     }, (error) => {
       console.error('Error fetching product comparison from Firestore:', error);
-      setComparisonProducts([]);
+      hasLoadedRef.current = true;
     });
 
     return () => unsubscribe();
   }, [currentUser]);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || !hasLoadedRef.current) return;
 
     const userDocRef = doc(db, 'users', currentUser.uid);
     const comparisonDocRef = doc(userDocRef, 'productComparison', 'comparisonProducts');
 
-    // Save comparisonProducts to Firestore
+    // Save comparisonProducts to Firestore (only after the initial load, so we never persist
+    // the transient empty state that exists before the snapshot arrives).
     setDoc(comparisonDocRef, { products: comparisonProducts })
       .catch(error => {
         console.error('Error saving product comparison to Firestore:', error);
@@ -95,12 +95,16 @@ export const ProductComparisonProvider = ({ children }: { children: ReactNode })
     });
   };
 
+  const removeProductFromComparison = (productId: string) => {
+    setComparisonProducts(prev => prev.filter(p => p.id !== productId));
+  };
+
   const clearComparison = () => {
     setComparisonProducts([]);
   };
 
   return (
-    <ProductComparisonContext.Provider value={{ comparisonProducts, setComparisonProducts, addProductToComparison, clearComparison }}>
+    <ProductComparisonContext.Provider value={{ comparisonProducts, setComparisonProducts, addProductToComparison, removeProductFromComparison, clearComparison }}>
       {children}
     </ProductComparisonContext.Provider>
   );

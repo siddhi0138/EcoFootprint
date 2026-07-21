@@ -13,11 +13,13 @@ import NotFound from "./pages/NotFound";
 import Cart from "./components/Cart";
 import Goals from "./pages/Goals";
 import ProductLifecycle from "./components/ProductLifecycle";
-import ProductComparison from "./components/ProductComparison";
 import Footer from "./components/Footer";
 import Layout from "./components/Layout";
 import { ProductComparisonProvider } from "./contexts/ProductComparisonContext";
 import CommunityHub from "./components/CommunityHub";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -36,13 +38,29 @@ const App = () => (
                   <BrowserRouter>
                     <Routes>
                       <Route path="/" element={<Layout><Index /></Layout>} />
+                      {/* These all render Index too - it switches content based on the tab prop
+                          Layout derives from the path. Real routes (instead of routing everything
+                          through "/" with in-memory-only state) so a refresh doesn't bounce the
+                          user back to the home hero - see Layout.tsx's pathToTabId. */}
+                      <Route path="/scanner" element={<Layout><Index /></Layout>} />
+                      <Route path="/chatbot" element={<Layout><Index /></Layout>} />
+                      <Route path="/carbon-tracker" element={<Layout><Index /></Layout>} />
+                      <Route path="/ai-recommendations" element={<Layout><Index /></Layout>} />
+                      <Route path="/marketplace" element={<Layout><Index /></Layout>} />
+                      <Route path="/education" element={<Layout><Index /></Layout>} />
+                      <Route path="/lifestyle" element={<Layout><Index /></Layout>} />
+                      <Route path="/profile" element={<Layout><Index /></Layout>} />
+                      <Route path="/notifications" element={<Layout><Index /></Layout>} />
+                      <Route path="/checkout" element={<Layout><Index /></Layout>} />
                       <Route path="/cart" element={<Layout><Cart setActiveTab={function (tab: string): void {
                         throw new Error("Function not implemented.");
                       } } /></Layout>} />
                       <Route path="/goals" element={<Layout><Goals /></Layout>} />
                       <Route path="/product-lifecycle" element={<Layout><ProductLifecycle /></Layout>} />
-                      <Route path="/product-comparison" element={<Layout><ProductComparison /></Layout>} />
                       <Route path="/community" element={<Layout><CommunityHub /></Layout>} />
+                      <Route path="/about" element={<Layout><About /></Layout>} />
+                      <Route path="/contact" element={<Layout><Contact /></Layout>} />
+                      <Route path="/privacy-policy" element={<Layout><PrivacyPolicy /></Layout>} />
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                       <Route path="*" element={<NotFound />} />
                     </Routes>

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
 import {
   Users,
   MessageCircle,
@@ -26,629 +27,374 @@ import {
   Zap,
   Leaf,
   Target,
-  TrendingUp
+  TrendingUp,
+  Gift,
+  Coins,
+  Crown,
+  ShoppingBag,
+  CheckCircle,
 } from 'lucide-react';
 
 import { useNotificationHelperNew } from '../hooks/useNotificationHelperNew';
+import { useToast } from '../hooks/use-toast';
+import { useAuth } from '../contexts/AuthContext';
+import { useUserData } from '../contexts/UserDataContext';
+import { db } from '../firebase';
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
+  addDoc,
+  doc,
+  updateDoc,
+  serverTimestamp,
+  arrayUnion,
+  arrayRemove,
+  Timestamp,
+} from 'firebase/firestore';
 
 const CommunityHub = () => {
   const { addCommunityNotification } = useNotificationHelperNew();
+  const { currentUser: authUser } = useAuth();
+  const { userStats, redeemReward } = useUserData();
+  const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState('feed');
   const [searchQuery, setSearchQuery] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [showCreatePost, setShowCreatePost] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
 
   const [posts, setPosts] = useState([]);
   const [groups, setGroups] = useState([]);
   const [events, setEvents] = useState([]);
   const [challenges, setChallenges] = useState([]);
+  const [leaderboardData, setLeaderboardData] = useState([]);
   const [commentInputs, setCommentInputs] = useState({});
 
-  // Mock current user data
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [newGroup, setNewGroup] = useState({ name: '', description: '', category: '' });
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+
+  // Live discussion feed for whichever group is currently open (selectedGroup) - real Firestore
+  // messages, not a static "for show" card.
+  const [groupMessages, setGroupMessages] = useState([]);
+  const [newGroupMessage, setNewGroupMessage] = useState('');
+  const [isSendingGroupMessage, setIsSendingGroupMessage] = useState(false);
+
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [newEvent, setNewEvent] = useState({ title: '', description: '', date: '', time: '', location: '', maxAttendees: '' });
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+
+  const [showCreateChallenge, setShowCreateChallenge] = useState(false);
+  const [newChallenge, setNewChallenge] = useState({ title: '', description: '', category: '', difficulty: 'Easy', duration: '', reward: '' });
+  const [isCreatingChallenge, setIsCreatingChallenge] = useState(false);
+
+  // Real identity for the logged-in user, derived from auth + their actual stats -
+  // no more fabricated points/scans/streaks for "You".
   const currentUser = {
-    name: 'You',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
-    points: 1845,
-    level: 'Intermediate',
-    totalScans: 127,
-    co2Saved: 23.5,
-    challengesCompleted: 8,
-    postsLiked: 89,
-    groupsJoined: 5,
-    eventsAttended: 12
+    uid: authUser?.uid,
+    name: authUser?.name || authUser?.email || 'EcoScope Member',
+    avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(authUser?.name || authUser?.email || 'U')}`,
+    points: userStats.totalPoints,
+    level: userStats.level,
+    totalScans: userStats.totalScans,
+    co2Saved: userStats.co2Saved,
+  };
+
+  // --- Rewards tab (merged in from the former standalone Rewards page) ---
+  const achievements = [
+    {
+      id: 1,
+      name: 'First Steps',
+      description: 'Complete your first product scan',
+      points: 50,
+      unlocked: userStats.totalScans >= 1,
+      icon: Target,
+      color: 'bg-emerald-500',
+      category: 'Getting Started'
+    },
+    {
+      id: 2,
+      name: 'Eco Explorer',
+      description: `Scan ${userStats.totalScans >= 10 ? '25' : '10'} products`,
+      points: userStats.totalScans >= 10 ? 200 : 100,
+      unlocked: userStats.totalScans >= (userStats.totalScans >= 10 ? 25 : 10),
+      progress: userStats.totalScans >= 10 ?
+        Math.min((userStats.totalScans / 25) * 100, 100) :
+        Math.min((userStats.totalScans / 10) * 100, 100),
+      icon: Users,
+      color: 'bg-blue-500',
+      category: 'Scanning'
+    },
+    {
+      id: 3,
+      name: 'Carbon Tracker',
+      description: `Track ${userStats.co2Saved >= 5 ? '15kg' : '5kg'} of CO₂ savings`,
+      points: userStats.co2Saved >= 5 ? 300 : 200,
+      unlocked: userStats.co2Saved >= (userStats.co2Saved >= 5 ? 15 : 5),
+      progress: userStats.co2Saved >= 5 ?
+        Math.min((userStats.co2Saved / 15) * 100, 100) :
+        Math.min((userStats.co2Saved / 5) * 100, 100),
+      icon: Leaf,
+      color: 'bg-green-500',
+      category: 'Environmental Impact'
+    },
+    {
+      id: 4,
+      name: 'Learning Champion',
+      description: `Complete ${userStats.coursesCompleted >= 5 ? '10' : '5'} courses`,
+      points: userStats.coursesCompleted >= 5 ? 400 : 250,
+      unlocked: userStats.coursesCompleted >= (userStats.coursesCompleted >= 5 ? 10 : 5),
+      progress: userStats.coursesCompleted >= 5 ?
+        Math.min((userStats.coursesCompleted / 10) * 100, 100) :
+        Math.min((userStats.coursesCompleted / 5) * 100, 100),
+      icon: Crown,
+      color: 'bg-purple-500',
+      category: 'Education'
+    },
+    {
+      id: 5,
+      name: 'Transport Pioneer',
+      description: `Use sustainable transport ${userStats.transportTrips >= 5 ? '20' : '5'} times`,
+      points: userStats.transportTrips >= 5 ? 400 : 200,
+      unlocked: userStats.transportTrips >= (userStats.transportTrips >= 5 ? 20 : 5),
+      progress: userStats.transportTrips >= 5 ?
+        Math.min((userStats.transportTrips / 20) * 100, 100) :
+        Math.min((userStats.transportTrips / 5) * 100, 100),
+      icon: Zap,
+      color: 'bg-cyan-500',
+      category: 'Transport'
+    }
+  ];
+
+  const rewardsCatalog = [
+    { id: 1, name: '10% Off Eco Products', cost: 150, description: 'Discount on sustainable marketplace purchases', icon: Gift, category: 'Shopping', savings: 'Up to $50 value' },
+    { id: 2, name: 'Plant a Tree', cost: 300, description: 'We plant a tree in your name through our partners', icon: Leaf, category: 'Environmental Impact', savings: '1 tree planted' },
+    { id: 3, name: 'Premium Analytics', cost: 500, description: '1 month of advanced insights and tracking', icon: Star, category: 'Features', savings: '$9.99 value' },
+    { id: 4, name: 'Sustainability Consultation', cost: 750, description: '30-minute call with sustainability expert', icon: Users, category: 'Expert Advice', savings: '$75 value' },
+    { id: 5, name: 'Carbon Offset Package', cost: 1000, description: 'Offset 1 ton of your carbon footprint', icon: Zap, category: 'Carbon Offset', savings: '1 ton CO₂ offset' },
+    { id: 6, name: 'Eco Product Bundle', cost: 1250, description: 'Curated bundle of top-rated sustainable products', icon: ShoppingBag, category: 'Product Bundle', savings: '$150 value' },
+  ].map(r => ({ ...r, available: userStats.totalPoints >= r.cost }));
+
+  const generateDailyChallenges = () => {
+    const dailyList = [];
+    const avgScansPerDay = Math.max(1, Math.ceil(userStats.totalScans / 30));
+    dailyList.push({
+      task: `Scan ${avgScansPerDay} sustainable product${avgScansPerDay > 1 ? 's' : ''}`,
+      progress: Math.min(userStats.currentWeekScans, avgScansPerDay),
+      total: avgScansPerDay,
+      points: avgScansPerDay * 15,
+      completed: userStats.currentWeekScans >= avgScansPerDay,
+      category: 'Scanning'
+    });
+    const carbonTarget = Math.max(1, Math.ceil(userStats.co2Saved / 10));
+    dailyList.push({
+      task: `Save ${carbonTarget}kg CO₂ today`,
+      progress: userStats.co2Saved >= carbonTarget ? carbonTarget : userStats.co2Saved % carbonTarget || 0,
+      total: carbonTarget,
+      points: carbonTarget * 20,
+      completed: (userStats.co2Saved % 10) >= carbonTarget,
+      category: 'Carbon Tracking'
+    });
+    if (userStats.coursesCompleted < 10) {
+      dailyList.push({
+        task: 'Complete 1 sustainability course',
+        progress: userStats.coursesCompleted > 0 ? 1 : 0,
+        total: 1,
+        points: 50,
+        completed: userStats.coursesCompleted > 0,
+        category: 'Learning'
+      });
+    }
+    return dailyList;
+  };
+  const dailyChallenges = generateDailyChallenges();
+
+  const getUnlockedAchievements = () => achievements.filter(a => a.unlocked).length;
+  const getCompletedChallenges = () => dailyChallenges.filter(c => c.completed).length;
+
+  const levelThresholds = [0, 100, 300, 600, 1000, 1500, 2500, 4000, 6000, 10000];
+  const currentLevel = levelThresholds.findIndex((threshold, index) =>
+    userStats.totalPoints >= threshold && (levelThresholds[index + 1] === undefined || userStats.totalPoints < levelThresholds[index + 1])
+  ) + 1;
+  const currentLevelThreshold = levelThresholds[currentLevel - 1] || 0;
+  const nextLevelThreshold = levelThresholds[currentLevel] || levelThresholds[levelThresholds.length - 1];
+  const levelProgress = nextLevelThreshold ? ((userStats.totalPoints - currentLevelThreshold) / (nextLevelThreshold - currentLevelThreshold)) * 100 : 100;
+
+  const handleRedeemReward = async (reward: typeof rewardsCatalog[0]) => {
+    if (await redeemReward(reward.cost, reward.name)) {
+      toast({
+        title: "Reward Redeemed! 🎉",
+        description: `You've successfully redeemed: ${reward.name}. It's saved to your rewards history.`,
+        duration: 5000,
+      });
+    } else {
+      toast({
+        title: "Insufficient Points",
+        description: `You need ${reward.cost - userStats.totalPoints} more points to redeem this reward.`,
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
   useEffect(() => {
     setCommentInputs(posts.reduce((acc, post) => ({ ...acc, [post.id]: '' }), {}));
   }, [posts]);
 
-  // Initialize with enhanced sample data
+  // Real community feed - reads/writes the shared 'communityPosts' Firestore collection
+  // (public read, authenticated create, author-only edit/delete, field-scoped like/comment/bookmark).
   useEffect(() => {
-    setPosts([
-      {
-        id: 'post1',
-        author: {
-          name: 'Sarah Green',
-          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=40&h=40&fit=crop&crop=face',
-          badge: 'Eco Champion',
-          level: 'Expert'
-        },
-        content: 'Just switched to a bamboo toothbrush and love it! Small changes make a big difference. What sustainable swaps have you made recently?',
-        image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        likes: 24,
-        comments: 8,
-        commentList: [
-          {
-            author: { name: 'GreenGuru', avatar: 'https://randomuser.me/api/portraits/men/32.jpg' },
-            content: 'Totally agree! Bamboo is a game-changer.'
-          },
-          {
-            author: { name: 'EcoWarrior77', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
-            content: 'I switched to a reusable water bottle. Best decision!'
-          }
+    const q = query(collection(db, 'communityPosts'), orderBy('timestamp', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const loaded = snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        const timestamp = data.timestamp instanceof Timestamp ? data.timestamp.toDate() : new Date();
+        const likedBy: string[] = data.likedBy || [];
+        const bookmarkedBy: string[] = data.bookmarkedBy || [];
+        return {
+          id: docSnap.id,
+          author: data.author,
+          content: data.content,
+          image: data.image || null,
+          timestamp: timestamp.toISOString(),
+          likes: likedBy.length,
+          comments: (data.commentList || []).length,
+          commentList: data.commentList || [],
+          shares: data.shares || 0,
+          tags: data.tags || [],
+          liked: !!authUser && likedBy.includes(authUser.uid),
+          bookmarked: !!authUser && bookmarkedBy.includes(authUser.uid),
+        };
+      });
+      setPosts(loaded);
+    }, (error) => console.error('Error loading community posts:', error));
+    return () => unsubscribe();
+  }, [authUser]);
 
-        ],
-        shares: 3,
-        tags: ['Zero Waste', 'Personal Care', 'Sustainability'],
-        liked: false,
-        bookmarked: false
-      },
-      {
-        id: 'post2',
-        author: {
-          name: 'Mike Rodriguez',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face',
-          badge: 'Solar Advocate',
-          level: 'Pro'
-        },
-        content: 'Amazing to see so many active eco warriors! Keep up the great work everyone! 🌱',
-        image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=300&fit=crop',
-        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        likes: 67,
-        comments: 15,
-        commentList: [
-          {
-            author: { name: 'SustainableSam', avatar: 'https://randomuser.me/api/portraits/men/55.jpg' },
-            content: 'Inspired by this community!'
-          },
-          {
-            author: { name: 'NatureLover', avatar: 'https://randomuser.me/api/portraits/women/66.jpg' },
-            content: 'Keep up the good vibes!'
-          }
-        ],
-        shares: 12,
-        tags: ['Community', 'Motivation'],
-        liked: true,
-        bookmarked: true
-      },
-      {
-        id: 'post3',
-        author: {
-          name: 'Emma Thompson',
-          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face',
-          badge: 'Climate Activist',
-          level: 'Master'
-        },
-        content: 'Celebrating 6 months of being car-free! Public transport + biking has saved me $2000 and reduced my carbon footprint significantly.',
-        image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=300&fit=crop',
-        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-        likes: 156,
-        comments: 34,
-        commentList: [
-          {
-            author: { name: 'UrbanCyclist', avatar: 'https://randomuser.me/api/portraits/men/77.jpg' },
-            content: 'That\'s amazing! I\'m trying to bike more too.'
-          },
-          {
-            author: { name: 'TransitQueen', avatar: 'https://randomuser.me/api/portraits/women/88.jpg' },
-            content: 'Public transport FTW!'
-          }
+  // Real community groups/events/challenges - top-level Firestore collections, same
+  // live-onSnapshot pattern as communityPosts above. Membership is tracked via an array of
+  // uids (memberIds/attendeeIds/participantIds) rather than a single shared boolean, since a
+  // shared 'joined' flag on the doc would make every user see the same joined state.
+  useEffect(() => {
+    const q = query(collection(db, 'groups'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setGroups(snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        const memberIds: string[] = data.memberIds || [];
+        return {
+          id: docSnap.id,
+          name: data.name,
+          description: data.description,
+          category: data.category,
+          memberIds,
+          members: memberIds.length,
+          joined: !!authUser && memberIds.includes(authUser.uid),
+        };
+      }));
+    }, (error) => console.error('Error loading groups:', error));
+    return () => unsubscribe();
+  }, [authUser]);
 
-        ],
-        shares: 28,
-        tags: ['Transportation', 'Carbon Reduction', 'Money Saving'],
-        liked: false,
-        bookmarked: false
-      },
-      {
-        id: 'post4',
-        author: {
-          name: 'Alex Chen',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face',
-          badge: 'Green Builder',
-          level: 'Pro'
-        },
-        content: 'Installed solar panels last month and they\'re already generating 40% of our home\'s energy! The installation process was smoother than expected.',
-        image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=300&fit=crop',
-        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-        likes: 89,
-        comments: 22,
-        commentList: [
-          {
-            author: { name: 'SolarUser', avatar: 'https://randomuser.me/api/portraits/men/99.jpg' },
-            content: 'Considering solar for my home. Any tips?'
-          },
-          {
-            author: { name: 'GreenHome', avatar: 'https://randomuser.me/api/portraits/women/11.jpg' },
-            content: 'Great to hear about your success!'
-          }
+  useEffect(() => {
+    const q = query(collection(db, 'events'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setEvents(snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        const attendeeIds: string[] = data.attendeeIds || [];
+        return {
+          id: docSnap.id,
+          title: data.title,
+          description: data.description,
+          date: data.date,
+          time: data.time,
+          location: data.location,
+          organizer: data.organizerName || 'Community Member',
+          maxAttendees: data.maxAttendees || null,
+          attendeeIds,
+          attendees: attendeeIds.length,
+          registered: !!authUser && attendeeIds.includes(authUser.uid),
+        };
+      }));
+    }, (error) => console.error('Error loading events:', error));
+    return () => unsubscribe();
+  }, [authUser]);
 
-        ],
-        shares: 18,
-        tags: ['Solar Energy', 'Home Improvement', 'Renewable Energy'],
-        liked: true,
-        bookmarked: true
-      },
-      {
-        id: 'post5',
-        author: {
-          name: 'Lisa Johnson',
-          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=40&h=40&fit=crop&crop=face',
-          badge: 'Urban Farmer',
-          level: 'Expert'
-        },
-        content: 'My rooftop garden is thriving! Growing 70% of my vegetables at home. Nothing beats the taste of homegrown tomatoes! 🍅',
-        image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=300&fit=crop',
-        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-        likes: 78,
-        comments: 19,
-        commentList: [
-          {
-            author: { name: 'GardenLife', avatar: 'https://randomuser.me/api/portraits/men/22.jpg' },
-            content: 'My tomatoes are struggling. Any advice?'
-          },
-          {
-            author: { name: 'HomeGrown', avatar: 'https://randomuser.me/api/portraits/women/33.jpg' },
-            content: 'Nothing better than fresh produce from your own garden!'
-          }
+  useEffect(() => {
+    const q = query(collection(db, 'challenges'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setChallenges(snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        const participantIds: string[] = data.participantIds || [];
+        return {
+          id: docSnap.id,
+          title: data.title,
+          description: data.description,
+          category: data.category,
+          difficulty: data.difficulty,
+          duration: data.duration,
+          reward: data.reward,
+          participantIds,
+          participants: participantIds.length,
+          joined: !!authUser && participantIds.includes(authUser.uid),
+        };
+      }));
+    }, (error) => console.error('Error loading challenges:', error));
+    return () => unsubscribe();
+  }, [authUser]);
 
-        ],
-        shares: 14,
-        tags: ['Urban Gardening', 'Food Security', 'Healthy Living'],
-        liked: false,
-        bookmarked: false
-      },
-      {
-        id: 'post6',
-        author: {
-          name: 'David Park',
-          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=40&h=40&fit=crop&crop=face',
-          badge: 'Waste Warrior',
-          level: 'Intermediate'
-        },
-        content: 'Completed my first month of zero waste living! It\'s challenging but incredibly rewarding. My trash can was literally empty this week.',
-        image: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=400&h=300&fit=crop',
-        timestamp: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(),
-        likes: 134,
-        comments: 41,
-        commentList: [
-          {
-            author: { name: 'ZeroWasteBeginner', avatar: 'https://randomuser.me/api/portraits/men/44.jpg' },
-            content: 'This is my goal! So inspiring.'
-          },
-          {
-            author: { name: 'ReduceReuseRecycle', avatar: 'https://randomuser.me/api/portraits/women/55.jpg' },
-            content: 'Tell us your secrets!'
-          }
-
-        ],
-        shares: 25,
-        tags: ['Zero Waste', 'Lifestyle Change', 'Minimalism'],
-        liked: true,
-        bookmarked: false
-      },
-      {
-        id: 'post7',
-        author: {
-          name: 'Maria Garcia',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=40&h=40&fit=crop&crop=face',
-          badge: 'Eco Educator',
-          level: 'Master'
-        },
-        content: 'Taught 50 kids about renewable energy today at the local school! Their enthusiasm for protecting the planet gives me so much hope. 🌍',
-        image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=300&fit=crop',
-        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        likes: 201,
-        comments: 56,
-        commentList: [
-          {
-            author: { name: 'TeacherTina', avatar: 'https://randomuser.me/api/portraits/women/66.jpg' },
-            content: 'Education is key! Thank you for doing this.'
-          },
-          {
-            author: { name: 'FutureGen', avatar: 'https://randomuser.me/api/portraits/men/77.jpg' },
-            content: 'The kids are our future!'
-          }
-
-        ],
-        shares: 38,
-        tags: ['Education', 'Youth Engagement', 'Community Outreach'],
-        liked: false,
-        bookmarked: true
-      },
-      {
-        id: 'post8',
-        author: {
-          name: 'James Wilson',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face',
-          badge: 'Tech Innovator',
-          level: 'Pro'
-        },
-        content: 'Just launched a new app that tracks your carbon footprint in real-time! Beta testing shows 23% reduction in emissions. Link in bio!',
-        image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop',
-        timestamp: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
-        likes: 167,
-        comments: 43,
-        commentList: [
-          {
-            author: { name: 'AppTester', avatar: 'https://randomuser.me/api/portraits/men/88.jpg' },
-            content: 'Downloaded the app! Looks promising.'
-          },
-          {
-            author: { name: 'DataGeek', avatar: 'https://randomuser.me/api/portraits/women/99.jpg' },
-            content: 'Real-time tracking is a great feature.'
-          }
-
-        ],
-        shares: 52,
-        tags: ['Technology', 'Innovation', 'Carbon Tracking'],
-        liked: true,
-        bookmarked: true
-      }
-    ]);
-
-    setGroups([
-      {
-        id: 'group1',
-        name: 'Zero Waste Living',
-        description: 'Tips and tricks for reducing waste in daily life',
-        members: 12543,
-        category: 'Lifestyle',
-        image: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=400&h=200&fit=crop',
-        joined: true,
-        posts: 1234,
-        activity: 'Very Active'
-      },
-      {
-        id: 'group2',
-        name: 'Renewable Energy Enthusiasts',
-        description: 'Discussing solar, wind, and other clean energy solutions',
-        members: 8967,
-        category: 'Energy',
-        image: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=400&h=200&fit=crop',
-        joined: false,
-        posts: 2345,
-        activity: 'Active'
-      },
-      {
-        id: 'group3',
-        name: 'Sustainable Fashion',
-        description: 'Ethical clothing choices and eco-friendly fashion',
-        members: 15678,
-        category: 'Fashion',
-        image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=200&fit=crop',
-        joined: true,
-        posts: 3456,
-        activity: 'Very Active'
-      },
-      {
-        id: 'group4',
-        name: 'Urban Gardening',
-        description: 'Growing your own food in small spaces',
-        members: 9876,
-        category: 'Gardening',
-        image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=200&fit=crop',
-        joined: false,
-        posts: 1876,
-        activity: 'Moderate'
-      },
-      {
-        id: 'group5',
-        name: 'Green Transportation',
-        description: 'Electric vehicles, public transport, and cycling advocacy',
-        members: 7432,
-        category: 'Transportation',
-        image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=200&fit=crop',
-        joined: true,
-        posts: 987,
-        activity: 'Active'
-      },
-      {
-        id: 'group6',
-        name: 'Climate Action Network',
-        description: 'Organizing for climate policy and environmental justice',
-        members: 11234,
-        category: 'Activism',
-        image: 'https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=400&h=200&fit=crop',
-        joined: false,
-        posts: 2876,
-        activity: 'Very Active'
-      },
-      {
-        id: 'group7',
-        name: 'Eco-Friendly Business',
-        description: 'Sustainable business practices and green entrepreneurship',
-        members: 5678,
-        category: 'Business',
-        image: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=200&fit=crop',
-        joined: true,
-        posts: 1567,
-        activity: 'Active'
-      },
-      {
-        id: 'group8',
-        name: 'Plastic-Free Community',
-        description: 'Eliminating single-use plastics from our daily lives',
-        members: 13456,
-        category: 'Zero Waste',
-        image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=200&fit=crop',
-        joined: false,
-        posts: 2234,
-        activity: 'Very Active'
-      }
-    ]);
-
-    setEvents([
-      {
-        id: 'event1',
-        title: 'Community Solar Workshop',
-        description: 'Learn about community solar programs and how to join',
-        date: '2024-07-15',
-        time: '2:00 PM',
-        location: 'Community Center',
-        attendees: 45,
-        maxAttendees: 100,
-        image: 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=200&fit=crop',
-        organizer: 'Green Energy Group',
-        registered: false
-      },
-      {
-        id: 'event2',
-        title: 'Zero Waste Cooking Class',
-        description: 'Learn to cook delicious meals with minimal waste',
-        date: '2024-07-20',
-        time: '6:00 PM',
-        location: 'Eco Kitchen Studio',
-        attendees: 28,
-        maxAttendees: 30,
-        image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=200&fit=crop',
-        organizer: 'Zero Waste Community',
-        registered: true
-      },
-      {
-        id: 'event3',
-        title: 'Urban Farming Meetup',
-        description: 'Connect with local urban farmers and learn techniques',
-        date: '2024-07-25',
-        time: '10:00 AM',
-        location: 'City Park',
-        attendees: 67,
-        maxAttendees: 80,
-        image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&h=200&fit=crop',
-        organizer: 'Urban Gardening Network',
-        registered: false
-      },
-      {
-        id: 'event4',
-        title: 'Climate Action Rally',
-        description: 'Join us for a peaceful rally demanding climate action',
-        date: '2024-07-30',
-        time: '12:00 PM',
-        location: 'City Hall',
-        attendees: 234,
-        maxAttendees: 500,
-        image: 'https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=400&h=200&fit=crop',
-        organizer: 'Climate Action Network',
-        registered: true
-      },
-      {
-        id: 'event5',
-        title: 'Sustainable Fashion Show',
-        description: 'Showcase of eco-friendly and ethically made clothing',
-        date: '2024-08-05',
-        time: '7:00 PM',
-        location: 'Fashion District',
-        attendees: 156,
-        maxAttendees: 200,
-        image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=200&fit=crop',
-        organizer: 'Sustainable Fashion Collective',
-        registered: false
-      },
-      {
-        id: 'event6',
-        title: 'Electric Vehicle Expo',
-        description: 'Test drive the latest electric vehicles and learn about incentives',
-        date: '2024-08-10',
-        time: '9:00 AM',
-        location: 'Convention Center',
-        attendees: 89,
-        maxAttendees: 150,
-        image: 'https://images.unsplash.com/photo-1593941707882-a5bac6861d75?w=400&h=200&fit=crop',
-        organizer: 'Green Transportation Alliance',
-        registered: true
-      },
-      {
-        id: 'event7',
-        title: 'Plastic-Free Challenge Kickoff',
-        description: 'Start your journey to eliminate single-use plastics',
-        date: '2024-08-15',
-        time: '3:00 PM',
-        location: 'Environmental Center',
-        attendees: 78,
-        maxAttendees: 120,
-        image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=200&fit=crop',
-        organizer: 'Plastic-Free Community',
-        registered: false
-      },
-      {
-        id: 'event8',
-        title: 'Green Building Workshop',
-        description: 'Learn about sustainable construction and renovation',
-        date: '2024-08-20',
-        time: '1:00 PM',
-        location: 'Eco Building Center',
-        attendees: 43,
-        maxAttendees: 60,
-        image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=400&h=200&fit=crop',
-        organizer: 'Green Building Council',
-        registered: true
-      }
-    ]);
-
-    setChallenges([
-      {
-        id: 'challenge1',
-        title: '30-Day Plastic Free Challenge',
-        description: 'Eliminate single-use plastics for 30 days',
-        participants: 1234,
-        duration: '30 days',
-        difficulty: 'Medium',
-        reward: '500 Green Points',
-        progress: 65,
-        joined: true,
-        category: 'Zero Waste'
-      },
-      {
-        id: 'challenge2',
-        title: 'Energy Saver Week',
-        description: 'Reduce energy consumption by 20% for one week',
-        participants: 876,
-        duration: '7 days',
-        difficulty: 'Easy',
-        reward: '200 Green Points',
-        progress: 0,
-        joined: false,
-        category: 'Energy'
-      },
-      {
-        id: 'challenge3',
-        title: 'Bike to Work Month',
-        description: 'Use bicycle for daily commuting for a month',
-        participants: 543,
-        duration: '30 days',
-        difficulty: 'Hard',
-        reward: '800 Green Points',
-        progress: 23,
-        joined: true,
-        category: 'Transportation'
-      },
-      {
-        id: 'challenge4',
-        title: 'Meatless Monday Movement',
-        description: 'Go vegetarian every Monday for 3 months',
-        participants: 2156,
-        duration: '12 weeks',
-        difficulty: 'Easy',
-        reward: '300 Green Points',
-        progress: 45,
-        joined: true,
-        category: 'Food'
-      },
-      {
-        id: 'challenge5',
-        title: 'Solar Panel Installation',
-        description: 'Install solar panels on your home or business',
-        participants: 234,
-        duration: '6 months',
-        difficulty: 'Hard',
-        reward: '2000 Green Points',
-        progress: 0,
-        joined: false,
-        category: 'Energy'
-      },
-      {
-        id: 'challenge6',
-        title: 'Community Garden Volunteer',
-        description: 'Volunteer at local community gardens for 3 months',
-        participants: 789,
-        duration: '12 weeks',
-        difficulty: 'Medium',
-        reward: '600 Green Points',
-        progress: 78,
-        joined: true,
-        category: 'Gardening'
-      },
-      {
-        id: 'challenge7',
-        title: 'Water Conservation Hero',
-        description: 'Reduce water usage by 30% for 60 days',
-        participants: 1567,
-        duration: '60 days',
-        difficulty: 'Medium',
-        reward: '400 Green Points',
-        progress: 0,
-        joined: false,
-        category: 'Water'
-      },
-      {
-        id: 'challenge8',
-        title: 'Thrift Shopping Only',
-        description: 'Buy only secondhand items for 90 days',
-        participants: 934,
-        duration: '90 days',
-        difficulty: 'Medium',
-        reward: '700 Green Points',
-        progress: 12,
-        joined: true,
-        category: 'Fashion'
-      }
-    ]);
+  // Real leaderboard - reads the public 'leaderboard' mirror collection (see
+  // UserDataContext, which keeps each user's own doc there in sync with their totalPoints).
+  useEffect(() => {
+    const q = query(collection(db, 'leaderboard'), orderBy('totalPoints', 'desc'), limit(10));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setLeaderboardData(snapshot.docs.map((docSnap, index) => {
+        const data = docSnap.data();
+        return {
+          uid: docSnap.id,
+          name: data.name || 'EcoScope Member',
+          avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.name || docSnap.id)}`,
+          points: data.totalPoints || 0,
+          rank: index + 1,
+        };
+      }));
+    }, (error) => console.error('Error loading leaderboard:', error));
+    return () => unsubscribe();
   }, []);
 
-  // Generate dynamic leaderboard data
-  const generateLeaderboard = () => {
-    const baseUsers = [
-      { name: 'Sarah Green', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=40&h=40&fit=crop&crop=face', basePoints: 2500 },
-      { name: 'Mike Rodriguez', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face', basePoints: 2300 },
-      { name: 'Emma Thompson', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face', basePoints: 2100 },
-      { name: 'Alex Chen', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face', basePoints: 1900 },
-      { name: 'Lisa Johnson', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=40&h=40&fit=crop&crop=face', basePoints: 1800 }
-    ];
-
-    // Add current user to the list
-    const allUsers = [...baseUsers, { 
-      name: currentUser.name, 
-      avatar: currentUser.avatar, 
-      basePoints: currentUser.points 
-    }];
-
-    // Sort by points and add ranking
-    return allUsers
-      .sort((a, b) => b.basePoints - a.basePoints)
-      .map((user, index) => ({
-        ...user,
-        rank: index + 1,
-        points: user.basePoints
-      }));
+  const handleLike = async (postId) => {
+    if (!authUser) return;
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+    try {
+      await updateDoc(doc(db, 'communityPosts', postId), {
+        likedBy: post.liked ? arrayRemove(authUser.uid) : arrayUnion(authUser.uid),
+      });
+    } catch (error) {
+      console.error('Error updating like:', error);
+    }
   };
 
-  const leaderboardData = generateLeaderboard();
-
-  const handleLike = (postId) => {
-    setPosts(posts.map(p =>
-      p.id === postId
-        ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 }
-        : p
-    ));
-  };
-
-  const handleAddComment = (postId) => {
+  const handleAddComment = async (postId) => {
     const commentContent = commentInputs[postId];
-    if (!commentContent.trim()) return;
-
-    setPosts(posts.map(p =>
-      p.id === postId
-        ? {
-            ...p,
-            comments: p.comments + 1,
-            commentList: [...(p.commentList || []), { author: currentUser, content: commentContent }]
-          }
-        : p
-    ));
-    setCommentInputs({ ...commentInputs, [postId]: '' });
+    if (!commentContent?.trim() || !authUser) return;
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+    try {
+      await updateDoc(doc(db, 'communityPosts', postId), {
+        commentList: arrayUnion({
+          author: { name: currentUser.name, avatar: currentUser.avatar },
+          content: commentContent,
+        }),
+      });
+      setCommentInputs({ ...commentInputs, [postId]: '' });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
   };
 
   const handleShare = (postId) => {
@@ -663,83 +409,210 @@ const CommunityHub = () => {
     }
   };
 
-  const handleBookmark = (postId) => {
-    setPosts(posts.map(p =>
-      p.id === postId
-        ? { ...p, bookmarked: !p.bookmarked }
-        : p
-    ));
+  const handleBookmark = async (postId) => {
+    if (!authUser) return;
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+    try {
+      await updateDoc(doc(db, 'communityPosts', postId), {
+        bookmarkedBy: post.bookmarked ? arrayRemove(authUser.uid) : arrayUnion(authUser.uid),
+      });
+    } catch (error) {
+      console.error('Error updating bookmark:', error);
+    }
   };
 
-  const handleJoinGroup = (groupId) => {
+  const handleJoinGroup = async (groupId) => {
+    if (!authUser) return;
     const group = groups.find(g => g.id === groupId);
-    if (group) {
-      const newJoinedStatus = !group.joined;
-      addCommunityNotification(`You have ${newJoinedStatus ? 'joined' : 'left'} the group "${group.name}".`);
+    if (!group) return;
+    try {
+      await updateDoc(doc(db, 'groups', groupId), {
+        memberIds: group.joined ? arrayRemove(authUser.uid) : arrayUnion(authUser.uid),
+      });
+      addCommunityNotification(`You have ${group.joined ? 'left' : 'joined'} the group "${group.name}".`);
+      toast({ title: group.joined ? 'Left Group' : 'Joined Group!', description: `You ${group.joined ? 'left' : 'joined'} "${group.name}".` });
+    } catch (error) {
+      console.error('Error updating group membership:', error);
+      toast({ title: 'Action Failed', description: 'Could not update group membership.', variant: 'destructive' });
     }
-
-    setGroups(groups.map(g =>
-      g.id === groupId
-        ? { ...g, joined: !g.joined, members: g.joined ? g.members - 1 : g.members + 1 }
-        : g
-    ));
   };
 
-  const handleRegisterEvent = (eventId) => {
+  // Real-time discussion feed for the currently open group - lets a group actually be used for
+  // something instead of just existing as a join/leave card.
+  useEffect(() => {
+    if (!selectedGroup) {
+      setGroupMessages([]);
+      return;
+    }
+    const q = query(collection(db, 'groups', selectedGroup.id, 'messages'), orderBy('timestamp', 'asc'), limit(200));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setGroupMessages(snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        const timestamp = data.timestamp instanceof Timestamp ? data.timestamp.toDate() : new Date();
+        return {
+          id: docSnap.id,
+          text: data.text,
+          authorId: data.authorId,
+          authorName: data.authorName,
+          authorAvatar: data.authorAvatar,
+          timestamp,
+        };
+      }));
+    }, (error) => console.error('Error loading group messages:', error));
+    return () => unsubscribe();
+  }, [selectedGroup]);
+
+  const handleSendGroupMessage = async () => {
+    if (!authUser || !selectedGroup || !newGroupMessage.trim()) return;
+    setIsSendingGroupMessage(true);
+    try {
+      await addDoc(collection(db, 'groups', selectedGroup.id, 'messages'), {
+        text: newGroupMessage.trim(),
+        authorId: authUser.uid,
+        authorName: currentUser.name,
+        authorAvatar: currentUser.avatar,
+        timestamp: serverTimestamp(),
+      });
+      setNewGroupMessage('');
+    } catch (error) {
+      console.error('Error sending group message:', error);
+      toast({ title: 'Message Failed', description: 'Could not send your message. Please try again.', variant: 'destructive' });
+    } finally {
+      setIsSendingGroupMessage(false);
+    }
+  };
+
+  const handleRegisterEvent = async (eventId) => {
+    if (!authUser) return;
     const event = events.find(e => e.id === eventId);
-    if (event) {
-      const newRegisteredStatus = !event.registered;
-      addCommunityNotification(`You have ${newRegisteredStatus ? 'registered for' : 'unregistered from'} the event "${event.title}".`);
+    if (!event) return;
+    try {
+      await updateDoc(doc(db, 'events', eventId), {
+        attendeeIds: event.registered ? arrayRemove(authUser.uid) : arrayUnion(authUser.uid),
+      });
+      addCommunityNotification(`You have ${event.registered ? 'unregistered from' : 'registered for'} the event "${event.title}".`);
+    } catch (error) {
+      console.error('Error updating event registration:', error);
     }
-
-    setEvents(events.map(e =>
-      e.id === eventId
-        ? { ...e, registered: !e.registered, attendees: e.registered ? e.attendees - 1 : e.attendees + 1 }
-        : e
-    ));
   };
 
-  const handleJoinChallenge = (challengeId) => {
+  const handleJoinChallenge = async (challengeId) => {
+    if (!authUser) return;
     const challenge = challenges.find(c => c.id === challengeId);
-    if (challenge) {
-      const newJoinedStatus = !challenge.joined;
-      addCommunityNotification(`You have ${newJoinedStatus ? 'joined' : 'left'} the challenge "${challenge.title}".`);
+    if (!challenge) return;
+    try {
+      await updateDoc(doc(db, 'challenges', challengeId), {
+        participantIds: challenge.joined ? arrayRemove(authUser.uid) : arrayUnion(authUser.uid),
+      });
+      addCommunityNotification(`You have ${challenge.joined ? 'left' : 'joined'} the challenge "${challenge.title}".`);
+    } catch (error) {
+      console.error('Error updating challenge participation:', error);
     }
-
-    setChallenges(challenges.map(c =>
-      c.id === challengeId
-        ? { ...c, joined: !c.joined, participants: c.joined ? c.participants - 1 : c.participants + 1 }
-        : c
-    ));
   };
 
-  const handleCreatePost = () => {
-    if (!newPostContent.trim()) return;
+  const handleCreateGroup = async () => {
+    if (!newGroup.name.trim() || !authUser) return;
+    setIsCreatingGroup(true);
+    try {
+      await addDoc(collection(db, 'groups'), {
+        name: newGroup.name,
+        description: newGroup.description,
+        category: newGroup.category || 'General',
+        creatorId: authUser.uid,
+        memberIds: [authUser.uid],
+        createdAt: serverTimestamp(),
+      });
+      setNewGroup({ name: '', description: '', category: '' });
+      setShowCreateGroup(false);
+      addCommunityNotification(`You created a new group "${newGroup.name}".`);
+    } catch (error) {
+      console.error('Error creating group:', error);
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  };
 
-    const newPost = {
-      id: Date.now().toString(),
-      author: {
-        name: currentUser.name,
-        avatar: currentUser.avatar,
-        badge: 'Community Member',
-        level: currentUser.level,
-      },
-      content: newPostContent,
-      image: null,
-      timestamp: new Date().toISOString(),
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      tags: ['Community'],
-      liked: false,
-      bookmarked: false,
-    };
+  const handleCreateEvent = async () => {
+    if (!newEvent.title.trim() || !newEvent.date || !authUser) return;
+    setIsCreatingEvent(true);
+    try {
+      await addDoc(collection(db, 'events'), {
+        title: newEvent.title,
+        description: newEvent.description,
+        date: newEvent.date,
+        time: newEvent.time,
+        location: newEvent.location,
+        maxAttendees: newEvent.maxAttendees ? parseInt(newEvent.maxAttendees, 10) : null,
+        organizerId: authUser.uid,
+        organizerName: currentUser.name,
+        attendeeIds: [authUser.uid],
+        createdAt: serverTimestamp(),
+      });
+      setNewEvent({ title: '', description: '', date: '', time: '', location: '', maxAttendees: '' });
+      setShowCreateEvent(false);
+      addCommunityNotification(`You created a new event "${newEvent.title}".`);
+    } catch (error) {
+      console.error('Error creating event:', error);
+    } finally {
+      setIsCreatingEvent(false);
+    }
+  };
 
-    setPosts([newPost, ...posts]);
-    setNewPostContent('');
-    setShowCreatePost(false);
+  const handleCreateChallenge = async () => {
+    if (!newChallenge.title.trim() || !authUser) return;
+    setIsCreatingChallenge(true);
+    try {
+      await addDoc(collection(db, 'challenges'), {
+        title: newChallenge.title,
+        description: newChallenge.description,
+        category: newChallenge.category || 'General',
+        difficulty: newChallenge.difficulty,
+        duration: newChallenge.duration,
+        reward: newChallenge.reward,
+        creatorId: authUser.uid,
+        participantIds: [authUser.uid],
+        createdAt: serverTimestamp(),
+      });
+      setNewChallenge({ title: '', description: '', category: '', difficulty: 'Easy', duration: '', reward: '' });
+      setShowCreateChallenge(false);
+      addCommunityNotification(`You created a new challenge "${newChallenge.title}".`);
+    } catch (error) {
+      console.error('Error creating challenge:', error);
+    } finally {
+      setIsCreatingChallenge(false);
+    }
+  };
 
-    addCommunityNotification('A new post has been created in the Community Hub. Check it out!');
+  const handleCreatePost = async () => {
+    if (!newPostContent.trim() || !authUser) return;
+    setIsPosting(true);
+    try {
+      await addDoc(collection(db, 'communityPosts'), {
+        authorId: authUser.uid,
+        author: {
+          name: currentUser.name,
+          avatar: currentUser.avatar,
+          badge: 'Community Member',
+          level: currentUser.level,
+        },
+        content: newPostContent,
+        image: null,
+        timestamp: serverTimestamp(),
+        likedBy: [],
+        bookmarkedBy: [],
+        commentList: [],
+        shares: 0,
+        tags: ['Community'],
+      });
+      setNewPostContent('');
+      setShowCreatePost(false);
+      addCommunityNotification('A new post has been created in the Community Hub. Check it out!');
+    } catch (error) {
+      console.error('Error creating post:', error);
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -751,13 +624,23 @@ const CommunityHub = () => {
     }
   };
 
-  const getActivityColor = (activity) => {
-    switch (activity) {
-      case 'Very Active': return 'bg-green-100 text-green-700';
-      case 'Active': return 'bg-blue-100 text-blue-700';
-      case 'Moderate': return 'bg-yellow-100 text-yellow-700';
-      default: return 'bg-gray-100 text-gray-700';
-    }
+  // Hash-based so any category string (including ones users type in when creating a group/
+  // challenge) gets a consistent, varied color instead of every badge defaulting to the same grey.
+  const CATEGORY_COLORS = [
+    'bg-blue-100 text-blue-700 border-blue-200',
+    'bg-amber-100 text-amber-700 border-amber-200',
+    'bg-pink-100 text-pink-700 border-pink-200',
+    'bg-purple-100 text-purple-700 border-purple-200',
+    'bg-cyan-100 text-cyan-700 border-cyan-200',
+    'bg-lime-100 text-lime-700 border-lime-200',
+    'bg-orange-100 text-orange-700 border-orange-200',
+    'bg-indigo-100 text-indigo-700 border-indigo-200',
+  ];
+  const getCategoryColor = (category?: string) => {
+    if (!category) return 'bg-gray-100 text-gray-700 border-gray-200';
+    let hash = 0;
+    for (let i = 0; i < category.length; i++) hash = (hash * 31 + category.charCodeAt(i)) >>> 0;
+    return CATEGORY_COLORS[hash % CATEGORY_COLORS.length];
   };
 
   const formatTimestamp = (timestamp) => {
@@ -772,14 +655,18 @@ const CommunityHub = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-6 pt-28 pb-8 space-y-6">
       <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-900 dark:border-gray-700">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Users className="w-6 h-6 text-green-600 dark:text-foreground" />
-            <span className="dark:text-foreground">Community Hub</span>
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center space-x-3 text-slate-800 dark:text-slate-200">
+            <div className="w-10 h-10 bg-emerald-600 dark:bg-emerald-600 rounded-xl flex items-center justify-center">
+              <Users className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <span className="text-xl font-bold">Community Hub</span>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-normal">Connect, share, and grow with fellow sustainability champions</p>
+            </div>
           </CardTitle>
-          <p className="text-gray-600 dark:text-muted-foreground">Connect, share, and grow with fellow sustainability champions</p>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
@@ -818,8 +705,8 @@ const CommunityHub = () => {
               className="min-h-[100px] dark:bg-background dark:text-foreground"
             />
             <div className="flex gap-2">
-              <Button onClick={handleCreatePost} className="bg-green-600 hover:bg-green-700 dark:bg-primary dark:hover:bg-primary/90">
-                Post
+              <Button onClick={handleCreatePost} disabled={isPosting || !newPostContent.trim()} className="bg-green-600 hover:bg-green-700 dark:bg-primary dark:hover:bg-primary/90">
+                {isPosting ? 'Posting...' : 'Post'}
               </Button>
               <Button variant="outline" onClick={() => setShowCreatePost(false)} className="dark:border-border dark:text-foreground dark:hover:bg-muted">
                 Cancel
@@ -829,12 +716,15 @@ const CommunityHub = () => {
         </Card>
       )}
 
+      <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-900 dark:border-gray-700">
+        <CardContent className="p-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
         <TabsTrigger value="feed" className="dark:text-foreground">Feed</TabsTrigger>
           <TabsTrigger value="groups" className="dark:text-foreground">Groups</TabsTrigger>
           <TabsTrigger value="events" className="dark:text-foreground">Events</TabsTrigger>
           <TabsTrigger value="challenges" className="dark:text-foreground">Challenges</TabsTrigger>
+          <TabsTrigger value="rewards" className="dark:text-foreground">Rewards</TabsTrigger>
           <TabsTrigger value="leaderboard" className="dark:text-foreground">Leaderboard</TabsTrigger>
         </TabsList>
 
@@ -950,112 +840,222 @@ const CommunityHub = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="groups">
+        <TabsContent value="groups" className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => setShowCreateGroup(true)} className="bg-green-600 hover:bg-green-700 dark:bg-primary dark:hover:bg-primary/90">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Group
+            </Button>
+          </div>
+
+          {showCreateGroup && (
+            <Card className="dark:bg-background dark:border-border">
+              <CardHeader><CardTitle className="dark:text-foreground">Create New Group</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <Input placeholder="Group name" value={newGroup.name} onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                <Input placeholder="Category (e.g. Lifestyle, Energy, Fashion)" value={newGroup.category} onChange={(e) => setNewGroup({ ...newGroup, category: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                <Textarea placeholder="Description" value={newGroup.description} onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                <div className="flex gap-2">
+                  <Button onClick={handleCreateGroup} disabled={isCreatingGroup || !newGroup.name.trim()} className="bg-green-600 hover:bg-green-700">
+                    {isCreatingGroup ? 'Creating...' : 'Create'}
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowCreateGroup(false)}>Cancel</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {groups.filter(group => 
+            {groups.filter(group =>
               group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
               group.description.toLowerCase().includes(searchQuery.toLowerCase())
             ).map(group => (
               <Card key={group.id} className="hover:shadow-lg transition-shadow">
-                <div className="aspect-video overflow-hidden rounded-t-lg">
-                  <img 
-                    src={group.image} 
-                    alt={group.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
                 <CardHeader>
-                  <CardTitle className="text-lg">{group.name}</CardTitle>
-                  <p className="text-sm text-gray-600">{group.description}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+                      <Users className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{group.name}</CardTitle>
+                      <Badge variant="outline" className={`text-xs mt-1 ${getCategoryColor(group.category)}`}>{group.category}</Badge>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 pt-2">{group.description}</p>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-1">
-                      <Users className="w-4 h-4 text-gray-500" />
-                      <span>{group.members.toLocaleString()} members</span>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {group.category}
-                    </Badge>
+                  <div className="flex items-center gap-1 text-sm">
+                    <Users className="w-4 h-4 text-gray-500" />
+                    <span>{group.members.toLocaleString()} member{group.members === 1 ? '' : 's'}</span>
                   </div>
-                  
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-1">
-                      <MessageCircle className="w-4 h-4 text-gray-500" />
-                      <span>{group.posts.toLocaleString()} posts</span>
-                    </div>
-                    <Badge className={`text-xs ${getActivityColor(group.activity)}`}>
-                      {group.activity}
-                    </Badge>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => handleJoinGroup(group.id)}
+                      className={`flex-1 ${group.joined
+                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-green-600 text-white hover:bg-green-700'
+                      }`}
+                    >
+                      {group.joined ? 'Joined' : 'Join Group'}
+                    </Button>
+                    <Button variant="outline" className="flex-1" onClick={() => setSelectedGroup(group)}>
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      Open Chat
+                    </Button>
                   </div>
-                  
-                  <Button
-                    onClick={() => handleJoinGroup(group.id)}
-                    className={`w-full ${group.joined 
-                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
-                  >
-                    {group.joined ? 'Joined' : 'Join Group'}
-                  </Button>
                 </CardContent>
               </Card>
             ))}
+            {groups.length === 0 && (
+              <div className="col-span-full text-center py-12 text-gray-500 dark:text-muted-foreground">
+                No groups yet. Be the first to create one!
+              </div>
+            )}
           </div>
+
+          {/* Group Chat - a real, live discussion feed for the opened group instead of a
+              dead-end join/leave card. */}
+          {selectedGroup && (
+            <Card className="dark:bg-background dark:border-border">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="dark:text-foreground">{selectedGroup.name} - Group Chat</CardTitle>
+                  <p className="text-sm text-gray-500 dark:text-muted-foreground">
+                    {selectedGroup.members.toLocaleString()} member{selectedGroup.members === 1 ? '' : 's'}
+                  </p>
+                </div>
+                <Button variant="ghost" onClick={() => setSelectedGroup(null)} className="dark:text-foreground">✕</Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="h-80 overflow-y-auto space-y-3 border rounded-lg p-4 bg-gray-50/50 dark:bg-muted/30 dark:border-border">
+                  {groupMessages.length === 0 && (
+                    <p className="text-sm text-gray-500 dark:text-muted-foreground text-center py-8">
+                      No messages yet - say something to get the conversation started!
+                    </p>
+                  )}
+                  {groupMessages.map((msg) => (
+                    <div key={msg.id} className="flex items-start gap-2">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={msg.authorAvatar} alt={msg.authorName} />
+                        <AvatarFallback>{(msg.authorName || '?').charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium dark:text-foreground">{msg.authorName}</span>
+                          <span className="text-xs text-gray-400 dark:text-muted-foreground">
+                            {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-muted-foreground">{msg.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {authUser ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Write a message..."
+                      value={newGroupMessage}
+                      onChange={(e) => setNewGroupMessage(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && !isSendingGroupMessage && handleSendGroupMessage()}
+                      className="dark:bg-background dark:text-foreground"
+                    />
+                    <Button onClick={handleSendGroupMessage} disabled={isSendingGroupMessage || !newGroupMessage.trim()} className="bg-green-600 hover:bg-green-700">
+                      Send
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-muted-foreground text-center">Log in to join the conversation.</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
-        <TabsContent value="events">
+        <TabsContent value="events" className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => setShowCreateEvent(true)} className="bg-green-600 hover:bg-green-700 dark:bg-primary dark:hover:bg-primary/90">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Event
+            </Button>
+          </div>
+
+          {showCreateEvent && (
+            <Card className="dark:bg-background dark:border-border">
+              <CardHeader><CardTitle className="dark:text-foreground">Create New Event</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <Input placeholder="Event title" value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                <Textarea placeholder="Description" value={newEvent.description} onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input type="date" value={newEvent.date} onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                  <Input type="time" value={newEvent.time} onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                </div>
+                <Input placeholder="Location" value={newEvent.location} onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                <Input type="number" min="1" placeholder="Max attendees (optional)" value={newEvent.maxAttendees} onChange={(e) => setNewEvent({ ...newEvent, maxAttendees: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                <div className="flex gap-2">
+                  <Button onClick={handleCreateEvent} disabled={isCreatingEvent || !newEvent.title.trim() || !newEvent.date} className="bg-green-600 hover:bg-green-700">
+                    {isCreatingEvent ? 'Creating...' : 'Create'}
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowCreateEvent(false)}>Cancel</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {events.filter(event => 
+            {events.filter(event =>
               event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
               event.description.toLowerCase().includes(searchQuery.toLowerCase())
             ).map(event => (
               <Card key={event.id} className="hover:shadow-lg transition-shadow">
-                <div className="aspect-video overflow-hidden rounded-t-lg">
-                  <img 
-                    src={event.image} 
-                    alt={event.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
                 <CardHeader>
-                  <CardTitle className="text-lg">{event.title}</CardTitle>
-                  <p className="text-sm text-gray-600">{event.description}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                      <Calendar className="w-5 h-5 text-white" />
+                    </div>
+                    <CardTitle className="text-lg">{event.title}</CardTitle>
+                  </div>
+                  <p className="text-sm text-gray-600 pt-2">{event.description}</p>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="w-4 h-4 text-gray-500" />
                     <span>{event.date}</span>
-                    <Clock className="w-4 h-4 text-gray-500 ml-2" />
-                    <span>{event.time}</span>
+                    {event.time && <><Clock className="w-4 h-4 text-gray-500 ml-2" /><span>{event.time}</span></>}
                   </div>
-                  
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="w-4 h-4 text-gray-500" />
-                    <span>{event.location}</span>
-                  </div>
-                  
+
+                  {event.location && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="w-4 h-4 text-gray-500" />
+                      <span>{event.location}</span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-1">
                       <Users className="w-4 h-4 text-gray-500" />
-                      <span>{event.attendees}/{event.maxAttendees} attending</span>
+                      <span>{event.attendees}{event.maxAttendees ? `/${event.maxAttendees}` : ''} attending</span>
                     </div>
                     <Badge variant="outline" className="text-xs">
                       {event.organizer}
                     </Badge>
                   </div>
-                  
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(event.attendees / event.maxAttendees) * 100}%` }}
-                    />
-                  </div>
-                  
+
+                  {event.maxAttendees && (
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min((event.attendees / event.maxAttendees) * 100, 100)}%` }}
+                      />
+                    </div>
+                  )}
+
                   <Button
                     onClick={() => handleRegisterEvent(event.id)}
-                    className={`w-full ${event.registered 
-                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                    disabled={!!event.maxAttendees && !event.registered && event.attendees >= event.maxAttendees}
+                    className={`w-full ${event.registered
+                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
                   >
@@ -1064,12 +1064,56 @@ const CommunityHub = () => {
                 </CardContent>
               </Card>
             ))}
+            {events.length === 0 && (
+              <div className="col-span-full text-center py-12 text-gray-500 dark:text-muted-foreground">
+                No events yet. Be the first to create one!
+              </div>
+            )}
           </div>
         </TabsContent>
 
-        <TabsContent value="challenges">
+        <TabsContent value="challenges" className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => setShowCreateChallenge(true)} className="bg-green-600 hover:bg-green-700 dark:bg-primary dark:hover:bg-primary/90">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Challenge
+            </Button>
+          </div>
+
+          {showCreateChallenge && (
+            <Card className="dark:bg-background dark:border-border">
+              <CardHeader><CardTitle className="dark:text-foreground">Create New Challenge</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <Input placeholder="Challenge title" value={newChallenge.title} onChange={(e) => setNewChallenge({ ...newChallenge, title: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                <Textarea placeholder="Description" value={newChallenge.description} onChange={(e) => setNewChallenge({ ...newChallenge, description: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input placeholder="Category" value={newChallenge.category} onChange={(e) => setNewChallenge({ ...newChallenge, category: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                  <select
+                    value={newChallenge.difficulty}
+                    onChange={(e) => setNewChallenge({ ...newChallenge, difficulty: e.target.value })}
+                    className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm"
+                  >
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input placeholder="Duration (e.g. 30 days)" value={newChallenge.duration} onChange={(e) => setNewChallenge({ ...newChallenge, duration: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                  <Input placeholder="Reward (e.g. 500 Green Points)" value={newChallenge.reward} onChange={(e) => setNewChallenge({ ...newChallenge, reward: e.target.value })} className="dark:bg-background dark:text-foreground" />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleCreateChallenge} disabled={isCreatingChallenge || !newChallenge.title.trim()} className="bg-green-600 hover:bg-green-700">
+                    {isCreatingChallenge ? 'Creating...' : 'Create'}
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowCreateChallenge(false)}>Cancel</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {challenges.filter(challenge => 
+            {challenges.filter(challenge =>
               challenge.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
               challenge.description.toLowerCase().includes(searchQuery.toLowerCase())
             ).map(challenge => (
@@ -1087,13 +1131,13 @@ const CommunityHub = () => {
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-1">
                       <Users className="w-4 h-4 text-gray-500" />
-                      <span>{challenge.participants.toLocaleString()} participants</span>
+                      <span>{challenge.participants.toLocaleString()} participant{challenge.participants === 1 ? '' : 's'}</span>
                     </div>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className={`text-xs ${getCategoryColor(challenge.category)}`}>
                       {challenge.category}
                     </Badge>
                   </div>
-                  
+
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4 text-gray-500" />
@@ -1104,26 +1148,11 @@ const CommunityHub = () => {
                       <span>{challenge.reward}</span>
                     </div>
                   </div>
-                  
-                  {challenge.joined && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span>Progress</span>
-                        <span>{challenge.progress}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${challenge.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  
+
                   <Button
                     onClick={() => handleJoinChallenge(challenge.id)}
-                    className={`w-full ${challenge.joined 
-                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' 
+                    className={`w-full ${challenge.joined
+                      ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       : 'bg-purple-600 text-white hover:bg-purple-700'
                     }`}
                   >
@@ -1132,7 +1161,166 @@ const CommunityHub = () => {
                 </CardContent>
               </Card>
             ))}
+            {challenges.length === 0 && (
+              <div className="col-span-full text-center py-12 text-gray-500 dark:text-muted-foreground">
+                No challenges yet. Be the first to create one!
+              </div>
+            )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="rewards" className="space-y-6">
+          <Card className="bg-white text-slate-900 border border-slate-200 shadow-xl dark:bg-background dark:text-foreground dark:border-border">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-3xl font-bold mb-2">{userStats.totalPoints.toLocaleString()} Points</h2>
+                  <div className="flex items-center space-x-4 text-slate-700 dark:text-muted-foreground">
+                    <span>Level {currentLevel}</span>
+                    <span>•</span>
+                    <span>{getUnlockedAchievements()}/{achievements.length} achievements</span>
+                    <span>•</span>
+                    <span>{getCompletedChallenges()}/{dailyChallenges.length} challenges today</span>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="text-center">
+                    <Coins className="w-8 h-8 mx-auto mb-1" />
+                    <div className="text-xs">Points</div>
+                  </div>
+                  <div className="text-center">
+                    <Trophy className="w-8 h-8 mx-auto mb-1" />
+                    <div className="text-xs">Level {currentLevel}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Progress to Level {currentLevel + 1}</span>
+                  <span>{nextLevelThreshold ? `${nextLevelThreshold - userStats.totalPoints} points to go` : 'Max Level!'}</span>
+                </div>
+                <Progress value={levelProgress} className="h-3" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-5 h-5" />
+                    <span>Today's Challenges</span>
+                  </div>
+                  <Badge variant="outline">{getCompletedChallenges()}/{dailyChallenges.length} Complete</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {dailyChallenges.map((challenge, index) => (
+                  <div key={index} className={`rounded-lg p-4 ${challenge.completed ? 'bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-700' : 'bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        {challenge.completed && <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />}
+                        <span className="font-medium">{challenge.task}</span>
+                      </div>
+                      <Badge variant="secondary">+{challenge.points}</Badge>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Progress value={(challenge.progress / challenge.total) * 100} className="flex-1 h-2" />
+                      <span className="text-sm text-slate-600 dark:text-muted-foreground">{challenge.progress}/{challenge.total}</span>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Trophy className="w-5 h-5" />
+                  <span>Achievements</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 max-h-96 overflow-y-auto">
+                {achievements.map((achievement) => (
+                  <div key={achievement.id} className={`p-4 rounded-lg border ${achievement.unlocked ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-700' : 'bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}>
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-12 h-12 ${achievement.color} rounded-xl flex items-center justify-center ${!achievement.unlocked && 'opacity-50'}`}>
+                        <achievement.icon className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <h3 className="font-semibold">{achievement.name}</h3>
+                          <Badge variant="outline" className="text-xs">{achievement.category}</Badge>
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-muted-foreground">{achievement.description}</p>
+                        {!achievement.unlocked && achievement.progress !== undefined && (
+                          <Progress value={achievement.progress} className="h-1.5 mt-2" />
+                        )}
+                      </div>
+                      <Badge>+{achievement.points}</Badge>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Gift className="w-5 h-5" />
+                  <span>Rewards Store</span>
+                </div>
+                <Badge variant="outline">{rewardsCatalog.filter(r => r.available).length} Available</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {userStats.totalPoints < 150 ? (
+                <div className="text-center py-12">
+                  <Gift className="w-20 h-20 text-slate-300 dark:text-slate-600 mx-auto mb-6" />
+                  <h3 className="text-xl font-semibold text-slate-600 dark:text-slate-300 mb-3">Start earning rewards!</h3>
+                  <p className="text-slate-500 dark:text-slate-400 mb-4">Complete challenges and track your sustainability journey to unlock amazing rewards.</p>
+                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700 max-w-md mx-auto">
+                    <p className="text-sm text-slate-700 dark:text-slate-300"><strong>Next reward unlocks at 150 points!</strong> You need {150 - userStats.totalPoints} more points.</p>
+                    <Progress value={(userStats.totalPoints / 150) * 100} className="h-2 mt-3" />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {rewardsCatalog.map((reward) => (
+                    <div key={reward.id} className={`p-6 rounded-xl border ${reward.available ? 'bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700' : 'bg-slate-50 border-slate-200 opacity-75 dark:bg-slate-900 dark:border-slate-700'}`}>
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                          <reward.icon className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold">{reward.name}</h3>
+                          <Badge variant="outline" className="text-xs mt-1">{reward.category}</Badge>
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-600 dark:text-muted-foreground mb-3">{reward.description}</p>
+                      <div className="text-xs text-slate-500 dark:text-muted-foreground mb-4">{reward.savings}</div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1">
+                          <Coins className="w-4 h-4 text-amber-500" />
+                          <span className="font-semibold">{reward.cost}</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          disabled={!reward.available}
+                          onClick={() => handleRedeemReward(reward)}
+                        >
+                          {reward.available ? 'Redeem' : `Need ${reward.cost - userStats.totalPoints}`}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="leaderboard">
@@ -1144,17 +1332,17 @@ const CommunityHub = () => {
                   Community Leaderboard
                 </CardTitle>
                 <p className="text-sm text-gray-600">
-                  Top contributors this month
+                  Top contributors by points
                 </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {leaderboardData.map((user, index) => (
+                  {leaderboardData.map((user) => (
                     <div
-                      key={index}
+                      key={user.uid}
                       className={`flex items-center gap-3 p-3 rounded-lg ${
-                        user.name === currentUser.name 
-                          ? 'bg-green-50 border border-green-200' 
+                        user.uid === authUser?.uid
+                          ? 'bg-green-50 border border-green-200'
                           : 'bg-gray-50'
                       }`}
                     >
@@ -1168,16 +1356,16 @@ const CommunityHub = () => {
                           {user.rank}
                         </span>
                       </div>
-                      
+
                       <Avatar className="w-10 h-10">
                         <AvatarImage src={user.avatar} alt={user.name} />
                         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      
+
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">{user.name}</span>
-                          {user.name === currentUser.name && (
+                          {user.uid === authUser?.uid && (
                             <Badge variant="default" className="text-xs">You</Badge>
                           )}
                         </div>
@@ -1186,7 +1374,7 @@ const CommunityHub = () => {
                           <span>{user.points.toLocaleString()} points</span>
                         </div>
                       </div>
-                      
+
                       {user.rank <= 3 && (
                         <div className="flex items-center">
                           {user.rank === 1 && <Trophy className="w-5 h-5 text-yellow-500" />}
@@ -1196,12 +1384,19 @@ const CommunityHub = () => {
                       )}
                     </div>
                   ))}
+                  {leaderboardData.length === 0 && (
+                    <div className="text-center py-8 text-gray-500 dark:text-muted-foreground">
+                      No leaderboard data yet. Start earning points to appear here!
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
       </Tabs>
+        </CardContent>
+      </Card>
     </div>
  );
 }

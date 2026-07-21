@@ -1,88 +1,104 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import AnimatedBackground from './AnimatedBackground';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import AuthModal from './AuthModal';
 
-const pathToTabId: Record<string, string> = {
+// Paths that render Index (which switches content based on the activeTab prop Layout derives
+// from the path here) - as opposed to paths that render a dedicated page component directly
+// (goals, product-lifecycle, ...). A page refresh on any of these used to lose all state and
+// bounce to the home hero, because the tab was only ever tracked in-memory with no URL behind
+// it - giving each one a real route fixes that the same way normal page refreshes work anywhere
+// else on the web: the URL IS the state.
+const INDEX_ROUTES: Record<string, string> = {
   '/': 'home',
-  '/goals': 'goals',
-  '/product-lifecycle': 'product-lifecycle',
-  '/product-comparison': 'product-comparison',
-  '/marketplace': 'marketplace',
-  '/community': 'community',
-  '/education': 'education',
-  '/rewards': 'rewards',
-  '/ai-scanner': 'ai-scanner',
+  '/scanner': 'scanner',
   '/chatbot': 'chatbot',
   '/carbon-tracker': 'carbon-tracker',
   '/ai-recommendations': 'ai-recommendations',
-  '/ar-scanner': 'ar-scanner',
-  '/smart-insights': 'smart-insights',
-  '/recipe-finder': 'recipe-finder',
-  '/transportation-planner': 'transportation-planner',
-  '/environmental-alerts': 'environmental-alerts',
-  '/esg-analyzer': 'esg-analyzer',
-  '/investment-tracker': 'investment-tracker',
-  '/checkout': 'checkout',
+  '/marketplace': 'marketplace',
+  '/education': 'education',
+  '/lifestyle': 'lifestyle',
+  '/profile': 'profile',
   '/notifications': 'notifications',
-  '/profile': 'profile'
+  '/checkout': 'checkout',
 };
+
+// Paths that render a dedicated page component (not Index) - still tracked here so Navbar
+// knows which item to highlight as active while on one of these pages.
+const OTHER_ROUTES: Record<string, string> = {
+  '/goals': 'goals',
+  '/product-lifecycle': 'product-lifecycle',
+  '/community': 'community',
+};
+
+const pathToTabId: Record<string, string> = { ...INDEX_ROUTES, ...OTHER_ROUTES };
+
+const tabIdToPath: Record<string, string> = Object.fromEntries(
+  Object.entries(pathToTabId).map(([path, tabId]) => [tabId, path])
+);
 
 const protectedRoutes = [
   '/goals',
   '/product-lifecycle',
-  '/product-comparison',
-  '/marketplace',
   '/community',
-  '/education',
-  '/rewards',
-  '/ai-scanner',
-  '/chatbot',
-  '/carbon-tracker',
-  '/ai-recommendations',
-  '/ar-scanner',
-  '/smart-insights',
-  '/recipe-finder',
-  '/transportation-planner',
-  '/environmental-alerts',
-  '/esg-analyzer',
-  '/investment-tracker',
-  '/checkout',
-  '/notifications',
-  '/profile'
 ];
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState('home');
   const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
-  const { currentUser } = useAuth();
+  const { currentUser, authChecked } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+  // Tracks the last pathname this effect actually synced activeTab from. Without this guard,
+  // the effect (which must depend on activeTab to catch deep-links) would re-fire on every
+  // same-page tab switch - e.g. clicking "Marketplace" while already on "/" sets activeTab to
+  // 'marketplace', which re-triggers the effect, which then re-derives 'home' from
+  // pathToTabId['/'] and immediately stomps the switch back to home.
+  const lastSyncedPathRef = useRef<string | null>(null);
+
   useEffect(() => {
+    // Wait for the initial auth check to finish before redirecting - otherwise a hard
+    // refresh/direct link to a protected route bounces a genuinely logged-in user back
+    // to home, because currentUser is still null on the very first render either way.
+    if (!authChecked) return;
     if (protectedRoutes.includes(location.pathname) && !currentUser) {
       // Redirect to home or login page if not authenticated
       navigate('/');
       return;
     }
+    if (lastSyncedPathRef.current === location.pathname) return;
+    lastSyncedPathRef.current = location.pathname;
+
+    if (location.pathname === '/') {
+      // A tab-only feature (e.g. "marketplace") navigated here via handleNavigate below,
+      // carrying the target tab in router state since it has no URL of its own.
+      const requestedTab = (location.state as { tab?: string } | null)?.tab;
+      setActiveTab(requestedTab || 'home');
+      return;
+    }
     const tabId = pathToTabId[location.pathname];
-    if (tabId && tabId !== activeTab) {
+    if (tabId) {
       setActiveTab(tabId);
     }
-  }, [location.pathname, activeTab, currentUser, navigate]);
+  }, [location.pathname, location.state, currentUser, authChecked, navigate]);
 
   const handleNavigate = (tabId: string) => {
-    setActiveTab(tabId);
-    const path = Object.entries(pathToTabId).find(([path, id]) => id === tabId)?.[0];
+    const path = tabIdToPath[tabId];
     if (path) {
+      setActiveTab(tabId);
       navigate(path);
+    } else if (location.pathname !== '/') {
+      // Tab-only feature with no route of its own - jump to "/" and tell Index which tab to show.
+      navigate('/', { state: { tab: tabId } });
     } else {
-      console.warn(`No route defined for tabId: ${tabId}`);
+      setActiveTab(tabId);
     }
   };
 
@@ -94,10 +110,21 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     setIsAuthModalOpen(false);
   };
 
-  if (!currentUser && protectedRoutes.includes(location.pathname)) {
-    // Optionally render a message or redirect component here
+  if (!authChecked && protectedRoutes.includes(location.pathname)) {
+    // Still checking whether there's a persisted session - render nothing rather than
+    // flashing a false "please log in" at a genuinely logged-in user on page refresh.
+    return null;
+  }
+
+  if (authChecked && !currentUser && protectedRoutes.includes(location.pathname)) {
     return <div className="text-center mt-20 text-red-600">Please log in to access this page.</div>;
   }
+
+  // Index owns no navbar of its own - it renders whichever tab is active based on these props.
+  const content =
+    location.pathname in INDEX_ROUTES && React.isValidElement(children)
+      ? React.cloneElement(children as React.ReactElement<any>, { activeTab, onNavigate: handleNavigate })
+      : children;
 
   return (
     <>
@@ -110,7 +137,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         clearCart={clearCart}
         toggleLoginForm={toggleLoginForm}
       />
-      <main className="pt-0 min-h-[calc(100vh-80px)]">{children}</main>
+      <main className="relative overflow-hidden pt-0 min-h-[calc(100vh-80px)] bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900">
+        <AnimatedBackground />
+        <div className="relative z-10">{content}</div>
+      </main>
       <Footer />
       <AuthModal
         isOpen={isAuthModalOpen}

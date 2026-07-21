@@ -48,7 +48,7 @@ const Hero = ({ onGetStarted }) => {
         <div className="text-center max-w-6xl mx-auto">
           {/* Enhanced Badge with Glassmorphism */}
           <div className="mb-8 inline-flex">
-            <Badge className="bg-white/20 dark:bg-gray-800/20 backdrop-blur-md border border-white/30 dark:border-gray-700/30 text-emerald-700 dark:text-emerald-300 px-8 py-3 text-base font-medium shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+            <Badge className="bg-white/20 hover:bg-emerald-100/70 dark:bg-gray-800/20 dark:hover:bg-emerald-900/30 backdrop-blur-md border border-white/30 dark:border-gray-700/30 text-emerald-700 dark:text-emerald-300 px-8 py-3 text-base font-medium shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
               <Sparkles className="w-5 h-5 mr-2" />
               AI-Powered Sustainability Intelligence
             </Badge>
@@ -76,8 +76,8 @@ const Hero = ({ onGetStarted }) => {
             Make choices that honor our planet's future.
           </p>
 
-          {/* Enhanced CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-20">
+          {/* Enhanced CTA Button */}
+          <div className="flex justify-center mb-20">
             <Button
               size="lg"
               className="group text-xl px-12 py-6 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-2xl hover:shadow-green-500/25 transition-all duration-500 transform hover:scale-105 hover:-translate-y-1 rounded-2xl border-0"
@@ -87,15 +87,6 @@ const Hero = ({ onGetStarted }) => {
               Begin Your Journey
               <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-xl px-12 py-6 border-2 border-emerald-200/50 dark:border-emerald-700/50 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm text-emerald-700 dark:text-emerald-300 hover:border-emerald-400 dark:hover:border-emerald-500 hover:bg-white/50 dark:hover:bg-gray-800/50 hover:shadow-xl transition-all duration-500 hover:scale-105 hover:-translate-y-1 rounded-2xl"
-              onClick={handleGetStartedClick}
-            >
-              <Sparkles className="w-5 h-5 mr-3" />
-              Explore Demo
-            </Button>
           </div>
 
           {/* Enhanced Stats with Glassmorphism Cards */}
@@ -104,32 +95,32 @@ const Hero = ({ onGetStarted }) => {
               <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-lg">
                 <Scan className="w-8 h-8 text-white" />
               </div>
-              <div className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-3">1M+</div>
-              <div className="text-slate-600 dark:text-gray-400 font-medium">Products Analyzed</div>
+              <div className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-3">3M+</div>
+              <div className="text-slate-600 dark:text-gray-400 font-medium">Products in Database</div>
             </div>
 
             <div className="group text-center p-8 bg-white/40 dark:bg-gray-800/40 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-500 hover:transform hover:scale-105 hover:-translate-y-2">
               <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-lg">
                 <Users className="w-8 h-8 text-white" />
               </div>
-              <div className="text-4xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-3">250K+</div>
-              <div className="text-slate-600 dark:text-gray-400 font-medium">Eco Warriors</div>
+              <div className="text-4xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent mb-3">10+</div>
+              <div className="text-slate-600 dark:text-gray-400 font-medium">AI-Powered Features</div>
             </div>
 
             <div className="group text-center p-8 bg-white/40 dark:bg-gray-800/40 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-500 hover:transform hover:scale-105 hover:-translate-y-2">
               <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-lg">
                 <Globe className="w-8 h-8 text-white" />
               </div>
-              <div className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent mb-3">500T</div>
-              <div className="text-slate-600 dark:text-gray-400 font-medium">CO₂ Prevented</div>
+              <div className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent mb-3">Live</div>
+              <div className="text-slate-600 dark:text-gray-400 font-medium">Real-Time AI Analysis</div>
             </div>
 
             <div className="group text-center p-8 bg-white/40 dark:bg-gray-800/40 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/20 shadow-xl hover:shadow-2xl hover:bg-white/50 dark:hover:bg-gray-800/50 transition-all duration-500 hover:transform hover:scale-105 hover:-translate-y-2">
               <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-lg">
                 <TrendingUp className="w-8 h-8 text-white" />
               </div>
-              <div className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-3">98%</div>
-              <div className="text-slate-600 dark:text-gray-400 font-medium">Accuracy Rate</div>
+              <div className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-3">100%</div>
+              <div className="text-slate-600 dark:text-gray-400 font-medium">Real Data, No Mock APIs</div>
             </div>
           </div>
         </div>
