@@ -26,3 +26,6 @@ backend/uploads/
 
 # Firebase CLI debug logs
 firebase-debug.log
+
+# Backend runtime logs
+backend/uvicorn.log
