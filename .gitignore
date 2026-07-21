@@ -1,5 +1,11 @@
 node_modules/
 
+# Build output - regenerated fresh by `npm run build` before every deploy, no need to track it
+dist/
+
+# Firebase CLI's local hosting-deploy cache (machine/session-specific, not project config)
+.firebase/
+
 # Frontend env
 .env
 .env.local
