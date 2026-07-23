@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     firebase_service_account_json: str | None = None
     frontend_origin: str = "http://localhost:8080"
 
+    @property
+    def frontend_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.frontend_origin.split(",") if origin.strip()]
+
     # Email delivery for order receipts (app -> user's inbox). Dual-provider strategy:
     #   1) PRIMARY: Gmail API via a server-side OAuth2 refresh token (no password, fixed sender).
     #   2) FALLBACK: Resend API (api key + verified sender).
