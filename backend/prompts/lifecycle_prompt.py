@@ -1,9 +1,20 @@
-def build_lifecycle_prompt(product: dict) -> str:
+def build_lifecycle_prompt(product: dict, rag_chunks: list[dict] | None = None) -> str:
     name = product.get("name") or "Unknown product"
     brand = product.get("brand") or "Unknown brand"
     category = product.get("category") or "Unknown category"
     score = product.get("sustainability_score")
     score_line = f"Known overall sustainability score: {score}/100\n" if score is not None else ""
+
+    reference_section = ""
+    if rag_chunks:
+        reference = "\n\n".join(f"[{c['source']}] {c['text']}" for c in rag_chunks)
+        reference_section = f"""
+Reference material (published LCA studies - ground your per-stage numbers and proportions in this
+where it's relevant to the product's category, and cite the source filename in the relevant stage's
+`details` text; where it doesn't cover this category, fall back to a reasoned category-level
+estimate and say so explicitly rather than implying it's study-backed):
+{reference}
+"""
 
     return f"""You are EcoGuide, a product lifecycle analyst. Produce a realistic cradle-to-grave
 lifecycle assessment for the product below, broken into its standard stages. Reason from what is
@@ -14,7 +25,7 @@ manufacturer's supply-chain data, so keep figures as honest category-level ESTIM
 Product: {name}
 Brand: {brand}
 Category: {category}
-{score_line}
+{score_line}{reference_section}
 Return a JSON object with a single key "stages": a list of 5 stage objects covering, in order:
 Raw Materials, Manufacturing, Transportation, Use Phase, and End of Life. Each stage object must have:
 - name: the stage name (e.g. "Raw Materials")

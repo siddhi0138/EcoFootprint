@@ -11,6 +11,7 @@ from prompts.eco_prompt import build_eco_analysis_prompt
 from prompts.general_eco_prompt import build_general_eco_analysis_prompt
 from prompts.lifecycle_prompt import build_lifecycle_prompt
 from prompts.vision_prompt import IMAGE_IDENTIFY_PROMPT
+from rag.retriever import retrieve
 from services.barcode import browse_openfoodfacts_products, fetch_openfoodfacts_product, search_openfoodfacts_products
 from services.marketplace_catalog import browse_catalog, lookup_catalog_product, CATALOG_CATEGORIES
 from services.ebay import has_ebay_credentials, search_ebay_products
@@ -476,7 +477,14 @@ def product_lifecycle(req: LifecycleRequest):
     heuristic when it's unavailable/rate-limited so the view never shows all zeros."""
     if not has_llm_key():
         return LifecycleResponse(**build_stub_lifecycle(req.model_dump()))
-    prompt = build_lifecycle_prompt(req.model_dump())
+
+    try:
+        rag_chunks = retrieve(f"{req.category or ''} {req.name} lifecycle environmental impact", top_k=3, max_distance=1.0)
+    except Exception as e:
+        logger.warning(f"Lifecycle RAG retrieval failed ({e}); continuing without reference material")
+        rag_chunks = []
+
+    prompt = build_lifecycle_prompt(req.model_dump(), rag_chunks)
     try:
         result = generate_json(prompt, response_schema=LifecycleResponse)
         if not result.stages:
