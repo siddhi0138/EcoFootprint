@@ -6,6 +6,8 @@ is_estimated=True so callers never present it as a real AI analysis.
 Remove the fallback in routes/product.py once a real OpenRouter key is configured.
 """
 
+from services.scoring import compute_sustainability_score
+
 _GRADE_SCORES = {"a": 90, "b": 72, "c": 55, "d": 38, "e": 20}
 
 
@@ -28,7 +30,7 @@ def build_stub_analysis(product: dict) -> dict:
     )
     packaging_score = 70 if recyclable else 45
     health_score = _grade_to_score(nutriscore)
-    overall = round((carbon_score + packaging_score + health_score) / 3)
+    overall = compute_sustainability_score(carbon_score, packaging_score, health_score)
 
     return {
         "carbon_footprint": {

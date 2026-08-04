@@ -16,6 +16,7 @@ from services.marketplace_catalog import browse_catalog, lookup_catalog_product,
 from services.ebay import has_ebay_credentials, search_ebay_products
 from services.llm import generate_json, generate_json_with_image, has_llm_key
 from services.gemini_stub import _grade_to_score, build_stub_analysis, build_stub_lifecycle
+from services.scoring import compute_sustainability_score
 
 logger = logging.getLogger(__name__)
 
@@ -347,7 +348,11 @@ def analyze_general_product(req: GeneralAnalyzeRequest):
         raise HTTPException(status_code=503, detail="AI analysis requires an LLM API key, which isn't configured.")
     prompt = build_general_eco_analysis_prompt(req.model_dump())
     try:
-        return generate_json(prompt, response_schema=EcoAnalysis)
+        analysis = generate_json(prompt, response_schema=EcoAnalysis)
+        analysis.sustainability_score = compute_sustainability_score(
+            analysis.carbon_footprint.score, analysis.packaging.score, analysis.health_impact.score
+        )
+        return analysis
     except Exception as e:
         logger.error(f"LLM API call failed: {e}")
         raise HTTPException(status_code=502, detail=f"LLM API error: {e}")
@@ -446,6 +451,9 @@ def analyze_product(req: AnalyzeRequest):
     prompt = build_eco_analysis_prompt(off_product)
     try:
         analysis = generate_json(prompt, response_schema=EcoAnalysis)
+        analysis.sustainability_score = compute_sustainability_score(
+            analysis.carbon_footprint.score, analysis.packaging.score, analysis.health_impact.score
+        )
         # A rate-limited/degraded LLM sometimes returns a valid-shaped but all-zero result,
         # which surfaced in the UI as a product scoring 0 across the board. Treat that as a
         # miss and use the OpenFoodFacts-derived heuristic (Eco-Score/Nutri-Score) instead, so
