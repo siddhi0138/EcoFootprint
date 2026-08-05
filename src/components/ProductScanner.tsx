@@ -48,13 +48,26 @@ interface ProductScannerProps {
   saveScannedProduct?: (product: any) => void;
 }
 
+// Keeps the currently-displayed analysis card visible across a page refresh - it should only
+// disappear when the user explicitly closes it, not just because the browser reloaded.
+const ACTIVE_ANALYSIS_STORAGE_KEY = 'ecofootprint_active_analysis';
+
+const loadStoredAnalysis = () => {
+  try {
+    const saved = localStorage.getItem(ACTIVE_ANALYSIS_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+};
+
 const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScannedProduct, onTabChange, saveScannedProduct }) => {
   const navigate = useNavigate();  const { scannedProducts, addScannedProduct } = useUserData();
   const { addToCart } = useCart();
   const { addProductToComparison } = useProductComparison();
   const { addNotification } = useNotifications();
   const [isScanning, setIsScanning] = useState(false);
-  const [detectedProduct, setDetectedProduct] = useState(null);
+  const [detectedProduct, setDetectedProduct] = useState(loadStoredAnalysis);
   const [scanMode, setScanMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([]);
@@ -77,6 +90,18 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
       setDetectedProduct(scannedProduct);
     }
   }, [scannedProduct]);
+
+  // Persist the active analysis so it survives a page refresh - cleared only by handleCloseAnalysis.
+  useEffect(() => {
+    if (detectedProduct) {
+      localStorage.setItem(ACTIVE_ANALYSIS_STORAGE_KEY, JSON.stringify(detectedProduct));
+    }
+  }, [detectedProduct]);
+
+  const handleCloseAnalysis = () => {
+    setDetectedProduct(null);
+    localStorage.removeItem(ACTIVE_ANALYSIS_STORAGE_KEY);
+  };
 
   // Automatically save detectedProduct to recent scans when it changes
   useEffect(() => {
@@ -376,6 +401,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
     scannerControlsRef.current?.stop();
     setScanMode(false);
     setDetectedProduct(null);
+    localStorage.removeItem(ACTIVE_ANALYSIS_STORAGE_KEY);
   };
 
   const handleIdentifyImage = async (dataUrl: string) => {
@@ -414,6 +440,7 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
       setVisionUnavailableMessage(null);
       setScanError(null);
       setDetectedProduct(null);
+      localStorage.removeItem(ACTIVE_ANALYSIS_STORAGE_KEY);
       const reader = new FileReader();
       reader.onload = (e) => {
         const dataUrl = e.target.result as string;
@@ -814,9 +841,19 @@ const ProductScanner: React.FC<ProductScannerProps> = ({ scannedProduct, setScan
                       </div>
                     </div>
                   </div>
-                  <Badge className={`text-2xl font-bold px-4 py-2 ${getScoreColor(detectedProduct.sustainabilityScore)}`}>
-                    {detectedProduct.sustainabilityScore}
-                  </Badge>
+                  <div className="flex items-start gap-2 shrink-0">
+                    <Badge className={`text-2xl font-bold px-4 py-2 ${getScoreColor(detectedProduct.sustainabilityScore)}`}>
+                      {detectedProduct.sustainabilityScore}
+                    </Badge>
+                    <button
+                      type="button"
+                      onClick={handleCloseAnalysis}
+                      aria-label="Close analysis"
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition-colors shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

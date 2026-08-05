@@ -659,7 +659,7 @@ const CommunityHub = () => {
       <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-900 dark:border-gray-700">
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center space-x-3 text-slate-800 dark:text-slate-200">
-            <div className="w-10 h-10 bg-emerald-600 dark:bg-emerald-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-emerald-600 dark:bg-emerald-600 rounded-xl flex items-center justify-center shrink-0">
               <Users className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -719,7 +719,7 @@ const CommunityHub = () => {
       <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl dark:bg-gray-900 dark:border-gray-700">
         <CardContent className="p-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto">
         <TabsTrigger value="feed" className="dark:text-foreground">Feed</TabsTrigger>
           <TabsTrigger value="groups" className="dark:text-foreground">Groups</TabsTrigger>
           <TabsTrigger value="events" className="dark:text-foreground">Events</TabsTrigger>

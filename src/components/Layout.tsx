@@ -16,6 +16,7 @@ import AuthModal from './AuthModal';
 const INDEX_ROUTES: Record<string, string> = {
   '/': 'home',
   '/scanner': 'scanner',
+  '/analysis': 'analysis',
   '/chatbot': 'chatbot',
   '/carbon-tracker': 'carbon-tracker',
   '/ai-recommendations': 'ai-recommendations',

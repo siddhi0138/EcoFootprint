@@ -456,11 +456,11 @@ const AIRecommendations = () => {
         </CardHeader>
         <CardContent className="space-y-6">
           <Tabs value={selectedTab === 'progress' ? 'insights' : selectedTab} onValueChange={setSelectedTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="insights">Your Insights</TabsTrigger>
-              <TabsTrigger value="recommendations">Smart Recommendations</TabsTrigger>
-              <TabsTrigger value="trends">Trends</TabsTrigger>
-              <TabsTrigger value="actions">Active Actions</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+              <TabsTrigger value="insights" className="whitespace-normal text-center py-2 leading-tight">Your Insights</TabsTrigger>
+              <TabsTrigger value="recommendations" className="whitespace-normal text-center py-2 leading-tight">Smart Recommendations</TabsTrigger>
+              <TabsTrigger value="trends" className="whitespace-normal text-center py-2 leading-tight">Trends</TabsTrigger>
+              <TabsTrigger value="actions" className="whitespace-normal text-center py-2 leading-tight">Active Actions</TabsTrigger>
             </TabsList>
 
             <TabsContent value="insights" className="space-y-6">

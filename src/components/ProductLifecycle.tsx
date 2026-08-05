@@ -19,6 +19,25 @@ interface ProductLifecycleProps {
   product?: any;
 }
 
+// Firestore's setDoc() rejects `undefined` field values outright - products from different
+// sources (barcode scan vs. general/eBay search) each leave different optional fields (price,
+// barcode, description, ...) unset, so strip them recursively rather than special-casing each one.
+const stripUndefined = (value: any): any => {
+  if (Array.isArray(value)) {
+    return value.map(stripUndefined);
+  }
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    const result: Record<string, any> = {};
+    for (const [key, val] of Object.entries(value)) {
+      if (val !== undefined) {
+        result[key] = stripUndefined(val);
+      }
+    }
+    return result;
+  }
+  return value;
+};
+
 const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduct }) => {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
@@ -257,8 +276,10 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
       return;
     }
     try {
-      // Create a copy of product without icon functions in stages
-      const sanitizedStages = (product.stages ?? []).map((stage: any) => {
+      // Create a copy of product without icon functions in stages - use effectiveStages, not
+      // product.stages, since a freshly-scanned product has an empty stages array and the real
+      // (generated or already-saved) stages the user is looking at live in effectiveStages.
+      const sanitizedStages = (effectiveStages ?? []).map((stage: any) => {
         const { icon, ...rest } = stage;
         return {
           ...rest,
@@ -295,11 +316,12 @@ const ProductLifecycle: React.FC<ProductLifecycleProps> = ({ product: propProduc
         savedAt: new Date(),
       };
 
+      const cleanedProduct = stripUndefined(sanitizedProduct);
       const productRef = doc(db, `users/${user.uid}/savedProductLifecycles`, product.id.toString());
-      await setDoc(productRef, sanitizedProduct, { merge: true });
-      setSavedProduct(sanitizedProduct);
+      await setDoc(productRef, cleanedProduct, { merge: true });
+      setSavedProduct(cleanedProduct);
       // Persist to localStorage
-      localStorage.setItem('persistedProductLifecycle', JSON.stringify(sanitizedProduct));
+      localStorage.setItem('persistedProductLifecycle', JSON.stringify(cleanedProduct));
       toast({ title: 'Lifecycle Saved', description: `Lifecycle data for "${product.name}" was saved successfully.` });
 
       // Add notification for saved product lifecycle

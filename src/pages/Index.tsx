@@ -48,25 +48,20 @@ const Index: React.FC<IndexProps> = ({ activeTab: activeTabProp, onNavigate }) =
   const activeTab = activeTabProp ?? internalActiveTab;
   const setActiveTab = onNavigate ?? setInternalActiveTab;
   const [searchQuery, setSearchQuery] = useState('');
-  const [scannedProduct, setScannedProductState] = useState<any>(null);
+  // Loaded eagerly from localStorage so the "View Full Analysis" page survives a refresh - it
+  // should only go away when the user explicitly closes it (see handleCloseAnalysis below), not
+  // just because the browser reloaded. activeTab itself resets to whatever the URL says (see
+  // Layout.tsx's INDEX_ROUTES), so this only matters while actually on the /analysis route.
+  const [scannedProduct, setScannedProductState] = useState<any>(() => {
+    try {
+      const saved = localStorage.getItem('scannedProduct');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [recentScans, setRecentScans] = useState([]);
-
-  // Load scannedProduct from localStorage on mount
-  // Disabled automatic loading to prevent default scans on refresh
-  // React.useEffect(() => {
-  //   const savedProduct = localStorage.getItem('scannedProduct');
-  //   if (savedProduct) {
-  //     setScannedProductState(JSON.parse(savedProduct));
-  //     // Removed setting activeTab to 'lifecycle' to always show homepage on refresh
-  //     // setActiveTab('lifecycle');
-  //   }
-  // }, []);
-
-  // Wrapper to set scannedProduct without saving to localStorage automatically
-  const setScannedProduct = (product: any) => {
-    setScannedProductState(product);
-  };
 
   // Utility function to sanitize product object by removing function properties
   const sanitizeProduct = (product: any) => {
@@ -81,15 +76,31 @@ const Index: React.FC<IndexProps> = ({ activeTab: activeTabProp, onNavigate }) =
     return sanitized;
   };
 
-  // Explicit save function to save scanned product to localStorage and recent scans
-  const saveScannedProductHandler = (product: any) => {
-    if (!product) return;
+  // Sets scannedProduct and persists it, so it's still there after a refresh regardless of
+  // which flow set it (viewing full analysis, saving a scan, etc).
+  const setScannedProduct = (product: any) => {
     const sanitizedProduct = sanitizeProduct(product);
     setScannedProductState(sanitizedProduct);
-    localStorage.setItem('scannedProduct', JSON.stringify(sanitizedProduct));
-    if (addScannedProduct) {
-      addScannedProduct(sanitizedProduct);
+    if (sanitizedProduct) {
+      localStorage.setItem('scannedProduct', JSON.stringify(sanitizedProduct));
+    } else {
+      localStorage.removeItem('scannedProduct');
     }
+  };
+
+  // Explicit save function to save scanned product to localStorage, recent scans, and history
+  const saveScannedProductHandler = (product: any) => {
+    if (!product) return;
+    setScannedProduct(product);
+    if (addScannedProduct) {
+      addScannedProduct(sanitizeProduct(product));
+    }
+  };
+
+  // The only way the full-analysis view should disappear other than a fresh scan overwriting it.
+  const handleCloseAnalysis = () => {
+    setScannedProduct(null);
+    setActiveTab('scanner');
   };
 
   const handleGetStarted = () => {
@@ -204,7 +215,7 @@ const Index: React.FC<IndexProps> = ({ activeTab: activeTabProp, onNavigate }) =
             </TabsContent>
 
             <TabsContent value="analysis" className="mt-4">
-              <ProductAnalysis product={scannedProduct} onBack={() => setActiveTab('scanner')} />
+              <ProductAnalysis product={scannedProduct} onBack={handleCloseAnalysis} />
             </TabsContent>
 
 <TabsContent value="comparison" className="mt-4">

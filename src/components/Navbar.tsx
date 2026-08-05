@@ -99,6 +99,119 @@ const Navbar = ({
     setCartOpen(false);
   };
 
+  // Shared cart dropdown, rendered from both the desktop and mobile cart trigger buttons below
+  // (the desktop trigger lives in a `hidden lg:flex` section and the mobile one in `lg:hidden`,
+  // so only one of the two render locations is ever visible at a time).
+  const cartDropdown = cartOpen && (
+    <div className="fixed left-4 right-4 top-20 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 w-auto bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-600">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100">Shopping Cart</h3>
+          {cartItems.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+              onClick={() => clearCart?.()}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Clear
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="max-h-64 overflow-y-auto">
+        {cartItems.length === 0 ? (
+          <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+            <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>Your cart is empty</p>
+            <Button
+              size="sm"
+              className="mt-3 bg-emerald-600 hover:bg-emerald-700"
+              onClick={() => {
+                onNavigate('marketplace');
+                setCartOpen(false);
+              }}
+            >
+              Browse Products
+            </Button>
+          </div>
+        ) : (
+          <div className="p-2">
+            {cartItems.map((item) => (
+              <div key={item.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <img
+                  src={item.image || '/api/placeholder/40/40'}
+                  alt={item.name}
+                  className="w-10 h-10 rounded-lg object-cover"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    {item.name}
+                  </p>
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                    ${typeof item.price === 'number' ? item.price.toFixed(2) : 'N/A'}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-6 h-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                  >
+                    <Minus className="w-3 h-3" />
+                  </Button>
+                  <span className="text-sm font-medium w-8 text-center">
+                    {item.quantity}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-6 h-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                  >
+                    <Plus className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {cartItems.length > 0 && (
+        <div className="p-4 border-t border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-semibold text-gray-900 dark:text-gray-100">Total:</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400">
+              ${cartTotal.toFixed(2)}
+            </span>
+          </div>
+          <div className="space-y-2">
+            <Button
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              onClick={handleCheckout}
+            >
+              Checkout
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                onNavigate('marketplace');
+                setCartOpen(false);
+              }}
+            >
+              Continue Shopping
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -233,115 +346,7 @@ const Navbar = ({
               </Button>
 
               {/* Cart Dropdown */}
-              {cartOpen && (
-                <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-600">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">Shopping Cart</h3>
-                      {cartItems.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                          onClick={() => clearCart?.()}
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Clear
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="max-h-64 overflow-y-auto">
-                    {cartItems.length === 0 ? (
-                      <div className="p-6 text-center text-gray-500 dark:text-gray-400">
-                        <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                        <p>Your cart is empty</p>
-                        <Button
-                          size="sm"
-                          className="mt-3 bg-emerald-600 hover:bg-emerald-700"
-                          onClick={() => {
-                            onNavigate('marketplace');
-                            setCartOpen(false);
-                          }}
-                        >
-                          Browse Products
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="p-2">
-                        {cartItems.map((item) => (
-                          <div key={item.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                            <img
-                              src={item.image || '/api/placeholder/40/40'}
-                              alt={item.name}
-                              className="w-10 h-10 rounded-lg object-cover"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                                {item.name}
-                              </p>
-                              <p className="text-sm text-emerald-600 dark:text-emerald-400">
- ${typeof item.price === 'number' ? item.price.toFixed(2) : 'N/A'}
-                              </p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="w-6 h-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                              >
-                                <Minus className="w-3 h-3" />
-                              </Button>
-                              <span className="text-sm font-medium w-8 text-center">
-                                {item.quantity}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="w-6 h-6 p-0 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                              >
-                                <Plus className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {cartItems.length > 0 && (
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-600">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="font-semibold text-gray-900 dark:text-gray-100">Total:</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                          ${cartTotal.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        <Button
-                          className="w-full bg-emerald-600 hover:bg-emerald-700"
-                          onClick={handleCheckout}
-                        >
-                          Checkout
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => {
-                            onNavigate('marketplace');
-                            setCartOpen(false);
-                          }}
-                        >
-                          Continue Shopping
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              {cartDropdown}
             </div>
 
             {/* Notification Icon */}
@@ -425,19 +430,22 @@ const Navbar = ({
           {/* Mobile Icons: Cart, Notifications, Theme, Profile */}
           <div className="lg:hidden flex items-center space-x-4">
             {/* Shopping Cart */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20 relative"
-              onClick={handleCartClick}
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
-                  {cartItemCount > 99 ? '99+' : cartItemCount}
-                </span>
-              )}
-            </Button>
+            <div className="relative dropdown-container">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-2 hover:bg-emerald-50 transition-colors duration-200 rounded-lg dark:hover:bg-emerald-900/20 relative"
+                onClick={handleCartClick}
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                    {cartItemCount > 99 ? '99+' : cartItemCount}
+                  </span>
+                )}
+              </Button>
+              {cartDropdown}
+            </div>
 
             {/* Notifications */}
             <Button

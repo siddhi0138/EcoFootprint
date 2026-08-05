@@ -43,6 +43,7 @@ const App = () => (
                           through "/" with in-memory-only state) so a refresh doesn't bounce the
                           user back to the home hero - see Layout.tsx's pathToTabId. */}
                       <Route path="/scanner" element={<Layout><Index /></Layout>} />
+                      <Route path="/analysis" element={<Layout><Index /></Layout>} />
                       <Route path="/chatbot" element={<Layout><Index /></Layout>} />
                       <Route path="/carbon-tracker" element={<Layout><Index /></Layout>} />
                       <Route path="/ai-recommendations" element={<Layout><Index /></Layout>} />

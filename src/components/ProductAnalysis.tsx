@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   TrendingUp,
   BarChart3,
@@ -17,7 +18,8 @@ import {
   Droplets,
   Zap,
   Heart,
-  ArrowLeft
+  ArrowLeft,
+  Clock
 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 
@@ -33,6 +35,7 @@ const ProductAnalysis = ({ product, onBack }: { product: any; onBack?: () => voi
   // instead of a fabricated one - populated below once we know which product is loaded.
   const [history, setHistory] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [learnMoreSuggestion, setLearnMoreSuggestion] = useState<any>(null);
 
   const { currentUser } = useContext(AuthContext);
 
@@ -518,7 +521,11 @@ const ProductAnalysis = ({ product, onBack }: { product: any; onBack?: () => voi
                       <p className="text-emerald-700 leading-relaxed">{suggestion.suggestion}</p>
                       <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                         <span className="text-sm text-emerald-600">Expected timeframe: 2-4 weeks</span>
-                        <Button size="sm" className="bg-slate-700 hover:bg-slate-800 rounded-xl">
+                        <Button
+                          size="sm"
+                          className="bg-slate-700 hover:bg-slate-800 rounded-xl"
+                          onClick={() => setLearnMoreSuggestion(suggestion)}
+                        >
                           Learn More
                         </Button>
                       </div>
@@ -604,6 +611,37 @@ const ProductAnalysis = ({ product, onBack }: { product: any; onBack?: () => voi
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={learnMoreSuggestion !== null} onOpenChange={(open) => !open && setLearnMoreSuggestion(null)}>
+        <DialogContent className="max-w-lg">
+          {learnMoreSuggestion && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  {getStatusIcon(learnMoreSuggestion.status)}
+                  <span>{learnMoreSuggestion.category}</span>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-slate-700 leading-relaxed">{learnMoreSuggestion.suggestion}</p>
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <Badge className={getImpactColor(learnMoreSuggestion.impact)}>
+                    {learnMoreSuggestion.impact} Impact
+                  </Badge>
+                  <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                    <TrendingUp className="w-4 h-4" />
+                    {learnMoreSuggestion.potential}
+                  </span>
+                  <span className="flex items-center gap-1 text-slate-600">
+                    <Clock className="w-4 h-4" />
+                    Expected timeframe: 2-4 weeks
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1151,18 +1151,18 @@ const EducationCenter = () => {
             {filteredWebinars.map((webinar) => (
               <Card key={webinar.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <img 
-                      src={webinar.thumbnail} 
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <img
+                      src={webinar.thumbnail}
                       alt={webinar.title}
-                      className="w-32 h-20 object-cover rounded"
+                      className="w-full h-40 sm:w-32 sm:h-20 object-cover rounded"
                     />
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div>
                           <h3 className="font-semibold text-lg dark:text-foreground">{webinar.title}</h3>
                           <p className="text-sm text-gray-600 mb-2 dark:text-muted-foreground">{webinar.description}</p>
- <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-muted-foreground">
+ <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-muted-foreground">
                             <span>Speaker: {webinar.speaker}</span>
                             <span>•</span>
                             <span>{webinar.date} at {webinar.time}</span>
@@ -1174,24 +1174,24 @@ const EducationCenter = () => {
                               {webinar.status === 'upcoming' ? 'Upcoming' : 'Recorded'}
                             </Badge>
                             <Badge variant="outline">{webinar.price}</Badge>
-                            {registeredWebinars.has(webinar.id) && ( 
+                            {registeredWebinars.has(webinar.id) && (
                               <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">Registered</Badge>
                             )}
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left sm:text-right shrink-0">
                           <div className="text-sm text-gray-600 mb-2 dark:text-muted-foreground">
-                            {webinar.attendees}/{webinar.maxAttendees} 
+                            {webinar.attendees}/{webinar.maxAttendees}
                           </div>
-                          <div className="flex gap-2">
-                            <Button 
+                          <div className="flex gap-2 flex-wrap">
+                            <Button
                               size="sm"
                               onClick={() => setSelectedWebinar(webinar)}
                               variant="outline"
                             >
                               View Details
                             </Button>
-                            <Button 
+                            <Button
                               size="sm"
                               onClick={() => handleRegisterWebinar(webinar.id)}
                               className="bg-green-600 hover:bg-green-700"

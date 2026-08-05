@@ -312,8 +312,8 @@ const EcoChatbot = () => {
     <div className="space-y-6">
       <Card className="bg-white border border-slate-200 shadow-lg rounded-2xl dark:bg-slate-900 dark:border-slate-700">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-slate-800 dark:text-slate-200">
-            <div className="w-10 h-10 bg-emerald-600 dark:bg-emerald-600 rounded-xl flex items-center justify-center">
+          <CardTitle className="flex flex-wrap items-center gap-3 text-slate-800 dark:text-slate-200">
+            <div className="w-10 h-10 bg-emerald-600 dark:bg-emerald-600 rounded-xl flex items-center justify-center shrink-0">
               <Bot className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -323,7 +323,7 @@ const EcoChatbot = () => {
                 <span>AI-Powered Sustainability Helper</span>
               </div>
             </div>
-            <div className="ml-auto flex items-center space-x-2">
+            <div className="ml-auto flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="border-slate-300 text-slate-700 bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:bg-slate-800">
                 <div className="w-2 h-2 bg-emerald-500 dark:bg-emerald-400 rounded-full mr-2 animate-pulse"></div>
                 Online
