@@ -35,7 +35,7 @@ more) lives in 🔥 Firebase Firestore, under rules that scope everything to its
 | | |
 |---|---|
 | ⚛️ **React 18** + **TypeScript** + **Vite** | Fast, type-safe UI |
-| 💨 **Tailwind CSS** + **shadcn/ui** | Utility-first styling on Radix primitives |
+| 💨 **Tailwind CSS** + **shadcn/ui** | Utility-first styling on Radix primitives, mobile-first responsive layouts throughout |
 | 🧭 **React Router** | Page navigation |
 | 📊 **Recharts** | Carbon trends, product analysis, radar/bar breakdowns |
 | 📄 **jsPDF** | Real generated PDFs — checkout receipts, course certificates |
@@ -57,9 +57,14 @@ more) lives in 🔥 Firebase Firestore, under rules that scope everything to its
   never takes a feature down.
 - 📸 **Vision analysis** — photo-based product identification via a vision-capable model.
 - 📚 **RAG (Retrieval-Augmented Generation)** — `backend/rag/retriever.py` retrieves relevant
-  knowledge chunks before EcoBot answers, so replies are grounded, not hallucinated.
+  knowledge chunks before EcoBot answers or a product lifecycle assessment is generated, so
+  replies are grounded in cited sources (published LCA studies for lifecycle stages) rather than
+  invented outright.
 - 🛠️ **Function/tool calling** — the chat model can call real backend functions mid-conversation
   (carbon footprint calculation, product search) via `backend/services/tools.py`.
+- 🧮 **Deterministic sustainability scoring** — the overall score is a fixed weighted formula over
+  the carbon/packaging/health category scores (`backend/services/scoring.py`), not a number the
+  LLM invents on its own.
 
 ### ☁️ Data & Infra
 - 🔥 **Firebase Firestore** — primary database, explicit security rules (`firestore.rules`)
